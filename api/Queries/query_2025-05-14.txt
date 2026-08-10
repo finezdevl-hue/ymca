@@ -1,0 +1,4 @@
+[08:55:24] INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription) VALUES (?, ?, ?, ?, ?, ?)
+[08:58:33] INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription) VALUES (?, ?, ?, ?, ?, ?)
+[09:45:35] INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription) VALUES (?, ?, ?, ?, ?, ?)
+[09:46:56] INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription) VALUES (?, ?, ?, ?, ?, ?)

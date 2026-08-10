@@ -1,0 +1,1 @@
+DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ?

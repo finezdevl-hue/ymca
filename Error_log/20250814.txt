@@ -1,0 +1,1 @@
+[17:04:24] login_id: 1 | Error: Prepare failed: Table 'db_members.tbl_tbl_monthly_attendance' doesn't exist

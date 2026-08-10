@@ -1,0 +1,8 @@
+[09:14:09] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["","0"]
+[09:24:27] login_id: 1 | SQL: INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete,from_date,to_date) VALUES (?, ?, ?, ?, ?, ?, 0,?,?) | Values: [null,150,null,1,null,null,null,null]
+[09:26:49] login_id: 1 | SQL: UPDATE tbl_attendance SET verified=1 WHERE date=? | Values: ["2025-09-22"]
+[09:27:42] login_id: 1 | SQL: UPDATE tbl_attendance SET verified=1 WHERE date=? | Values: ["2025-09-22"]
+[09:33:18] login_id: 1 | SQL: UPDATE tbl_attendance SET verified=1 WHERE date=? | Values: ["2025-10-01"]
+[09:33:42] login_id: 1 | SQL: UPDATE tbl_attendance SET verified=1 WHERE date=? | Values: ["2025-10-01"]
+[09:33:55] login_id: 1 | SQL: UPDATE tbl_attendance SET verified=1 WHERE date=? | Values: ["2025-10-02"]
+[09:35:01] login_id: 1 | SQL: UPDATE tbl_attendance SET verified=1 WHERE date=? | Values: ["2025-10-02"]

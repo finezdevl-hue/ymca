@@ -1,0 +1,1 @@
+INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?)

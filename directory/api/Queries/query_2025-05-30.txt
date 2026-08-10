@@ -1,0 +1,1 @@
+[14:29:45] INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription) VALUES (?, ?, ?, ?, ?, ?)

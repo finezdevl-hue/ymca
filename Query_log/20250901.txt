@@ -1,0 +1,2 @@
+[12:16:17] login_id:  | SQL: INSERT INTO tbl_attendance(member_id, group_id,date) VALUES (?, 0, ?) | Values: ["1","2025-09-01"]
+[12:32:12] login_id:  | SQL: INSERT INTO tbl_attendance(member_id, group_id,date) VALUES (?, 0, ?) | Values: ["1","2025-09-02"]

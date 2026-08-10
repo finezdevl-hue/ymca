@@ -1,0 +1,6 @@
+[15:33:52] login_id: 1 | SQL: INSERT INTO tbl_opening_balance (date, amount) VALUES (?, ?) | Values: ["2025-10-31","2000"]
+[15:35:51] login_id: 1 | SQL: UPDATE tbl_opening_balance SET  date = ?, amount = ? WHERE id = ? | Values: ["2025-10-31","2500","1"]
+[16:04:39] login_id: 1 | SQL: INSERT INTO tbl_members (first_name, middle_name,last_name,father_name,mother_name,dob,
+                    blood_group,phone,whtsapp,email,p_street,p_city,p_pincode,p_country,img,inactive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) | Values: ["test","mid","lasd","","","2002-01-15","5","747457547","5674574","user2@gmail.com","ewrw","werwt","4535","fdsfsfs","1","0"]
+[16:07:34] login_id: 1 | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive =?  WHERE id = ? | Values: ["test","mid","lasd","","","2002-01-15","5","747457547","user2@gmail.com","ewrw","0","4535","fdsfsfs","1","1","2"]

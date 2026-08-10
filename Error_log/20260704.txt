@@ -1,0 +1,1 @@
+[12:07:24] login_id: 1 | Error: Unknown column 'iswallet' in 'field list'

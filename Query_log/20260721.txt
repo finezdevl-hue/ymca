@@ -1,0 +1,125 @@
+[14:02:28] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","2"]
+[14:02:28] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["20","2","2026-07-21"]
+[14:02:43] login_id: 1 | SQL: INSERT INTO tbl_dates (date) VALUES (?) | Values: ["2026-07-21"]
+[14:04:55] login_id: 1 | SQL: DELETE FROM tbl_group_member_map WHERE member_id = ? | Values: ["24"]
+[14:04:55] login_id: 1 | SQL: INSERT INTO tbl_group_member_map (member_id, group_id) VALUES (?, ?) | Values: ["24","1"]
+[14:04:55] login_id: 1 | SQL: INSERT INTO tbl_group_member_map (member_id, group_id) VALUES (?, ?) | Values: ["24","2"]
+[14:05:10] login_id: 1 | SQL: DELETE FROM tbl_dates WHERE id = ? | Values: ["17"]
+[14:05:19] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[14:05:19] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: [24,"1","2026-07-21"]
+[14:05:40] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","2"]
+[14:05:51] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[14:05:55] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[14:05:55] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: [24,"1","2026-07-21"]
+[14:06:36] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[14:24:05] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[14:24:05] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: [24,"1","2026-07-21"]
+[14:24:09] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[14:29:07] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Morning"]
+[14:29:07] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date, session) VALUES (?, ?, ?, ?) | Values: [24,"1","2026-07-21","Morning"]
+[14:29:13] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Morning"]
+[14:29:23] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","1"]
+[14:29:23] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date, session) VALUES (?, ?, ?, ?) | Values: ["24","1","2026-07-21","Morning"]
+[14:29:41] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Morning"]
+[14:29:41] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date, session) VALUES (?, ?, ?, ?) | Values: [24,"1","2026-07-21","Morning"]
+[14:29:46] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Morning"]
+[14:33:08] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Evening"]
+[14:33:08] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date, session) VALUES (?, ?, ?, ?) | Values: [24,"1","2026-07-21","Evening"]
+[14:33:47] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Evening"]
+[14:33:50] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Evening"]
+[14:33:50] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date, session) VALUES (?, ?, ?, ?) | Values: [24,"1","2026-07-21","Evening"]
+[14:34:25] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Evening"]
+[14:34:26] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Evening"]
+[14:34:26] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date, session) VALUES (?, ?, ?, ?) | Values: [24,"1","2026-07-21","Evening"]
+[14:34:35] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Evening"]
+[14:34:39] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","2"]
+[14:34:39] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date, session) VALUES (?, ?, ?, ?) | Values: ["46","2","2026-07-21","Morning"]
+[14:34:39] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date, session) VALUES (?, ?, ?, ?) | Values: ["20","2","2026-07-21","Morning"]
+[14:34:44] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Evening"]
+[14:34:44] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date, session) VALUES (?, ?, ?, ?) | Values: [24,"1","2026-07-21","Evening"]
+[14:34:51] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","2"]
+[14:36:57] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Evening"]
+[14:36:59] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? AND session = ? | Values: ["2026-07-21","1",24,"Evening"]
+[14:36:59] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date, session) VALUES (?, ?, ?, ?) | Values: [24,"1","2026-07-21","Evening"]
+[14:48:01] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","1"]
+[16:02:29] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[16:02:29] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [24,"1","2026-07-21"]
+[16:02:32] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[16:02:33] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[16:02:33] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [24,"1","2026-07-21"]
+[16:02:48] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","2",24]
+[16:02:48] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [24,"2","2026-07-21"]
+[16:02:58] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","2"]
+[16:02:58] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: ["2","2","2026-07-21"]
+[16:02:58] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: ["13","2","2026-07-21"]
+[16:02:58] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: ["24","2","2026-07-21"]
+[16:03:05] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[16:03:06] login_id: 13 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-21","1",24]
+[16:03:06] login_id: 13 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [24,"1","2026-07-21"]
+[16:03:17] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","2"]
+[16:03:23] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","1"]
+[16:04:10] login_id: 1 | SQL: DELETE FROM tbl_group_member_map WHERE member_id = ? | Values: ["8"]
+[16:04:10] login_id: 1 | SQL: INSERT INTO tbl_group_member_map (member_id, group_id) VALUES (?, ?) | Values: ["8","2"]
+[16:04:31] login_id: 1 | SQL: DELETE FROM tbl_group_member_map WHERE member_id = ? | Values: ["1"]
+[16:04:31] login_id: 1 | SQL: INSERT INTO tbl_group_member_map (member_id, group_id) VALUES (?, ?) | Values: ["1","2"]
+[16:28:02] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(DISTINCT a.date) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-06-01","2026-06-30","2026-06-01","2026-06-30","2026-06-01","2026-06-30"]
+[16:28:02] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(DISTINCT a.date)
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-06-01","2026-06-30"]
+[16:46:24] login_id: 1 | SQL: INSERT INTO tbl_groups (name, status) VALUES (?,1) | Values: ["noon"]
+[16:46:50] login_id: 1 | SQL: DELETE FROM tbl_groups WHERE id = ? | Values: ["3"]
+[16:50:56] login_id: 1 | SQL: INSERT INTO tbl_groups (name, status) VALUES (?,1) | Values: ["noon"]
+[16:59:22] login_id: 1 | SQL: DELETE FROM tbl_groups WHERE id = ? | Values: ["4"]
+[17:00:43] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","1"]
+[17:00:43] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: ["24","1","2026-07-21"]
+[17:06:58] login_id: 1 | SQL: INSERT INTO tbl_dates (date, group_id) VALUES (?, ?) | Values: ["2026-07-21",1]
+[17:09:17] login_id: 1 | SQL: DELETE FROM tbl_dates WHERE id = ? | Values: ["18"]
+[17:09:28] login_id: 1 | SQL: INSERT INTO tbl_dates (date, group_id) VALUES (?, ?) | Values: ["2026-07-21",1]
+[17:09:28] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21",1]
+[17:09:58] login_id: 1 | SQL: DELETE FROM tbl_dates WHERE id = ? | Values: ["19"]
+[17:10:06] login_id: 1 | SQL: INSERT INTO tbl_dates (date, group_id) VALUES (?, ?) | Values: ["2026-07-21",2]
+[17:10:06] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21",2]
+[17:10:19] login_id: 1 | SQL: DELETE FROM tbl_dates WHERE id = ? | Values: ["20"]
+[17:10:28] login_id: 1 | SQL: INSERT INTO tbl_dates (date, group_id) VALUES (?, ?) | Values: ["2026-07-21",0]
+[17:10:28] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? | Values: ["2026-07-21"]
+[17:10:40] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(DISTINCT a.date) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-06-01","2026-06-30","2026-06-01","2026-06-30","2026-06-01","2026-06-30"]
+[17:10:40] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(DISTINCT a.date)
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-06-01","2026-06-30"]
+[17:10:46] login_id: 1 | SQL: DELETE FROM tbl_dates WHERE id = ? | Values: ["21"]
+[17:12:51] login_id: 1 | SQL: INSERT INTO tbl_dates (date, group_id) VALUES (?, ?) | Values: ["2026-07-21",1]
+[17:12:51] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21",1]
+[17:14:04] login_id: 1 | SQL: DELETE FROM tbl_dates WHERE id = ? | Values: ["22"]
+[17:14:10] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21","1"]
+[17:14:10] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: ["24","1","2026-07-21"]
+[17:14:36] login_id: 1 | SQL: INSERT INTO tbl_dates (date, group_id) VALUES (?, ?) | Values: ["2026-07-21",1]
+[17:14:36] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-21",1]
+[17:14:54] login_id: 1 | SQL: DELETE FROM tbl_dates WHERE id = ? | Values: ["23"]

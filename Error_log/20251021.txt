@@ -1,0 +1,4 @@
+[10:31:05] login_id: 1 | Error: Prepare failed: Column count doesn't match value count at row 1
+[10:31:36] login_id: 1 | Error: Prepare failed: Column count doesn't match value count at row 1
+[15:13:11] login_id: 1 | Error: Prepare failed: Column count doesn't match value count at row 1
+[15:15:22] login_id: 1 | Error: Prepare failed: Column count doesn't match value count at row 1

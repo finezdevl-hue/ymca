@@ -1,0 +1,1 @@
+[19:28:22] login_id: 3 | SQL: INSERT INTO tbl_dates (date) VALUES (?) | Values: ["2025-11-16"]

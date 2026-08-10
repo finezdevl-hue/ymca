@@ -1,0 +1,4 @@
+[23:18:55] login_id: 1 | SQL: DELETE FROM tbl_group_member_map WHERE member_id = ? | Values: ["1"]
+[23:18:55] login_id: 1 | SQL: INSERT INTO tbl_group_member_map (member_id, group_id) VALUES (?, ?) | Values: ["1","2"]
+[23:23:35] login_id: 1 | SQL: SELECT login_id FROM tbl_login WHERE email = ? | Values: ["simon@gmail.com"]
+[23:23:35] login_id: 1 | SQL: INSERT INTO tbl_login (name,email, password) VALUES (?, ?, ?) | Values: ["Simon  Thomas Irimpan","simon@gmail.com","12345"]

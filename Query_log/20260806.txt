@@ -1,0 +1,194 @@
+[11:08:30] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[11:08:30] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,3,1]
+[11:28:25] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[11:28:25] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-06"]
+[11:28:28] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[11:30:07] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[11:30:07] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-06"]
+[11:30:10] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[11:48:22] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [5,2]
+[11:48:22] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [5,2,5,1]
+[11:56:22] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[11:56:22] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,4,1]
+[11:58:48] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[11:58:48] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,5,1]
+[11:59:44] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[11:59:44] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,3,1]
+[12:05:13] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[12:05:13] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,5,1]
+[12:05:20] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[12:05:20] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,3,1]
+[12:05:23] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE id = ? | Values: [1771]
+[12:05:29] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[12:05:29] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,3,1]
+[12:05:33] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[12:05:33] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,5,1]
+[12:05:53] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[12:05:53] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,3,1]
+[12:20:23] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE id = ? | Values: [1794]
+[12:22:03] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,0]
+[12:22:03] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,0,3,1]
+[12:22:26] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,0]
+[12:22:26] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,0,3,1]
+[12:27:28] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,0]
+[12:27:28] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,0,3,1]
+[12:32:26] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[12:32:26] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,5,1]
+[12:32:44] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE id = ? | Values: [1932]
+[12:42:10] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE id = ? | Values: [1974]
+[12:42:16] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [6,2]
+[12:42:16] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [6,2,3,1]
+[12:56:08] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[12:56:08] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-06"]
+[12:56:08] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06","2"]
+[12:58:41] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[12:58:48] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[12:58:48] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-06"]
+[12:58:48] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,"2","19:00","2026-08-06"]
+[12:58:51] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[12:58:52] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[12:58:52] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"half_chance","19:00","2026-08-06"]
+[12:59:11] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[12:59:11] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-06"]
+[12:59:11] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,"2","19:00","2026-08-06"]
+[12:59:14] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[12:59:16] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[12:59:16] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"half_chance","19:00","2026-08-06"]
+[12:59:18] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[12:59:20] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[12:59:20] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"absent","19:00","2026-08-06"]
+[12:59:26] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[12:59:31] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[12:59:31] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-06"]
+[12:59:31] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,"2","19:00","2026-08-06"]
+[13:01:11] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[13:01:16] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[13:01:16] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-06"]
+[13:01:16] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,"2","19:01","2026-08-06"]
+[13:02:43] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[13:03:13] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[13:03:13] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-06"]
+[13:03:13] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,"2","19:00","2026-08-06"]
+[13:06:48] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[13:11:09] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[13:11:09] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"absent",null,"2026-08-06"]
+[13:11:14] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[13:11:16] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[13:11:16] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"absent",null,"2026-08-06"]
+[13:11:21] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[13:51:48] login_id: 1 | SQL: UPDATE tbl_groups SET allow_tomorrow_attendance=? WHERE id=? | Values: [0,1]
+[13:51:50] login_id: 1 | SQL: UPDATE tbl_groups SET allow_tomorrow_attendance=? WHERE id=? | Values: [1,2]
+[13:52:11] login_id: 1 | SQL: UPDATE tbl_groups SET allow_tomorrow_attendance=? WHERE id=? | Values: [0,2]
+[14:35:32] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[14:35:32] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"absent",null,"2026-08-06"]
+[14:35:36] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[14:38:42] login_id: 1 | SQL: UPDATE tbl_groups SET allow_tomorrow_attendance=? WHERE id=? | Values: [1,2]
+[14:47:35] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[14:47:35] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"absent",null,"2026-08-06"]
+[14:47:37] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[14:48:31] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[14:48:31] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"half_chance","15:20","2026-08-06"]
+[14:48:46] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[14:48:52] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[14:48:52] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"half_chance","15:20","2026-08-06"]
+[14:48:55] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[14:53:22] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[14:53:22] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"half_chance","19:00","2026-08-06"]
+[14:54:58] login_id: 5 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,4]
+[14:54:58] login_id: 5 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [5,4,2,"half_chance","19:05","2026-08-06"]
+[15:11:26] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[15:19:23] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[15:19:23] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-06"]
+[15:19:23] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE (login_id = ? OR member_id = ?) AND status_date = ? AND group_id = ? | Values: [10,1,"2026-08-06","2"]
+[15:19:27] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[15:19:33] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",1]
+[15:19:33] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-07"]
+[15:19:33] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE (login_id = ? OR member_id = ?) AND status_date = ? AND group_id = ? | Values: [10,1,"2026-08-07","2"]
+[15:19:42] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",1]
+[15:19:57] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[15:19:57] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"absent",null,"2026-08-06"]
+[15:20:00] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[15:23:58] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[15:23:58] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [1,"2","2026-08-06"]
+[15:23:58] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,"2","15:25","2026-08-06"]
+[15:24:02] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06","2",1]
+[15:24:18] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-06",2,1]
+[15:24:18] login_id: 10 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [10,1,2,"half_chance",null,"2026-08-06"]
+[15:24:21] login_id: 10 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [10,"2026-08-06",2]
+[15:24:47] login_id: 10 | SQL: UPDATE tbl_members SET 
+                            first_name = ?, 
+                            middle_name = ?, 
+                            last_name = ?, 
+                            gender = ?, 
+                            father_name = ?, 
+                            mother_name = ?, 
+                            dob = ?, 
+                            blood_group = ?, 
+                            phone = ?, 
+                            whtsapp = ?, 
+                            email = ?, 
+                            p_street = ?, 
+                            p_city = ?, 
+                            p_pincode = ?, 
+                            p_country = ?, 
+                            img = ? 
+                        WHERE id = ? | Values: ["Simon","Thomas","irimpan","","","","","","9098786756","9098786756","simonthomasadvocate@gmail.com","","","","","2026-06-26_12-56-31.jpg","1"]
+[15:24:57] login_id: 10 | SQL: UPDATE tbl_members SET 
+                            first_name = ?, 
+                            middle_name = ?, 
+                            last_name = ?, 
+                            gender = ?, 
+                            father_name = ?, 
+                            mother_name = ?, 
+                            dob = ?, 
+                            blood_group = ?, 
+                            phone = ?, 
+                            whtsapp = ?, 
+                            email = ?, 
+                            p_street = ?, 
+                            p_city = ?, 
+                            p_pincode = ?, 
+                            p_country = ?, 
+                            img = ? 
+                        WHERE id = ? | Values: ["Simon","Thomas","Irimpan","","","","","","9098786756","9098786756","simonthomasadvocate@gmail.com","","","","","2026-06-26_12-56-31.jpg","1"]
+[15:25:48] login_id: 5 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [5,"2026-08-06",2]
+[15:26:04] login_id: 1 | SQL: UPDATE tbl_groups SET allow_tomorrow_attendance=? WHERE id=? | Values: [0,2]
+[16:32:16] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE id = ? | Values: [32]

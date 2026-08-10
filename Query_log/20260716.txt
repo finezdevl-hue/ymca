@@ -1,0 +1,32 @@
+[17:25:39] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-15","2"]
+[17:25:39] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["20","2","2026-07-15"]
+[17:25:39] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["4","2","2026-07-15"]
+[17:25:39] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["8","2","2026-07-15"]
+[17:25:39] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["39","2","2026-07-15"]
+[17:25:39] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["10","2","2026-07-15"]
+[17:25:39] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["1","2","2026-07-15"]
+[17:25:39] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["28","2","2026-07-15"]
+[19:16:11] login_id: 1 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-07-16","2"]
+[19:16:11] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["4","2","2026-07-16"]
+[19:16:11] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["26","2","2026-07-16"]
+[19:16:11] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["15","2","2026-07-16"]
+[19:16:11] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["39","2","2026-07-16"]
+[19:16:11] login_id: 1 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["1","2","2026-07-16"]
+[19:43:12] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-06-01","2026-06-30","2026-06-01","2026-06-30","2026-06-01","2026-06-30"]
+[19:43:12] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-06-01","2026-06-30"]

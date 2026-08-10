@@ -1,0 +1,6 @@
+[09:05:13] login_id: 1 | SQL: DELETE FROM tbl_group_member_map WHERE member_id = ? | Values: ["2"]
+[09:05:13] login_id: 1 | SQL: INSERT INTO tbl_group_member_map (member_id, group_id) VALUES (?, ?) | Values: ["2","2"]
+[09:05:29] login_id: 1 | SQL: DELETE FROM tbl_group_member_map WHERE member_id = ? | Values: ["1"]
+[09:05:29] login_id: 1 | SQL: INSERT INTO tbl_group_member_map (member_id, group_id) VALUES (?, ?) | Values: ["1","2"]
+[13:08:32] login_id: 1 | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive =?  WHERE id = ? | Values: ["test","mid","lasd","","","2002-01-15","5","747457547","user2@gmail.com","ewrw","0","4535","fdsfsfs","1","0","2"]

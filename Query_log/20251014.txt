@@ -1,0 +1,2 @@
+[13:50:56] login_id: 1 | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?  WHERE id = ? | Values: ["safsar","fewf","rwefwfw","etwtw","twtwet","2025-09-12","5","4235353","testw@gmail.com","erwr","0","45325235","fdsfsfs","0","1"]

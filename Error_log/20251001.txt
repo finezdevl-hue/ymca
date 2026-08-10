@@ -1,0 +1,1 @@
+[09:25:11] login_id: 1 | Error: Prepare failed: Table 'db_members.verify_attendance' doesn't exist

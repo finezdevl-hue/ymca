@@ -1,0 +1,8 @@
+[19:22:14] login_id: 1 | SQL: UPDATE tbl_payment_head_master SET  name = ?, type = ?, pnl = ?, cash = ?, bank = ? WHERE id = ? | Values: ["Bank interest","Credit","1","0","1","14"]
+[19:24:40] login_id: 1 | SQL: UPDATE tbl_payment_head_master SET  name = ?, type = ?, pnl = ?, cash = ?, bank = ? WHERE id = ? | Values: ["Bank interest","Credit","1","1","1","14"]
+[20:15:16] login_id: 3 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2025-11-15","2"]
+[20:15:16] login_id: 3 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["22","2","2025-11-15"]
+[20:15:16] login_id: 3 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["4","2","2025-11-15"]
+[20:15:16] login_id: 3 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["21","2","2025-11-15"]
+[20:15:16] login_id: 3 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["31","2","2025-11-15"]
+[20:15:16] login_id: 3 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["10","2","2025-11-15"]

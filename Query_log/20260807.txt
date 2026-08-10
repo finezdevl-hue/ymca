@@ -1,0 +1,122 @@
+[10:56:33] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",33]
+[10:56:33] login_id: 7 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [33,"2","2026-08-07"]
+[10:56:33] login_id: 7 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [7,33,"2","10:55","2026-08-07"]
+[10:56:44] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",33]
+[10:59:27] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",33]
+[10:59:27] login_id: 7 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [33,"2","2026-08-07"]
+[10:59:27] login_id: 7 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [7,33,"2","11:00","2026-08-07"]
+[10:59:30] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",33]
+[10:59:30] login_id: 7 | SQL: DELETE FROM tbl_temp_attendance_status WHERE (login_id = ? OR member_id = ?) AND status_date = ? AND group_id = ? | Values: [7,33,"2026-08-07","2"]
+[11:19:32] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [7,2]
+[11:19:32] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [7,2,3,1]
+[11:22:42] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",33]
+[11:22:42] login_id: 7 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [33,"2","2026-08-07"]
+[11:22:42] login_id: 7 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [7,33,"2","07:20","2026-08-07"]
+[11:26:57] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",33]
+[11:26:57] login_id: 7 | SQL: DELETE FROM tbl_temp_attendance_status WHERE (login_id = ? OR member_id = ?) AND status_date = ? AND group_id = ? | Values: [7,33,"2026-08-07","2"]
+[11:26:59] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07",2,33]
+[11:26:59] login_id: 7 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [7,33,2,"absent",null,"2026-08-07"]
+[11:27:03] login_id: 7 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [7,"2026-08-07",2]
+[11:27:05] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07",2,33]
+[11:27:05] login_id: 7 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [7,33,2,"half_chance",null,"2026-08-07"]
+[11:27:09] login_id: 7 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [7,"2026-08-07",2]
+[11:28:12] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",33]
+[11:28:12] login_id: 7 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [33,"2","2026-08-07"]
+[11:28:12] login_id: 7 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [7,33,"2","11:30","2026-08-07"]
+[11:29:16] login_id: 9 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",15]
+[11:29:16] login_id: 9 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [15,"2","2026-08-07"]
+[11:29:16] login_id: 9 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [9,15,"2","00:00","2026-08-07"]
+[11:32:38] login_id: 9 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",15]
+[11:32:38] login_id: 9 | SQL: DELETE FROM tbl_temp_attendance_status WHERE (login_id = ? OR member_id = ?) AND status_date = ? AND group_id = ? | Values: [9,15,"2026-08-07","2"]
+[11:32:48] login_id: 9 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",15]
+[11:32:48] login_id: 9 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [15,"2","2026-08-07"]
+[11:32:48] login_id: 9 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [9,15,"2","12:00","2026-08-07"]
+[11:32:54] login_id: 9 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",15]
+[11:32:54] login_id: 9 | SQL: DELETE FROM tbl_temp_attendance_status WHERE (login_id = ? OR member_id = ?) AND status_date = ? AND group_id = ? | Values: [9,15,"2026-08-07","2"]
+[11:32:59] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",33]
+[11:32:59] login_id: 7 | SQL: DELETE FROM tbl_temp_attendance_status WHERE (login_id = ? OR member_id = ?) AND status_date = ? AND group_id = ? | Values: [7,33,"2026-08-07","2"]
+[11:37:45] login_id: 9 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",15]
+[11:37:45] login_id: 9 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [15,"2","2026-08-07"]
+[11:37:45] login_id: 9 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [9,15,"2","11:35","2026-08-07"]
+[11:38:03] login_id: 9 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",15]
+[11:38:03] login_id: 9 | SQL: DELETE FROM tbl_temp_attendance_status WHERE (login_id = ? OR member_id = ?) AND status_date = ? AND group_id = ? | Values: [9,15,"2026-08-07","2"]
+[11:38:13] login_id: 9 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07",2,15]
+[11:38:13] login_id: 9 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                        VALUES (?, ?, ?, ?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [9,15,2,"half_chance",null,"2026-08-07"]
+[11:38:24] login_id: 9 | SQL: DELETE FROM tbl_temp_attendance_status WHERE login_id = ? AND status_date = ? AND group_id = ? | Values: [9,"2026-08-07",2]
+[11:41:35] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",33]
+[11:41:35] login_id: 7 | SQL: INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?) | Values: [33,"2","2026-08-07"]
+[11:41:35] login_id: 7 | SQL: INSERT INTO tbl_temp_attendance_status (login_id, member_id, group_id, status, expected_time, status_date) 
+                                            VALUES (?, ?, ?, 'present', ?, ?) 
+                                            ON DUPLICATE KEY UPDATE status = 'present', expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP | Values: [7,33,"2","11:40","2026-08-07"]
+[11:41:56] login_id: 7 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-08-07","2",33]
+[11:41:56] login_id: 7 | SQL: DELETE FROM tbl_temp_attendance_status WHERE (login_id = ? OR member_id = ?) AND status_date = ? AND group_id = ? | Values: [7,33,"2026-08-07","2"]
+[12:27:26] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [9,2]
+[12:27:26] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [9,2,5,1]
+[13:37:38] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE id = ? | Values: [4743]
+[13:37:47] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [9,2]
+[13:37:47] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [9,2,2,1]
+[13:50:27] login_id: 9 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet, flag, transaction_type, group_id) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?) | Values: ["21",50,"2026-08-07",9,"1","Fee SetOff Payment","0","1","1",2]
+[13:50:27] login_id: 9 | SQL: UPDATE tbl_member_recievable SET iscomplete = ? WHERE id = ? | Values: [0,"0"]
+[13:52:23] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [9,2]
+[13:52:23] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [9,2,2,1]
+[13:55:01] login_id: 9 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet,flag,transaction_type) VALUES (?, ?, ?, ?, ?, ?,?,1,?,?) | Values: ["21","50","2026-08-07",9,"1","Wallet SetOff Payment","0","1","1"]
+[13:55:01] login_id: 9 | SQL: INSERT INTO tbl_wallet (client_id ,date, amount, type) VALUES (?, ?, ?, 'debit') | Values: ["21","2026-08-07","50"]
+[13:58:31] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [9,2]
+[13:58:31] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [9,2,2,1]
+[14:08:12] login_id: 9 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet,flag,transaction_type) VALUES (?, ?, ?, ?, ?, ?,?,1,?,?) | Values: ["1","50","2026-08-07",9,"1","Wallet SetOff Payment","0","1","1"]
+[14:08:12] login_id: 9 | SQL: INSERT INTO tbl_wallet (client_id ,date, amount, type) VALUES (?, ?, ?, 'debit') | Values: ["1","2026-08-07","50"]
+[14:10:21] login_id: 9 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet, flag, transaction_type, group_id) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?) | Values: ["1",50,"2026-08-07",9,"1","Fee SetOff Payment","0","1","1",2]
+[14:10:21] login_id: 9 | SQL: UPDATE tbl_member_recievable SET iscomplete = ? WHERE id = ? | Values: [0,"0"]
+[14:16:26] login_id: 9 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet, flag, transaction_type, group_id) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?) | Values: ["1",1100,"2026-08-07",9,"1","Fee SetOff Payment","0","1","1",2]
+[14:16:26] login_id: 9 | SQL: UPDATE tbl_member_recievable SET iscomplete = ? WHERE id = ? | Values: [0,"0"]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [16,230]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [4,231]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [10,232]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [11,233]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [12,234]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [11,235]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [4,236]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [5,237]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [3,238]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [9,239]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [9,240]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [3,241]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [8,242]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ? | Values: [7,243]
+[14:37:34] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET attendance = 0 WHERE from_date = ? AND to_date = ? AND member_id NOT IN (1,2,4,8,10,15,20,21,23,24,26,28,39,46) | Values: ["2026-07-01","2026-07-31"]
+[15:32:38] login_id: 1 | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive =?  WHERE id = ? | Values: ["Alex","Joseph","not a member","","","","0","8129807134","","","0","0","","0","0","40"]
+[15:32:52] login_id: 1 | SQL: UPDATE tbl_members SET member_type = ? WHERE id = ? | Values: [1,40]
+[15:35:15] login_id: 1 | SQL: UPDATE tbl_members SET member_type = ? WHERE id = ? | Values: [1,48]
+[15:39:49] login_id: 1 | SQL: UPDATE tbl_members SET member_type = ? WHERE id = ? | Values: [1,49]
+[15:39:55] login_id: 1 | SQL: UPDATE tbl_members SET member_type = ? WHERE id = ? | Values: [1,54]
+[15:39:58] login_id: 1 | SQL: UPDATE tbl_members SET member_type = ? WHERE id = ? | Values: [1,52]
+[15:54:23] login_id: 1 | SQL: INSERT INTO tbl_member_recievable (member_id, fees, date, head, discription, iscomplete) VALUES (?, ?, ?, ?, ?, 0) | Values: [40,400,"2026-08-07",1,"Guest Play Fee"]
+[16:26:02] login_id: 1 | SQL: UPDATE tbl_members SET member_type = ? WHERE id = ? | Values: [1,51]
+[16:33:13] login_id: guest | SQL: INSERT INTO tbl_members (first_name, middle_name,last_name,father_name,mother_name,dob,
+                    blood_group,phone,whtsapp,email,p_street,p_city,p_pincode,p_country,img,inactive,member_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) | Values: ["TestGuest","","Demo","","","1990-01-01",0,"9998887776","9998887776","","","","","","0",0,1]
+[16:35:25] login_id: 1 | SQL: INSERT INTO tbl_members (first_name, middle_name,last_name,father_name,mother_name,dob,
+                    blood_group,phone,whtsapp,email,p_street,p_city,p_pincode,p_country,img,inactive,member_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) | Values: ["Harikrishna","","Manoj","","","1990-01-01",0,"6238426929","6238426929","harikrishnamanoj79@gmail.com","","","","","0","0",1]
+[17:52:40] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE id = ? | Values: [4466]
+[17:52:46] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [3,2]
+[17:52:46] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [3,2,5,1]

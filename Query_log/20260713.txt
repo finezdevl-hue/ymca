@@ -1,0 +1,187 @@
+[10:50:10] login_id: 19 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-13","",null]
+[11:16:23] login_id: 19 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-13",2,10]
+[11:16:23] login_id: 19 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: [10,2,"2026-07-13"]
+[11:16:58] login_id: 19 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-13","2",10]
+[11:16:59] login_id: 19 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-13","2",10]
+[11:16:59] login_id: 19 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: [10,"2","2026-07-13"]
+[11:17:02] login_id: 19 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-13","2",10]
+[11:41:14] login_id: 1 | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive =?  WHERE id = ? | Values: ["simon","Thomas","irimpan","","","","0","9098786756","simonthomasadvocate@gmail.com","","","0","","2026-06-26_12-56-31.jpg","0","1"]
+[11:41:14] login_id: 1 | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["simonthomasadvocate@gmail.com","simon@gmail.com"]
+[11:42:16] login_id: 1 | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive =?  WHERE id = ? | Values: ["Shinto","","Muthu","","","","0","9947484525","muthu@gmail.com","","0","0","","2026-06-26_13-07-43.jpg","0","6"]
+[11:42:48] login_id: 1 | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive =?  WHERE id = ? | Values: ["Shinto","","Muthu","","","","0","9947484525","","","0","0","","2026-06-26_13-07-43.jpg","0","6"]
+[11:42:48] login_id: 1 | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["","muthu@gmail.com"]
+[11:43:29] login_id: 10 | SQL: UPDATE tbl_members SET 
+                            first_name = ?, 
+                            middle_name = ?, 
+                            last_name = ?, 
+                            gender = ?, 
+                            father_name = ?, 
+                            mother_name = ?, 
+                            dob = ?, 
+                            blood_group = ?, 
+                            phone = ?, 
+                            whtsapp = ?, 
+                            email = ?, 
+                            p_street = ?, 
+                            p_city = ?, 
+                            p_pincode = ?, 
+                            p_country = ?, 
+                            img = ? 
+                        WHERE id = ? | Values: ["simon","Thomas","irimpan","0","","","","0","9098786756","9098786756","simonthomasadvocate11@gmail.com","","","0","","2026-06-26_12-56-31.jpg","1"]
+[12:02:26] login_id: guest | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?  WHERE id = ? | Values: ["Test","M","User","Father","Mother","1990-01-01",1,"1234567890","temp_new@test.com","Street","City",123456,"Country","img.png",9999]
+[12:02:26] login_id: guest | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["temp_new@test.com","temp_old@test.com"]
+[12:02:26] login_id: guest | SQL: UPDATE tbl_members SET 
+                            first_name = ?, 
+                            middle_name = ?, 
+                            last_name = ?, 
+                            gender = ?, 
+                            father_name = ?, 
+                            mother_name = ?, 
+                            dob = ?, 
+                            blood_group = ?, 
+                            phone = ?, 
+                            whtsapp = ?, 
+                            email = ?, 
+                            p_street = ?, 
+                            p_city = ?, 
+                            p_pincode = ?, 
+                            p_country = ?, 
+                            img = ? 
+                        WHERE id = ? | Values: ["Test","M","User","Male","Father","Mother","1990-01-01",1,"1234567890","1234567890","temp_new@test.com","Street","City",123456,"Country","img.png",9999]
+[12:02:26] login_id: guest | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["temp_new@test.com","temp_old@test.com"]
+[12:02:26] login_id: guest | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive =?  WHERE id = ? | Values: ["Test","M","User","Father","Mother","1990-01-01",1,"1234567890","temp_new@test.com","Street","City",123456,"Country","img.png",0,9999]
+[12:02:26] login_id: guest | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["temp_new@test.com","temp_old@test.com"]
+[12:02:48] login_id: guest | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?  WHERE id = ? | Values: ["Test","M","User","Father","Mother","1990-01-01",1,"1234567890","temp_new@test.com","Street","City",123456,"Country","img.png",9999]
+[12:02:48] login_id: guest | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["temp_new@test.com","temp_old@test.com"]
+[12:02:48] login_id: guest | SQL: UPDATE tbl_members SET 
+                            first_name = ?, 
+                            middle_name = ?, 
+                            last_name = ?, 
+                            gender = ?, 
+                            father_name = ?, 
+                            mother_name = ?, 
+                            dob = ?, 
+                            blood_group = ?, 
+                            phone = ?, 
+                            whtsapp = ?, 
+                            email = ?, 
+                            p_street = ?, 
+                            p_city = ?, 
+                            p_pincode = ?, 
+                            p_country = ?, 
+                            img = ? 
+                        WHERE id = ? | Values: ["Test","M","User","Male","Father","Mother","1990-01-01",1,"1234567890","1234567890","temp_new@test.com","Street","City",123456,"Country","img.png",9999]
+[12:02:48] login_id: guest | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["temp_new@test.com","temp_old@test.com"]
+[12:02:48] login_id: guest | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive =?  WHERE id = ? | Values: ["Test","M","User","Father","Mother","1990-01-01",1,"1234567890","temp_new@test.com","Street","City",123456,"Country","img.png",0,9999]
+[12:02:48] login_id: guest | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["temp_new@test.com","temp_old@test.com"]
+[12:04:47] login_id: 10 | SQL: UPDATE tbl_members SET 
+                            first_name = ?, 
+                            middle_name = ?, 
+                            last_name = ?, 
+                            gender = ?, 
+                            father_name = ?, 
+                            mother_name = ?, 
+                            dob = ?, 
+                            blood_group = ?, 
+                            phone = ?, 
+                            whtsapp = ?, 
+                            email = ?, 
+                            p_street = ?, 
+                            p_city = ?, 
+                            p_pincode = ?, 
+                            p_country = ?, 
+                            img = ? 
+                        WHERE id = ? | Values: ["simon","Thomas","irimpan","0","","","","0","9098786756","9098786756","simonthomasadvocate112@gmail.com","","","0","","2026-06-26_12-56-31.jpg","1"]
+[12:04:47] login_id: 10 | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["simonthomasadvocate112@gmail.com","simonthomasadvocate11@gmail.com"]
+[12:05:48] login_id: 10 | SQL: UPDATE tbl_members SET 
+                            first_name = ?, 
+                            middle_name = ?, 
+                            last_name = ?, 
+                            gender = ?, 
+                            father_name = ?, 
+                            mother_name = ?, 
+                            dob = ?, 
+                            blood_group = ?, 
+                            phone = ?, 
+                            whtsapp = ?, 
+                            email = ?, 
+                            p_street = ?, 
+                            p_city = ?, 
+                            p_pincode = ?, 
+                            p_country = ?, 
+                            img = ? 
+                        WHERE id = ? | Values: ["simon","Thomas","irimpan","0","","","","0","9098786756","9098786756","simonthomasadvocate113@gmail.com","","","0","","2026-06-26_12-56-31.jpg","1"]
+[12:05:48] login_id: 10 | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["simonthomasadvocate113@gmail.com","simonthomasadvocate112@gmail.com"]
+[12:07:42] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-13","2",1]
+[12:07:42] login_id: 10 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: [1,"2","2026-07-13"]
+[12:07:44] login_id: 10 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ? | Values: ["2026-07-13","2",1]
+[12:09:56] login_id: guest | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?  WHERE id = ? | Values: ["Test","M","User","Father","Mother","1990-01-01",1,"1234567890","temp_new@test.com","Street","City",123456,"Country","img.png",9999]
+[12:09:56] login_id:  | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["temp_new@test.com","temp_old@test.com"]
+[12:09:56] login_id: guest | SQL: UPDATE tbl_members SET 
+                            first_name = ?, 
+                            middle_name = ?, 
+                            last_name = ?, 
+                            gender = ?, 
+                            father_name = ?, 
+                            mother_name = ?, 
+                            dob = ?, 
+                            blood_group = ?, 
+                            phone = ?, 
+                            whtsapp = ?, 
+                            email = ?, 
+                            p_street = ?, 
+                            p_city = ?, 
+                            p_pincode = ?, 
+                            p_country = ?, 
+                            img = ? 
+                        WHERE id = ? | Values: ["Test","M","User","Male","Father","Mother","1990-01-01",1,"1234567890","1234567890","temp_new@test.com","Street","City",123456,"Country","img.png",9999]
+[12:09:56] login_id:  | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["temp_new@test.com","temp_old@test.com"]
+[12:09:56] login_id: guest | SQL: UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
+                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive =?  WHERE id = ? | Values: ["Test","M","User","Father","Mother","1990-01-01",1,"1234567890","temp_new@test.com","Street","City",123456,"Country","img.png",0,9999]
+[12:09:56] login_id:  | SQL: UPDATE tbl_login SET email = ? WHERE email = ? | Values: ["temp_new@test.com","temp_old@test.com"]
+[12:10:34] login_id: 10 | SQL: UPDATE tbl_members SET 
+                            first_name = ?, 
+                            middle_name = ?, 
+                            last_name = ?, 
+                            gender = ?, 
+                            father_name = ?, 
+                            mother_name = ?, 
+                            dob = ?, 
+                            blood_group = ?, 
+                            phone = ?, 
+                            whtsapp = ?, 
+                            email = ?, 
+                            p_street = ?, 
+                            p_city = ?, 
+                            p_pincode = ?, 
+                            p_country = ?, 
+                            img = ? 
+                        WHERE id = ? | Values: ["simon","Thomas","irimpan","0","","","","0","9098786756","9098786756","simonthomasadvocate3@gmail.com","","","0","","2026-06-26_12-56-31.jpg","1"]
+[12:10:34] login_id: 10 | SQL: UPDATE tbl_login SET email = ? WHERE login_id = ? | Values: ["simonthomasadvocate3@gmail.com",10]
+[12:11:19] login_id: 10 | SQL: UPDATE tbl_members SET 
+                            first_name = ?, 
+                            middle_name = ?, 
+                            last_name = ?, 
+                            gender = ?, 
+                            father_name = ?, 
+                            mother_name = ?, 
+                            dob = ?, 
+                            blood_group = ?, 
+                            phone = ?, 
+                            whtsapp = ?, 
+                            email = ?, 
+                            p_street = ?, 
+                            p_city = ?, 
+                            p_pincode = ?, 
+                            p_country = ?, 
+                            img = ? 
+                        WHERE id = ? | Values: ["simon","Thomas","irimpan","0","","","","0","9098786756","9098786756","simonthomasadvocate@gmail.com","","","0","","2026-06-26_12-56-31.jpg","1"]
+[12:11:19] login_id: 10 | SQL: UPDATE tbl_login SET email = ? WHERE login_id = ? | Values: ["simonthomasadvocate@gmail.com",10]

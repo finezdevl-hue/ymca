@@ -1,0 +1,445 @@
+[13:09:55] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[13:09:55] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[13:41:48] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[13:41:48] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[13:41:53] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[13:41:53] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[13:41:53] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-03-01","2026-03-31","2026-03-01","2026-03-31","2026-03-01","2026-03-31"]
+[13:41:53] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-03-01","2026-03-31"]
+[13:41:54] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[13:41:54] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[13:41:55] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[13:41:55] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[13:58:40] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[13:58:40] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[14:00:51] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[14:00:51] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[14:00:54] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[14:00:54] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[14:00:54] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-03-01","2026-03-31","2026-03-01","2026-03-31","2026-03-01","2026-03-31"]
+[14:00:54] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-03-01","2026-03-31"]
+[14:00:56] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[14:00:56] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[14:08:15] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-05-24","2025 March Fee","55"]
+[14:08:16] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-05-24","2025 March Fee","55"]
+[14:08:17] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-05-24","2025 March Fee","55"]
+[14:08:19] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-05-24","2025 March Fee","55"]
+[14:08:38] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:08:53] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:08:54] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:08:54] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:08:58] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:08:58] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:08:58] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:08:58] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:08:59] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:08:59] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:09:03] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-05-24","2025 March Fee","55"]
+[14:09:22] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[14:09:22] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[14:17:48] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["6"]
+[14:17:48] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","11"]
+[14:17:48] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","12"]
+[14:17:48] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","23"]
+[14:17:48] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","29"]
+[14:17:48] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","42"]
+[14:17:48] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","43"]
+[14:17:48] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","44"]
+[14:17:48] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","45"]
+[14:17:48] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","46"]
+[14:18:26] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["6"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","11"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","12"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","23"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","25"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","26"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","29"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","42"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","43"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","44"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","45"]
+[14:18:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","46"]
+[14:23:59] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["6"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","11"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","12"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","23"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","25"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","26"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","29"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","42"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","43"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","44"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","45"]
+[14:23:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","46"]
+[14:29:26] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["6"]
+[14:29:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","11"]
+[14:29:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","23"]
+[14:29:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","25"]
+[14:29:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","26"]
+[14:29:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","29"]
+[14:29:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","42"]
+[14:29:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","43"]
+[14:29:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","44"]
+[14:29:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","45"]
+[14:29:26] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","46"]
+[14:29:42] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["6"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","11"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","12"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","23"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","25"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","26"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","29"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","42"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","43"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","44"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","45"]
+[14:29:42] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","46"]
+[14:35:46] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["6"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","11"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","12"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","23"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","25"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","26"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","29"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","42"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","43"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","44"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","45"]
+[14:35:46] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6","46"]
+[15:00:59] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["7"]
+[15:00:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","11"]
+[15:00:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","12"]
+[15:00:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","23"]
+[15:00:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","29"]
+[15:00:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","42"]
+[15:00:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","43"]
+[15:00:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","44"]
+[15:00:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","45"]
+[15:00:59] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","46"]
+[15:01:18] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["7"]
+[15:01:18] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","11"]
+[15:01:18] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","23"]
+[15:01:18] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","29"]
+[15:01:18] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","42"]
+[15:01:18] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","43"]
+[15:01:18] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","44"]
+[15:01:18] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","45"]
+[15:01:18] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","46"]
+[15:04:30] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["7"]
+[15:04:30] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","11"]
+[15:04:30] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","23"]
+[15:04:30] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","29"]
+[15:04:30] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","42"]
+[15:04:30] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","43"]
+[15:04:30] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","44"]
+[15:04:30] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","45"]
+[15:04:30] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","46"]
+[15:07:34] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["7"]
+[15:07:34] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","11"]
+[15:07:34] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","23"]
+[15:07:34] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","29"]
+[15:07:34] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","42"]
+[15:07:34] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","43"]
+[15:07:34] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","44"]
+[15:07:34] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","45"]
+[15:07:34] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7","46"]
+[15:14:15] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["7"]
+[15:14:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",11]
+[15:14:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",23]
+[15:14:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",25]
+[15:14:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",26]
+[15:14:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",29]
+[15:14:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",42]
+[15:14:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",43]
+[15:14:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",45]
+[15:14:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",46]
+[15:15:13] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["7"]
+[15:15:13] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",11]
+[15:15:13] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",23]
+[15:15:13] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",25]
+[15:15:13] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",26]
+[15:15:13] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",29]
+[15:15:13] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",42]
+[15:15:13] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",43]
+[15:15:13] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",44]
+[15:15:13] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",45]
+[15:15:13] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",46]
+[15:45:40] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["7"]
+[15:45:40] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",11]
+[15:45:40] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",23]
+[15:45:40] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",25]
+[15:45:40] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",29]
+[15:45:40] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",42]
+[15:45:40] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",43]
+[15:45:40] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",44]
+[15:45:40] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",45]
+[15:45:40] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",46]
+[15:49:44] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["7"]
+[15:49:44] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",11]
+[15:49:44] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",23]
+[15:49:44] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",29]
+[15:49:44] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",42]
+[15:49:44] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",43]
+[15:49:44] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",44]
+[15:53:15] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["7"]
+[15:53:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",23]
+[15:53:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",29]
+[15:53:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",42]
+[15:53:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",43]
+[15:53:15] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",44]
+[15:53:21] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["7"]
+[15:53:21] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",23]
+[15:53:21] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",29]
+[15:53:21] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",42]
+[15:53:21] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",43]
+[15:53:21] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["7",44]
+[15:58:22] login_id: 1 | SQL: DELETE FROM tbl_menu_map WHERE login_id = ? | Values: ["6"]
+[15:58:22] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6",11]
+[15:58:22] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6",12]
+[15:58:22] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6",23]
+[15:58:22] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6",29]
+[15:58:22] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6",42]
+[15:58:22] login_id: 1 | SQL: INSERT INTO tbl_menu_map(login_id, menu_id, is_active) VALUES (?, ?, 1) | Values: ["6",43]
+[16:20:28] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[16:20:28] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[16:26:55] login_id: 1 | SQL: INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
+                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(a.member_id) AS attendance, 0 AS isreceiveble
+                                    FROM tbl_attendance AS a
+                                    WHERE a.date BETWEEN ? AND ?
+                                      AND a.member_id NOT IN (
+                                          SELECT tmp.member_id FROM (
+                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
+                                          ) AS tmp
+                                      )
+                                    GROUP BY a.member_id | Values: ["2026-04-01","2026-04-30","2026-04-01","2026-04-30","2026-04-01","2026-04-30"]
+[16:26:55] login_id: 1 | SQL: UPDATE tbl_monthly_attendance AS ma
+                                    SET ma.attendance = (
+                                        SELECT COUNT(*) 
+                                        FROM tbl_attendance AS a 
+                                        WHERE a.member_id = ma.member_id 
+                                          AND a.date BETWEEN ma.from_date AND ma.to_date
+                                    )
+                                    WHERE ma.from_date = ? AND ma.to_date = ? | Values: ["2026-04-01","2026-04-30"]
+[16:27:21] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:27:25] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:27:26] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:27:46] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-12-31","","162"]
+[16:27:57] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-12-31","","162"]
+[16:30:50] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:30:51] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:30:52] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:30:53] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:30:53] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:30:53] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:30:53] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:31:06] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-12-31","","162"]
+[16:33:12] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["250","2025-12-31","","162"]
+[16:33:20] login_id: 1 | SQL: UPDATE tbl_member_recievable SET fees = ?, date = ?, discription = ? WHERE id = ? | Values: ["300","2025-12-31","","162"]

@@ -1,0 +1,20 @@
+[17:03:04] INSERT INTO tbl_payable (date, head, particuler, amount, iscomplete) VALUES (?, ?, ?, ?, 1)
+[17:03:04] INSERT INTO tbl_paid (date, head, particuler, amount, payable_id) VALUES (?, ?, ?, ?, ?)
+[17:05:18] INSERT INTO tbl_other_recieveble (date, head, particuler, amount, iscomplete) VALUES (?, ?, ?, ?, 1)
+[17:05:18] INSERT INTO tbl_other_recieved (date, head, particuler, amount, recieveble_id) VALUES (?, ?, ?, ?, ?)
+[17:46:14] DELETE FROM tbl_other_recieved WHERE id = ?
+[17:46:14] SELECT p.amount as total_recieveble_Amount,SUM(pd.amount) AS total_recieved_amount
+                FROM tbl_other_recieveble AS p
+                LEFT JOIN tbl_payment_head_master AS g ON p.head = g.id
+                LEFT JOIN tbl_other_recieved AS pd ON p.id = pd.recieveble_id where pd.recieveble_id = ?
+                GROUP BY p.id, p.date, p.particuler, p.amount, p.head, g.type, g.name
+[17:46:14] UPDATE tbl_other_recieveble SET iscomplete = ?  WHERE id = ?
+[17:48:10] DELETE FROM tbl_other_recieved WHERE id = ?
+[17:48:10] SELECT p.amount as total_recieveble_Amount,SUM(pd.amount) AS total_recieved_amount
+                FROM tbl_other_recieveble AS p
+                LEFT JOIN tbl_payment_head_master AS g ON p.head = g.id
+                LEFT JOIN tbl_other_recieved AS pd ON p.id = pd.recieveble_id where pd.recieveble_id = ?
+                GROUP BY p.id, p.date, p.particuler, p.amount, p.head, g.type, g.name
+[17:48:10] UPDATE tbl_other_recieveble SET iscomplete = ?  WHERE id = ?
+[17:52:38] INSERT INTO tbl_other_recieveble (date, head, particuler, amount, iscomplete) VALUES (?, ?, ?, ?, 0)
+[17:52:38] INSERT INTO tbl_other_recieved (date, head, particuler, amount, recieveble_id) VALUES (?, ?, ?, ?, ?)

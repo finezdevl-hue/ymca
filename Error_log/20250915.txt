@@ -1,0 +1,4 @@
+[14:06:35] login_id: 1 | Error: Execute failed: Column 'client_id' cannot be null
+[14:07:10] login_id: 1 | Error: Execute failed: Column 'client_id' cannot be null
+[14:28:22] login_id: 1 | Error: Prepare failed: Column count doesn't match value count at row 1
+[14:28:49] login_id: 1 | Error: Prepare failed: Column count doesn't match value count at row 1

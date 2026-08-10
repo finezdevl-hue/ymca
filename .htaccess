@@ -1,0 +1,13 @@
+# Apache Server Configuration for Extensionless PHP URLs
+
+RewriteEngine On
+
+# 1. Check if the requested filename with .php extension exists
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.*)$ $1.php [L,QSA]
+
+# 2. Redirect explicit .php URLs to extensionless URLs (Browser Clean Address Bar)
+RewriteCond %{THE_REQUEST} \s/+(.+?)\.php[\s?] [NC]
+RewriteCond %{REQUEST_METHOD} !POST
+RewriteRule ^ /%1 [R=301,L]

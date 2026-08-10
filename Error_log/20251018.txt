@@ -1,0 +1,7 @@
+[11:08:45] login_id: 1 | Error: Prepare failed: Unknown column 'transation_type' in 'field list'
+[11:09:01] login_id: 1 | Error: Prepare failed: Unknown column 'transation_type' in 'field list'
+[11:42:58] login_id: 1 | Error: Prepare failed: Unknown column 'transaction_type' in 'field list'
+[14:03:03] login_id: 1 | Error: Prepare failed: Column count doesn't match value count at row 1
+[14:03:40] login_id: 1 | Error: Prepare failed: Column count doesn't match value count at row 1
+[14:05:02] login_id: 1 | Error: Prepare failed: Column count doesn't match value count at row 1
+[14:08:32] login_id: 1 | Error: Prepare failed: Column count doesn't match value count at row 1

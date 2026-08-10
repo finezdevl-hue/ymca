@@ -1,0 +1,12 @@
+[09:02:22] login_id: 1 | Error: Execute failed: Column 'date' cannot be null
+[09:02:45] login_id: 1 | Error: Execute failed: Column 'date' cannot be null
+[09:49:30] login_id: 1 | Error: Prepare failed: Unknown column 'recieveble_id' in 'where clause'
+[09:49:42] login_id: 1 | Error: Prepare failed: Unknown column 'recieveble_id' in 'where clause'
+[09:50:31] login_id: 1 | Error: Prepare failed: Unknown column 'recieveble_id' in 'where clause'
+[09:53:27] login_id: 1 | Error: Prepare failed: Unknown column 'recieveble_id' in 'where clause'
+[10:58:52] login_id: 1 | Error: Execute failed: Column 'head' cannot be null
+[11:00:10] login_id: 1 | Error: Execute failed: Column 'date' cannot be null
+[11:12:56] login_id: 1 | Error: Execute failed: Column 'date' cannot be null
+[11:33:03] login_id: 1 | Error: Prepare failed: Unknown column 'receiveble_id' in 'where clause'
+[11:54:14] login_id: 1 | Error: Prepare failed: Unknown column 'receiveble_id' in 'where clause'
+[11:55:09] login_id: 1 | Error: Prepare failed: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'is_member_trans = ?' at line 1

@@ -1,0 +1,2 @@
+[16:53:24] login_id: 1 | SQL: INSERT INTO tbl_wallet (client_id, date, amount, type) VALUES (?, ?, ?, ?) | Values: ["1","2026-07-11","200","credit"]
+[16:54:02] login_id: 1 | SQL: DELETE FROM tbl_wallet WHERE id = ? | Values: ["6"]

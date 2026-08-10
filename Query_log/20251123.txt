@@ -1,0 +1,6 @@
+[09:43:54] login_id: 3 | SQL: INSERT INTO tbl_dates (date) VALUES (?) | Values: ["2025-11-21"]
+[11:05:05] login_id: 3 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2025-11-22","2"]
+[11:05:05] login_id: 3 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["46","2","2025-11-22"]
+[11:05:05] login_id: 3 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["26","2","2025-11-22"]
+[11:05:05] login_id: 3 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["10","2","2025-11-22"]
+[11:05:05] login_id: 3 | SQL: INSERT INTO tbl_attendance (member_id,group_id,date) VALUES (?, ?, ?) | Values: ["1","2","2025-11-22"]

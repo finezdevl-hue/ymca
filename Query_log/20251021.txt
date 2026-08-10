@@ -1,0 +1,54 @@
+[10:31:05] login_id: 1 | SQL: INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete, flag) VALUES (?, ?, ?, ?, ?, ?, 0,?) | Values: ["1",300,"2025-10-21",1,"3","t3est","2"]
+[10:31:36] login_id: 1 | SQL: INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete, flag) VALUES (?, ?, ?, ?, ?, ?, 0,?) | Values: ["1",300,"2025-10-21",1,"3","test","2"]
+[10:33:32] login_id: 1 | SQL: INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete, flag) VALUES (?, ?, ?, ?, ?, ?, 0,?) | Values: ["1",300,"2025-10-21",1,"3","test","2"]
+[10:33:32] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, flag) VALUES (?, 0, ?, ?, ?, ?, ?, ?) | Values: ["1","0000-00-00",1,"3","test",15,"2"]
+[10:33:32] login_id: 1 | SQL: UPDATE tbl_monthly_attendance SET isreceiveble = 1 WHERE id= ? | Values: ["4"]
+[14:39:37] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet,flag,transaction_type) VALUES (?, ?, ?, ?, ?, ?,?,0,?,?) | Values: ["1","NaN","",1,"3","test","14","2","1"]
+[14:40:07] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet,flag,transaction_type) VALUES (?, ?, ?, ?, ?, ?,?,0,?,?) | Values: ["1","0","",1,"3","t3est","13","2","1"]
+[15:10:15] login_id: 1 | SQL: INSERT INTO tbl_member_recieved 
+                            (member_id, fees, date, receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?) | Values: ["1","300","2025-10-21","14","2","1"]
+[15:10:15] login_id: 1 | SQL: INSERT INTO tbl_member_recieved 
+                            (member_id, fees, date, receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?) | Values: ["1","300","2025-10-21","15","2","1"]
+[15:10:15] login_id: 1 | SQL: INSERT INTO tbl_member_recieved 
+                            (member_id, fees, date, receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?) | Values: ["1","100","2025-10-21","13","2","1"]
+[15:13:11] login_id: 1 | SQL: INSERT INTO tbl_member_recieved 
+                            (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?) | Values: ["1","300","2025-10-21",1,"14","2","1"]
+[15:15:22] login_id: 1 | SQL: INSERT INTO tbl_member_recieved 
+                            (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?) | Values: ["1","300","2025-10-21",1,"14","2","1"]
+[15:15:57] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?) | Values: ["1","300","2025-10-21",1,"14","2","1"]
+[15:15:57] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?) | Values: ["1","300","2025-10-21",1,"15","2","1"]
+[15:15:57] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?) | Values: ["1","100","2025-10-21",1,"13","2","1"]
+[15:31:22] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?) | Values: ["1","300","2025-10-21",1,"15","2","2"]
+[15:31:22] login_id: 1 | SQL: INSERT INTO tbl_payable (date, head, amount, iscomplete, flag, invoice_id,is_member_trans) VALUES (?, 2, ?, 1, ?, ?,?) | Values: ["2025-10-21","300","2","15",1]
+[15:31:22] login_id: 1 | SQL: INSERT INTO tbl_paid (date, head, amount, payable_id, flag,transaction_type, invoice_id, is_member_trans) VALUES (?, 2, ?, ?, ?, ?, ?, ?) | Values: ["2025-10-21","300","12","2","2","15",1]
+[15:31:22] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?) | Values: ["1","300","2025-10-21",1,"13","2","2"]
+[15:31:22] login_id: 1 | SQL: INSERT INTO tbl_payable (date, head, amount, iscomplete, flag, invoice_id,is_member_trans) VALUES (?, 2, ?, 1, ?, ?,?) | Values: ["2025-10-21","300","2","13",1]
+[15:31:22] login_id: 1 | SQL: INSERT INTO tbl_paid (date, head, amount, payable_id, flag,transaction_type, invoice_id, is_member_trans) VALUES (?, 2, ?, ?, ?, ?, ?, ?) | Values: ["2025-10-21","300","13","2","2","13",1]
+[15:31:22] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?) | Values: ["1","100","2025-10-21",1,"14","2","2"]
+[15:31:22] login_id: 1 | SQL: INSERT INTO tbl_payable (date, head, amount, iscomplete, flag, invoice_id,is_member_trans) VALUES (?, 2, ?, 1, ?, ?,?) | Values: ["2025-10-21","100","2","14",1]
+[15:31:22] login_id: 1 | SQL: INSERT INTO tbl_paid (date, head, amount, payable_id, flag,transaction_type, invoice_id, is_member_trans) VALUES (?, 2, ?, ?, ?, ?, ?, ?) | Values: ["2025-10-21","100","14","2","2","14",1]
+[15:34:29] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?) | Values: ["1","300","2025-10-21",1,"15","2","2"]
+[15:34:29] login_id: 1 | SQL: UPDATE tbl_member_recievable SET iscomplete = 1  WHERE id = ?  | Values: ["15"]
+[15:34:29] login_id: 1 | SQL: INSERT INTO tbl_payable (date, head, amount, iscomplete, flag, invoice_id,is_member_trans) VALUES (?, 2, ?, 1, ?, ?,?) | Values: ["2025-10-21","300","2","15",1]
+[15:34:29] login_id: 1 | SQL: INSERT INTO tbl_paid (date, head, amount, payable_id, flag,transaction_type, invoice_id, is_member_trans) VALUES (?, 2, ?, ?, ?, ?, ?, ?) | Values: ["2025-10-21","300","15","2","2","15",1]
+[15:34:29] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?) | Values: ["1","300","2025-10-21",1,"13","2","2"]
+[15:34:29] login_id: 1 | SQL: UPDATE tbl_member_recievable SET iscomplete = 1  WHERE id = ?  | Values: ["13"]
+[15:34:29] login_id: 1 | SQL: INSERT INTO tbl_payable (date, head, amount, iscomplete, flag, invoice_id,is_member_trans) VALUES (?, 2, ?, 1, ?, ?,?) | Values: ["2025-10-21","300","2","13",1]
+[15:34:29] login_id: 1 | SQL: INSERT INTO tbl_paid (date, head, amount, payable_id, flag,transaction_type, invoice_id, is_member_trans) VALUES (?, 2, ?, ?, ?, ?, ?, ?) | Values: ["2025-10-21","300","16","2","2","13",1]
+[15:34:29] login_id: 1 | SQL: INSERT INTO tbl_member_recieved (member_id, fees, date,login_id , receiveble_id, flag, transaction_type) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?) | Values: ["1","100","2025-10-21",1,"14","2","2"]
+[15:34:29] login_id: 1 | SQL: INSERT INTO tbl_payable (date, head, amount, iscomplete, flag, invoice_id,is_member_trans) VALUES (?, 2, ?, 1, ?, ?,?) | Values: ["2025-10-21","100","2","14",1]
+[15:34:29] login_id: 1 | SQL: INSERT INTO tbl_paid (date, head, amount, payable_id, flag,transaction_type, invoice_id, is_member_trans) VALUES (?, 2, ?, ?, ?, ?, ?, ?) | Values: ["2025-10-21","100","17","2","2","14",1]

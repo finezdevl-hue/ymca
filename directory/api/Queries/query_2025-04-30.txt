@@ -1,0 +1,12 @@
+[11:39:46] INSERT INTO tbl_payable (date, head, particuler, amount, iscomplete) VALUES (?, ?, ?, ?, 0)
+[11:39:46] INSERT INTO tbl_paid (date, head, particuler, amount, payable_id) VALUES (?, ?, ?, ?, ?)
+[11:40:07] INSERT INTO tbl_paid (date, head, particuler, amount, payable_id) VALUES (?, ?, ?, ?, ?)
+[11:40:07] SELECT p.amount AS total_payable_amount,
+                SUM(pd.amount) AS total_paid_amount
+                FROM tbl_payable AS p
+                LEFT JOIN tbl_payment_head_master AS g ON p.head = g.id
+                LEFT JOIN tbl_paid AS pd ON p.id = pd.payable_id where pd.payable_id = ?
+                GROUP BY p.id, p.date, p.particuler, p.amount, p.head, g.type, g.name 
+[11:40:07] UPDATE tbl_payable SET iscomplete = ? WHERE id = ?
+[11:43:13] INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription) VALUES (?, ?, ?, ?, ?, ?)
+[11:46:11] SELECT member_id,attendance FROM tbl_monthly_attendance WHERE MONTH(from_date) = ? AND YEAR(from_date) = ? 

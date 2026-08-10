@@ -1,0 +1,5 @@
+[11:34:26] login_id: 1 | SQL: UPDATE tbl_payment_settings SET upi_id = ?, payee_name = ?, payment_note = ?, is_active = ? WHERE id = 1 | Values: ["harikrishnamanoj79-1@oksbi","Harikrishna","YMCA Member Fee Payment",1]
+[12:16:33] login_id: 1 | SQL: DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ? | Values: [3,2]
+[12:16:33] login_id: 1 | SQL: INSERT INTO tbl_user_group_roles (login_id, group_id, role_id, assigned_by) VALUES (?, ?, ?, ?) | Values: [3,2,2,1]
+[14:21:18] login_id: 3 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-08-05","2"]
+[14:21:21] login_id: 3 | SQL: DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? | Values: ["2026-08-05","2"]

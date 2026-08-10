@@ -1,0 +1,355 @@
+<?php
+session_start();
+?>
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Payment Master</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../font-awesome/css/font-awesome.css" rel="stylesheet">
+
+    <link href="../css/animate.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link href="../css/plugins/sweetalert/sweetalert.css" rel="stylesheet">
+    <script src="../js/plugins/sweetalert/sweetalert.min.js"></script>
+    <script src="../app_js/sweetalert-finez.js"></script>
+    <script>
+        $(document).ready(function() {          
+            loadData(1); // Function to load data for a specific page       
+        });  
+
+        // function to load Payment detail start
+        function loadData(page) {
+            $('#hdn_current_page').val(page); //used for Status Update function
+            console.log("Loading data for page:", page);
+            $.ajax({               
+               type: "POST",
+               url: "api/payment_master.php",
+               data: {
+                action: 'load_data',
+                page: page, 
+                // val:$('#txt_search').val()
+               },
+                success: function(data) {
+
+                    var obj = jQuery.parseJSON(data);
+                    console.log(obj);
+                                       
+                    var totalrows = obj[0].total_rows;
+                    var htm="";
+                    htm=htm+ "<div class='row'>";
+
+                    htm=htm+ "<div class='col-lg-12'>";
+                    htm=htm+ "<div class='ibox float-e-margins'>";
+                    htm=htm+ "<div class='ibox-title'>";
+                    htm=htm+ "<div class='ibox-tools'></div>";
+                    htm=htm+ "</div>";
+                    htm=htm+ "<div class='ibox-content'>";
+                    htm=htm+ "<div class='table-responsive'>";
+                    htm=htm+ "<table class='table table-striped'>";
+                    htm=htm+ "<thead>";
+                    htm=htm+ "<tr>";
+                    htm=htm+ "<th>No</th>";
+                    htm=htm+ "<th>NAME</th>";
+                    htm=htm+ "<th>TYPE</th>";
+                    htm=htm+ "<th>P&L</th>";
+                    htm=htm+ "<th>Cash</th>";
+                    htm=htm+ "<th>Bank</th>";
+                    htm=htm+ "<th>Action</th>";
+                    htm=htm+ "</tr>";
+                    htm=htm+ "</thead>";
+                    htm=htm+ "<tbody>";
+                    for (var i = 0; i < obj[1].length; i++) {
+
+                        var j= i+1;
+                        var slno=((page-1)*8)+j
+                        
+                        htm=htm+ "<tr>";
+                        htm=htm+ "<td>" + slno+ "</td>";
+                        htm=htm+ "<td>"+obj[1][i].name+"</td>";
+                        htm=htm+ "<td>"+obj[1][i].type+"</td>";
+                        htm += "<td><input type='radio' " + (obj[1][i].pnl == 1 ? "checked" : "") + " style='pointer-events:none; cursor:default;'></td>";
+                        htm += "<td><input type='radio' " + (obj[1][i].cash == 1 ? "checked" : "") + " style='pointer-events:none; cursor:default;'></td>";
+                        htm += "<td><input type='radio' " + (obj[1][i].bank == 1 ? "checked" : "") + " style='pointer-events:none; cursor:default;'></td>";
+
+                        htm=htm+ "<td><button type='button' class='fa fa-edit btn btn-primary btn-xs' onclick='updatePayment("+obj[1][i].id+",\"" +obj[1][i].name+ "\",\"" +obj[1][i].type+ "\"," +obj[1][i].pnl+"," +obj[1][i].cash+"," +obj[1][i].bank+");'>Edit</button>";
+                        htm=htm+ "<button type='button' class='fa fa-trash btn btn-danger btn-xs' onclick='deletePaymentDetails("+obj[1][i].id+");'>Delete</button></td>";
+                        htm=htm+ "</tr>";
+                            
+                    }                
+                    htm=htm+ "</tbody>";
+                    htm=htm+ "</table>";
+                    htm=htm+ "</div>";
+
+                    htm=htm+ "</div>";
+                    htm=htm+ "</div>";
+                    htm=htm+ "</div>";
+                    htm=htm+ "</div>";
+
+                    $('#table_client').html(htm);
+                    var htmpage= paginate(totalrows,page);
+                    $('#table_client').append(htmpage);
+                },
+                error: function(xhr, status, error) {
+                   console.log('AJAX error: ', status, error);
+                }
+            });
+            loadMenu();
+        }
+        // function to load Payment details end
+        
+    </script>
+
+    <script>
+
+        // function for popup to edit Payment details  start
+        function updatePayment(id,name,type,pnl,cash,bank){
+            $("#name").val(name);
+            $("#selected_type").val(type);
+
+            $("#pnl").prop("checked", pnl == 1);
+            $("#cash").prop("checked", cash == 1);
+            $("#bank").prop("checked", bank == 1);
+
+            $("#hdn_id").val(id);
+            $('#paymentModel').modal('show');
+          
+        }
+        // function for popup to edit Payment details end
+
+        //function for poup to add new Payment details into master table start
+        function addPayment(){
+            $('#paymentModel').modal('show');
+        }
+        //function for pop to add new Payment details into master table end
+
+        //function for close the popup for add new Payment details start
+        function closeaddPayment(){
+            $('#payment_form')[0].reset();
+            $("#hdn_id").val(0);
+            $('#paymentModel').modal('toggle');
+        }
+        // function for close the popup for add new Payment details end
+
+        //function to save new payment details or update details start
+        function savePayment() {
+            swal({
+                title: "Are you sure?",
+                text: "Do you want to save this data!",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "Yes,Save!",
+                cancelButtonText: "Cancel",
+                closeOnConfirm: false,
+                closeOnCancel: true
+            },
+            function (isConfirm) {
+			if (isConfirm){
+                var data = {
+                    action: 'save_payment',
+                    name: $('#name').val(),  
+                    type: $("#selected_type").val(),
+                    id: $("#hdn_id").val(),
+                    pnl: $("#pnl").is(":checked") ? 1 : 0,
+                    bank: $("#bank").is(":checked") ? 1 : 0,
+                    cash: $("#cash").is(":checked") ? 1 : 0
+                };
+                // AJAX call
+                $.ajax({
+                    type: "POST",
+                    url: "api/payment_master.php",
+                    data: data,
+                    success: function(response) {
+                        closeaddPayment();
+                        console.log('saved:', response);                    
+                        alertsuccess('Saved Sucessfully');
+                        loadData($('#hdn_current_page').val());
+                    },
+                    error: function (xhr, status){
+        
+                        var msgObj = JSON.parse(xhr.responseText);
+                        alerterror(msgObj, xhr);
+                        $('#payment_form')[0].reset();
+                        $("hdn_id").val(0);
+                    
+                    }
+                });
+            }
+		    });
+        }
+        // function to save new payment details or update details end
+        
+        //function to delete payment details start
+        function deletePaymentDetails(id) {
+            $("#hdn_id").val(id);
+            deleteRow();
+        }
+        
+        function deleteRow() {
+            swal({
+                title: "Are you sure?",
+                text: "Do you want to save this data!",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "Yes,delete!",
+                cancelButtonText: "Cancel",
+                closeOnConfirm: false,
+                closeOnCancel: true
+            },
+               function (isConfirm) {
+			if (isConfirm){
+                var data = {
+                action: 'delete_payment_details',
+                id: $("#hdn_id").val(),               
+            };
+            // AJAX call
+            $.ajax({
+                type: "POST",
+                url: "api/payment_master.php",
+                data: data,
+                success: function(response) {
+                    $("#hdn_id").val(0);
+                    // console.log('deleted:', response);
+                    alertwarning('Deleted');
+                    loadData($('#hdn_current_page').val());
+                    
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX error:', status, error);
+                }
+            });
+                
+                    
+            }
+		});   
+        }
+        //function to delete payment details end
+
+        
+    
+    </script>
+    <script src="../app_pagination/pagination.js"></script>
+    <script src="../app_menu/menu.js"></script>
+</head>
+
+<body>
+    <input type="hidden" id="hdn_current_page"  value="0">
+    <input type="hidden" id="hdn_id"  value="0">
+    
+    <div id="wrapper">
+
+        <!-- navigation start -->
+        <nav class="navbar-default navbar-static-side" role="navigation">
+            <div class="dropdown profile-element">
+                <center>
+                    <span><img alt="image" class="img-circle" src="../img/customer.png" style="padding-top: 20px;"/></span>
+                    <span class="clear"> <span class="block m-t-xs"> <strong class="font-bold"><?php echo $_SESSION['name']; ?></strong>
+                </center>
+            </div>
+            <div class="sidebar-collapse" id="divMenuContainer">
+                <!-- menu injected via ajax -->
+            </div>
+        </nav>
+        <!-- navigation end -->
+        <div id="page-wrapper" class="gray-bg">
+            <!-- header start -->
+            <div class="row border-bottom">
+                <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
+                    <div class="navbar-header">
+                        <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
+                    </div>
+                    <ul class="nav navbar-top-links navbar-right">     
+                        <form action="../app_login_manager/logout.php" method="post"></form>        
+                            <li>
+                                <a href="../app_login_manager/logout.php" style="color: #147ad1";>
+                                    <i class="fa fa-sign-out"></i> Log out
+                                </a>
+                            </li>
+                        </form>
+                    </ul>
+
+                </nav>
+            </div>
+            <!-- header end -->
+            <!-- search bar starts -->
+            <div class="row wrapper border-bottom white-bg page-heading">
+                <div class="col-sm-8">
+                    <h2>Payment Master</h2>
+                </div>
+                <div class="col-sm-4">
+                    <div class="title-action">
+                        <div class="ibox-tools">
+                            <button type="button" class="btn btn-primary btn-xs" onclick="addPayment(0)">Add Payment</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- search bar ends -->
+            
+            <div class="wrapper wrapper-content animated fadeInRight" id="table_client">
+                <!-- data injected Dynamically via ajax -->
+            </div>
+        </div>
+    
+        <!-- popup modal for add new payment into master starts -->
+        <div class="modal inmodal" id="paymentModel" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content animated bounceInRight">
+                    <form method="POST" id="payment_form">
+                        <div class="modal-body">
+                            <div class="row" style="padding-bottom: 15px;">
+                                
+                                <div class="col-md-6"><input type="text" id="name" name="name" placeholder="Name"  class="form-control"></div>
+                                <div class="dropdown form-group col-md-6">
+                                    <select id="selected_type" class="form-control">
+                                        <option value="0"selected disabled>Select Type</option>
+                                        <option  value="Credit">Credit</option>
+                                        <option  value="Debit">Debit</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row" style="padding-bottom: 15px;">
+                                <div class="col-md-4"><label>pnl<input type="checkbox" id="pnl" name="pnl" ></label></div>
+                                <div class="col-md-4"><label>bank<input type="checkbox" id="bank" name="bank" ></label></div>
+                                <div class="col-md-4"><label>cash<input type="checkbox" id="cash" name="cash" ></label></div>
+                            </div>
+                            
+                            
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-white" onclick="closeaddPayment();">Close</button>
+                            <button type="button" class="btn btn-primary" onclick="savePayment();">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- popup modal for add new payment into master ends -->
+    </div>
+       
+
+    <!-- Mainly scripts -->
+    <script src="../js/jquery-3.1.1.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/plugins/metisMenu/jquery.metisMenu.js"></script>
+    <script src="../js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+
+    <!-- Custom and plugin javascript -->
+    <script src="../js/inspinia.js"></script>
+    <script src="../js/plugins/pace/pace.min.js"></script>
+
+
+</body>
+
+</html>

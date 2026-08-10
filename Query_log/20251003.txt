@@ -1,0 +1,3 @@
+[16:23:42] login_id: 1 | SQL: INSERT INTO tbl_dates (date) VALUES (?) | Values: ["2025-10-03"]
+[16:23:48] login_id: 1 | SQL: INSERT INTO tbl_dates (date) VALUES (?) | Values: ["2025-10-04"]
+[16:23:59] login_id: 1 | SQL: INSERT INTO tbl_dates (date) VALUES (?) | Values: ["2025-10-05"]
