@@ -164,13 +164,14 @@ include '../../app_pagination/pagination.php';
                 $offset = ($current_page - 1) * $rowsPerPage;
                 $searchVal = trim($_POST['val'] ?? '');
 
-                if (empty($searchVal)) {
+                if (empty($searchVal) || $searchVal === '0000-00-00') {
                     $sqldatarows = "SELECT d.id, d.date, d.group_id, COALESCE(g.name, 'All Groups') AS group_name 
                                     FROM tbl_dates d 
                                     LEFT JOIN tbl_groups g ON d.group_id = g.id 
+                                    WHERE d.date != '0000-00-00'
                                     ORDER BY d.date DESC 
                                     LIMIT $offset, $rowsPerPage";
-                    $sqlcountrows = "SELECT COUNT(id) as total FROM tbl_dates";
+                    $sqlcountrows = "SELECT COUNT(id) as total FROM tbl_dates WHERE date != '0000-00-00'";
 
                     $result = app_exec_query($sqldatarows);
                     $totalRowsResult = app_exec_query($sqlcountrows);
@@ -182,13 +183,13 @@ include '../../app_pagination/pagination.php';
                     $sqldatarows = "SELECT d.id, d.date, d.group_id, COALESCE(g.name, 'All Groups') AS group_name 
                                     FROM tbl_dates d 
                                     LEFT JOIN tbl_groups g ON d.group_id = g.id 
-                                    WHERE MONTH(d.date) = ? AND YEAR(d.date) = ? 
+                                    WHERE d.date != '0000-00-00' AND (d.date = ? OR (MONTH(d.date) = ? AND YEAR(d.date) = ?))
                                     ORDER BY d.date DESC 
                                     LIMIT $offset, $rowsPerPage";
-                    $sqlcountrows = "SELECT COUNT(id) as total FROM tbl_dates WHERE MONTH(date) = ? AND YEAR(date) = ?";
+                    $sqlcountrows = "SELECT COUNT(id) as total FROM tbl_dates WHERE date != '0000-00-00' AND (date = ? OR (MONTH(date) = ? AND YEAR(date) = ?))";
 
-                    $result = app_exec_getresult($sqldatarows, [$month, $year], "ii");
-                    $totalRowsResult = app_exec_getresult($sqlcountrows, [$month, $year], "ii");
+                    $result = app_exec_getresult($sqldatarows, [$searchVal, $month, $year], "sii");
+                    $totalRowsResult = app_exec_getresult($sqlcountrows, [$searchVal, $month, $year], "sii");
                     $totalRows = ($totalRowsResult && $row = $totalRowsResult->fetch_assoc()) ? (int)$row['total'] : 0;
                 }
 

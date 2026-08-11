@@ -299,6 +299,11 @@ if (isNormalMember($login_id)) {
         function searchDate(){
             loadData(1);
         }
+        
+        function clearDateSearch(){
+            $('#date_search').val('');
+            loadData(1);
+        }
     
         function loadData(page) {
             $('#hdn_current_page').val(page);
@@ -329,7 +334,11 @@ if (isNormalMember($login_id)) {
                     htm += "<tbody>";
                     
                     if (obj[1].length === 0) {
-                        htm += "<tr><td colspan='4' class='text-center' style='padding: 30px !important; color: #64748b;'>No holiday dates configured.</td></tr>";
+                        var isFiltered = $('#date_search').val() !== '';
+                        var emptyMsg = isFiltered 
+                            ? "No holiday dates found for selected filter. <a href='javascript:void(0)' onclick='clearDateSearch()' style='font-weight:700; color:#4f46e5; text-decoration:underline;'>Show All Holidays</a>"
+                            : "No holiday dates configured.";
+                        htm += "<tr><td colspan='4' class='text-center' style='padding: 30px !important; color: #64748b;'>" + emptyMsg + "</td></tr>";
                     } else {
                         for (var i = 0; i < obj[1].length; i++) {
                             var j = i + 1;
@@ -583,9 +592,10 @@ if (isNormalMember($login_id)) {
                         </h2>
                         
                         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                            <div class="search-container">
-                                <input type="date" id="date_search" onchange="searchDate()">
-                                <button class="search-btn" onclick="searchDate()"><i class="fa fa-search"></i></button>
+                            <div class="search-container" style="display: flex; align-items: center; gap: 6px;">
+                                <input type="date" id="date_search" onchange="searchDate()" title="Filter by date">
+                                <button class="search-btn" onclick="searchDate()" title="Search"><i class="fa fa-search"></i></button>
+                                <button type="button" class="btn btn-default" onclick="clearDateSearch()" title="Show All Holidays" style="border-radius: 10px; padding: 7px 14px; font-weight: 700; font-size: 13px; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1;"><i class="fa fa-refresh"></i> Show All</button>
                             </div>
                             
                             <button type="button" class="btn-action-primary" onclick="popupDates('0')">
