@@ -19,12 +19,17 @@ $primary_role = getUserPrimaryRoleName($login_id);
 
 $active_tab = 'accounts';
 
-// Fetch recent other receivables
+// Fetch pending other receivables (excluding received/completed payments)
 $sql = "
-    SELECT r.id, r.date, r.amount, r.particuler, fhm.name AS head_name
+    SELECT r.id, r.date, r.amount, r.particuler, fhm.name AS head_name,
+           COALESCE(SUM(pd.amount), 0) AS total_recieved
     FROM tbl_other_recieveble r
-    LEFT JOIN tbl_fees_head_master fhm ON r.head = fhm.id
-    WHERE (r.cancel IS NULL OR r.cancel = 0) AND r.amount > 0
+    LEFT JOIN tbl_payment_head_master fhm ON r.head = fhm.id
+    LEFT JOIN tbl_other_recieved pd ON r.id = pd.recieveble_id AND (pd.cancel IS NULL OR pd.cancel = 0)
+    WHERE (r.cancel IS NULL OR r.cancel = 0)
+      AND (r.iscomplete IS NULL OR r.iscomplete = 0)
+    GROUP BY r.id, r.date, r.amount, r.particuler, fhm.name
+    HAVING (r.amount - total_recieved) > 0
     ORDER BY r.date DESC LIMIT 40
 ";
 $res = app_exec_query($sql);
@@ -92,6 +97,7 @@ $res = app_exec_query($sql);
         <div>
             <?php if ($res && $res->num_rows > 0): ?>
                 <?php while ($r = $res->fetch_assoc()): ?>
+                    <?php $due = (float)$r['amount'] - (float)$r['total_recieved']; ?>
                     <div class="rcp-card">
                         <div>
                             <div class="rcp-date"><i class="fa fa-calendar"></i> <?php echo (!empty($r['date']) && $r['date'] != '0000-00-00') ? date('d M Y', strtotime($r['date'])) : 'General Entry'; ?></div>
@@ -101,7 +107,7 @@ $res = app_exec_query($sql);
                             <?php endif; ?>
                         </div>
                         <div class="rcp-amt">
-                            ₹<?php echo number_format((float)$r['amount'], 2); ?>
+                            ₹<?php echo number_format($due, 2); ?>
                         </div>
                     </div>
                 <?php endwhile; ?>
