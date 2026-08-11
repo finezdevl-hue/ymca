@@ -156,75 +156,58 @@ include '../../app_pagination/pagination.php';
         }
         // action add range dates end
 
-         if($action=="load_data"){
-            try{
+        if ($action == "load_data") {
+            try {
                 $rowsPerPage = 8;
-                $current_page = (int)$_POST['page'];
+                $current_page = isset($_POST['page']) ? (int)$_POST['page'] : 1;
+                if ($current_page < 1) $current_page = 1;
                 $offset = ($current_page - 1) * $rowsPerPage;
-                
-                if($_POST['val']== ''){
-                    $sqldatarows = "SELECT d.id, d.date, d.group_id, COALESCE(g.name, 'All Groups') AS group_name FROM tbl_dates d LEFT JOIN tbl_groups g ON d.group_id = g.id ORDER BY d.date DESC";
-                    $sqlcountrows = "SELECT Count(id) as total FROM tbl_dates";
-                    $result = app_exec_query($sqldatarows . " LIMIT $offset, $rowsPerPage");
-                    $totalRowsResult = app_exec_query($sqlcountrows);
-                    $totalRows = $totalRowsResult->fetch_assoc()['total'];
-                }
-                else{            
-                    $date = $_POST['val'];
-                    $month = date('m', strtotime($date));
-                    $year = date('Y', strtotime($date));
+                $searchVal = trim($_POST['val'] ?? '');
 
-                    $sqldatarows ="SELECT d.id, d.date, d.group_id, COALESCE(g.name, 'All Groups') AS group_name FROM tbl_dates d LEFT JOIN tbl_groups g ON d.group_id = g.id WHERE MONTH(d.date) = ? AND YEAR(d.date) = ? ORDER BY d.date DESC";
+                if (empty($searchVal)) {
+                    $sqldatarows = "SELECT d.id, d.date, d.group_id, COALESCE(g.name, 'All Groups') AS group_name 
+                                    FROM tbl_dates d 
+                                    LEFT JOIN tbl_groups g ON d.group_id = g.id 
+                                    ORDER BY d.date DESC 
+                                    LIMIT $offset, $rowsPerPage";
+                    $sqlcountrows = "SELECT COUNT(id) as total FROM tbl_dates";
+
+                    $result = app_exec_query($sqldatarows);
+                    $totalRowsResult = app_exec_query($sqlcountrows);
+                    $totalRows = ($totalRowsResult && $row = $totalRowsResult->fetch_assoc()) ? (int)$row['total'] : 0;
+                } else {
+                    $month = (int)date('m', strtotime($searchVal));
+                    $year  = (int)date('Y', strtotime($searchVal));
+
+                    $sqldatarows = "SELECT d.id, d.date, d.group_id, COALESCE(g.name, 'All Groups') AS group_name 
+                                    FROM tbl_dates d 
+                                    LEFT JOIN tbl_groups g ON d.group_id = g.id 
+                                    WHERE MONTH(d.date) = ? AND YEAR(d.date) = ? 
+                                    ORDER BY d.date DESC 
+                                    LIMIT $offset, $rowsPerPage";
                     $sqlcountrows = "SELECT COUNT(id) as total FROM tbl_dates WHERE MONTH(date) = ? AND YEAR(date) = ?";
 
-                    $result = app_exec_getresult($sqldatarows . " LIMIT $offset, $rowsPerPage", [$month, $year], "ss");
-                    $totalRowsResult = app_exec_getresult($sqlcountrows, [$month, $year], "ss");
-                    $totalRows = $totalRowsResult->fetch_assoc()['total'];
-                }    
-                
-                $sqldatarows .= " LIMIT $offset , $rowsPerPage ";
-            
-                if($_POST['val']== '') {
-                    $result = app_exec_query($sqldatarows);
-                    
-                    $totalRowsResult = app_exec_query($sqlcountrows);
-                    $totalRows = $totalRowsResult->fetch_assoc()['total'];
-                }
-                else{
-                    $searchvalue= $_POST['val'];
-                    $parameters = [
-                        $month,
-                        $year,
-                    ];
-                    
-                    $types="ii";
-                    $result=app_exec_getresult($sqldatarows,$parameters,$types);
-
-                    $totalRowsResult = app_exec_getresult($sqlcountrows,$parameters,$types);
-                    $totalRows = $totalRowsResult->fetch_assoc()['total'];
+                    $result = app_exec_getresult($sqldatarows, [$month, $year], "ii");
+                    $totalRowsResult = app_exec_getresult($sqlcountrows, [$month, $year], "ii");
+                    $totalRows = ($totalRowsResult && $row = $totalRowsResult->fetch_assoc()) ? (int)$row['total'] : 0;
                 }
 
-                //stringify
+                $qrydata = [];
                 if ($result && $result->num_rows > 0) {
-                    // Fetch all rows as an array
-                    $qrydata = [];
                     while ($row = $result->fetch_assoc()) {
-                        $qrydata[] = $row; // Add each row to the array
+                        $qrydata[] = $row;
                     }
-                } else {
-                    $qrydata = []; // If no data is found
                 }
 
-                $pagination = array("total_rows"=>$totalRows);
-                $resdata=array($pagination,$qrydata);
+                $pagination = array("total_rows" => $totalRows);
+                $resdata = array($pagination, $qrydata);
 
                 echo json_encode($resdata);
                 exit();
+            } catch (Throwable $e) {
+                echo json_encode([["total_rows" => 0], []]);
+                exit();
             }
-            catch (Throwable $e) {
-                throw new Exception('Oops! Something went wrong.');
-            }
-            
         }
         // action load groups end
    
