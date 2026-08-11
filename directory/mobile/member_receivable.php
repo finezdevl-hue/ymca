@@ -121,7 +121,7 @@ $active_tab = 'accounts';
         .status-pill-pending { background: #fef3c7; color: #92400e; }
 
         .rec-item-title { font-size: 14px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0; }
-        .rec-item-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 11.5px; background: #f8fafc; padding: 8px 10px; border-radius: 10px; margin-bottom: 10px; }
+        .rec-item-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; font-size: 11px; background: #f8fafc; padding: 8px 6px; border-radius: 10px; margin-bottom: 10px; text-align: center; }
         .rec-item-lbl { font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; }
         .rec-item-val { font-weight: 800; color: #0f172a; margin-top: 1px; }
 
@@ -469,8 +469,12 @@ $active_tab = 'accounts';
                                     <div class="rec-item-val" style="color:#059669;">₹${paid.toFixed(2)}</div>
                                 </div>
                                 <div>
-                                    <div class="rec-item-lbl">Due Balance</div>
-                                    <div class="rec-item-val" style="color:${due > 0 ? '#dc2626' : '#059669'};">₹${due.toFixed(2)}</div>
+                                    <div class="rec-item-lbl">Set-Off</div>
+                                    <div class="rec-item-val" id="card_setoff_${r.recieveble_id}" style="color:#64748b;">₹0.00</div>
+                                </div>
+                                <div>
+                                    <div class="rec-item-lbl">Balance Dues</div>
+                                    <div class="rec-item-val" id="card_bal_${r.recieveble_id}" style="color:${due > 0 ? '#dc2626' : '#059669'};">₹${due.toFixed(2)}</div>
                                 </div>
                             </div>
                             ${!isComplete ? `
@@ -483,10 +487,83 @@ $active_tab = 'accounts';
                 });
 
                 $('#receivables_list_container').html(htm);
+                updateDuesLogSetOffCalculations();
             } catch(e) {
                 $('#receivables_list_container').html('<div style="text-align:center; padding:30px; color:#ef4444;">Error loading receivables.</div>');
             }
         });
+    }
+
+    function updateDuesLogSetOffCalculations() {
+        let totalPayAmt = parseFloat($('#txt_pay_amount').val() || 0);
+        let remAmt = totalPayAmt;
+
+        if (!raw_receivables_data || raw_receivables_data.length === 0) return;
+
+        if (selectedSpecificRecId > 0) {
+            raw_receivables_data.forEach(function(r) {
+                let recId = r.recieveble_id;
+                let totalRec = parseFloat(r.receiveble_fees || 0);
+                let paid = parseFloat(r.total_received_fees || 0);
+                let due = Math.max(0, totalRec - paid);
+                let isComplete = (parseInt(r.iscomplete, 10) === 1 || due === 0);
+
+                let alloc = 0;
+                if (!isComplete && parseInt(recId, 10) === parseInt(selectedSpecificRecId, 10)) {
+                    alloc = Math.min(remAmt, due);
+                }
+                let bal = Math.max(0, due - alloc);
+                updateCardRowUI(recId, alloc, bal, isComplete);
+            });
+        } else {
+            raw_receivables_data.forEach(function(r) {
+                let recId = r.recieveble_id;
+                let totalRec = parseFloat(r.receiveble_fees || 0);
+                let paid = parseFloat(r.total_received_fees || 0);
+                let due = Math.max(0, totalRec - paid);
+                let isComplete = (parseInt(r.iscomplete, 10) === 1 || due === 0);
+
+                let alloc = 0;
+                if (!isComplete && due > 0 && remAmt > 0) {
+                    alloc = Math.min(remAmt, due);
+                    remAmt -= alloc;
+                }
+                let bal = Math.max(0, due - alloc);
+                updateCardRowUI(recId, alloc, bal, isComplete);
+            });
+        }
+    }
+
+    function updateCardRowUI(recId, alloc, bal, isComplete) {
+        let $setoffEl = $('#card_setoff_' + recId);
+        let $balEl = $('#card_bal_' + recId);
+        let $card = $('#rec_card_' + recId);
+
+        if ($setoffEl.length) {
+            $setoffEl.text('₹' + alloc.toFixed(2));
+            if (alloc > 0) {
+                $setoffEl.css({ 'color': '#059669', 'font-weight': '800' });
+            } else {
+                $setoffEl.css({ 'color': '#64748b', 'font-weight': '600' });
+            }
+        }
+
+        if ($balEl.length) {
+            $balEl.text('₹' + bal.toFixed(2));
+            if (bal === 0 && !isComplete && alloc > 0) {
+                $balEl.css({ 'color': '#059669', 'font-weight': '800' });
+            } else if (bal > 0) {
+                $balEl.css({ 'color': '#dc2626', 'font-weight': '800' });
+            } else {
+                $balEl.css({ 'color': '#059669', 'font-weight': '800' });
+            }
+        }
+
+        if (alloc > 0 && !isComplete) {
+            $card.addClass('selected-setoff-card');
+        } else if (selectedSpecificRecId === 0 && !selectedAllPending) {
+            $card.removeClass('selected-setoff-card');
+        }
     }
 
     function setFullPendingFees() {
@@ -506,6 +583,7 @@ $active_tab = 'accounts';
             if ($('.action-card > div:first').length) {
                 $(hintHtm).insertBefore('.action-card > div:first');
             }
+            updateDuesLogSetOffCalculations();
         } else {
             if (typeof swal !== 'undefined') {
                 swal("No Dues", "No pending dues for this member.", "info");
@@ -535,6 +613,7 @@ $active_tab = 'accounts';
         if ($('.action-card > div:first').length) {
             $(hintHtm).insertBefore('.action-card > div:first');
         }
+        updateDuesLogSetOffCalculations();
     }
 
     function clearSelectedItem() {
@@ -543,6 +622,7 @@ $active_tab = 'accounts';
         $('#selected_item_hint').remove();
         $('.rec-item-card').removeClass('selected-setoff-card');
         $('#txt_pay_amount').val('');
+        updateDuesLogSetOffCalculations();
     }
 
     function buildReceivedArray(payAmount) {
@@ -825,6 +905,10 @@ $active_tab = 'accounts';
     $(document).ready(function() {
         loadMemberBalances();
         loadReceivablesList();
+
+        $('#txt_pay_amount').on('input keyup change', function() {
+            updateDuesLogSetOffCalculations();
+        });
     });
 
     function submitCustomGuestFee() {
