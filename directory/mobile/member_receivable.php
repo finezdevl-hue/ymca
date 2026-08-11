@@ -487,11 +487,6 @@ $active_tab = 'accounts';
                                     <div class="rec-item-val" id="card_bal_${r.recieveble_id}" style="color:${due > 0 ? '#dc2626' : '#059669'};">₹${due.toFixed(2)}</div>
                                 </div>
                             </div>
-                            ${!isComplete ? `
-                                <button type="button" class="btn-setoff-sm" onclick="setOffSpecificItem(${r.recieveble_id}, ${due}, ${r.head}, ${r.flag}, '${(r.discription || '').replace(/'/g, "\\'")}')">
-                                    <i class="fa fa-check"></i> SetOff ₹${due.toFixed(2)}
-                                </button>
-                            ` : ''}
                         </div>
                     `;
                 });
