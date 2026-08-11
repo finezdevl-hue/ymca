@@ -126,15 +126,25 @@ $active_tab = 'accounts';
         .rec-item-val { font-weight: 800; color: #0f172a; margin-top: 1px; }
 
         .btn-setoff-sm {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none;
-            border-radius: 8px; padding: 6px 12px; font-size: 11.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;
-            cursor: pointer; width: 100%; justify-content: center;
-            background: #ffffff;
-            border-radius: 18px;
-            border: 1px solid #e2e8f0;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff !important;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 12px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 4px;
+            box-shadow: 0 3px 10px rgba(16, 185, 129, 0.2);
+            transition: all 0.2s ease;
+        }
+        .btn-setoff-sm:active {
+            transform: scale(0.98);
         }
 
         .action-title { font-size: 13.5px; font-weight: 800; color: #0f172a; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
