@@ -610,6 +610,9 @@ if (!isSuperAdmin($login_id)) {
                             <option value="0">Member (Default Baseline Access)</option>
                             <!-- Roles populated via JS -->
                         </select>
+                        <div id="cashier-role-notice" style="display:none; background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:8px 12px; border-radius:10px; font-size:11.5px; font-weight:600; margin-top:8px;">
+                            <i class="fa fa-info-circle"></i> <strong>Single Cashier Rule:</strong> Only one Group Cashier is allowed per group. Assigning this will transfer the cashier role to this member.
+                        </div>
                     </div>
 
                     <div class="form-group" id="group-select-wrap" style="margin-bottom:24px;">
@@ -653,6 +656,14 @@ $(document).ready(function() {
     loadMenu();
     loadRolesAndGroups();
     loadUsers();
+
+    $('#modal-role-select').on('change', function() {
+        if (parseInt($(this).val()) === 2) {
+            $('#cashier-role-notice').slideDown(150);
+        } else {
+            $('#cashier-role-notice').slideUp(150);
+        }
+    });
 });
 
 function loadRolesAndGroups() {

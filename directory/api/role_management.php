@@ -101,6 +101,17 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
                 exit();
             }
 
+            // Enforce single Group Cashier per group rule (role_id = 2)
+            if ($role_id == 2) {
+                if ($group_id > 0) {
+                    $del_old_cashier = "DELETE FROM tbl_user_group_roles WHERE group_id = ? AND role_id = 2";
+                    app_exec_nonquery($del_old_cashier, [$group_id], "i");
+                } else {
+                    $del_old_cashier = "DELETE FROM tbl_user_group_roles WHERE role_id = 2";
+                    app_exec_nonquery($del_old_cashier, [], "");
+                }
+            }
+
             // Remove existing mapping for same user & group if exists
             $del_sql = "DELETE FROM tbl_user_group_roles WHERE login_id = ? AND group_id = ?";
             app_exec_nonquery($del_sql, [$target_login_id, $group_id], "ii");
