@@ -487,7 +487,9 @@ $active_tab = 'accounts';
                 });
 
                 $('#receivables_list_container').html(htm);
-                updateDuesLogSetOffCalculations();
+                if (selectedSpecificRecId > 0 || selectedAllPending) {
+                    updateDuesLogSetOffCalculations();
+                }
             } catch(e) {
                 $('#receivables_list_container').html('<div style="text-align:center; padding:30px; color:#ef4444;">Error loading receivables.</div>');
             }
@@ -921,8 +923,10 @@ $active_tab = 'accounts';
                 $('#selected_item_hint').remove();
                 $('.rec-item-card').removeClass('selected-setoff-card');
                 $('#setoff_action_buttons').hide();
+                updateDuesLogSetOffCalculations();
+            } else if (selectedSpecificRecId > 0 || selectedAllPending) {
+                updateDuesLogSetOffCalculations();
             }
-            updateDuesLogSetOffCalculations();
         });
     });
 
