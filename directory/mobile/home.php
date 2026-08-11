@@ -354,9 +354,9 @@ session_write_close();
         .hc-modal-overlay {
             display: none;
             position: fixed; inset: 0;
-            background: rgba(0,0,0,0.45);
+            background: rgba(0,0,0,0.55);
             backdrop-filter: blur(6px);
-            z-index: 9500;
+            z-index: 1000000 !important;
             align-items: flex-end;
             justify-content: center;
         }
@@ -365,9 +365,12 @@ session_write_close();
         .hc-sheet {
             background: #fff;
             border-radius: 28px 28px 0 0;
-            padding: 20px 22px 36px;
+            padding: 20px 22px 28px;
             width: 100%; max-width: 500px;
             animation: slideUpSheet 0.28s ease;
+            box-shadow: 0 -10px 35px rgba(0,0,0,0.25);
+            position: relative;
+            z-index: 1000001 !important;
         }
         @keyframes slideUpSheet { from { transform: translateY(60px); opacity:0; } to { transform: translateY(0); opacity:1; } }
         .hc-handle { width:40px; height:4px; border-radius:4px; background:#e2e8f0; margin:0 auto 18px; }
@@ -1180,7 +1183,7 @@ function submitHalfChance() {
 </script>
 
 <!-- UPI Payment Modal Container -->
-<div id="upi-modal-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; overflow-y:auto;">
+<div id="upi-modal-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:1000000 !important; overflow-y:auto;">
     <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px);" onclick="closeHomePayModal(event)"></div>
     <div style="position:relative; max-width:480px; margin:40px auto; background:#ffffff; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.2); overflow:hidden; z-index:10000; font-family:'Inter', sans-serif;">
         
