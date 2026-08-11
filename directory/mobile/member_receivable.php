@@ -302,7 +302,7 @@ $active_tab = 'accounts';
                         </button>
                     </div>
                 </div>
-                <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+                <div id="setoff_action_buttons" style="display:none; flex-direction:column; gap:8px; margin-top:6px;">
                     <button type="button" class="btn btn-success" onclick="submitCashPayment()" style="width:100%; border-radius:12px; font-weight:800; padding:12px; font-size:13.5px; box-shadow:0 4px 10px rgba(16,185,129,0.15);">
                         <i class="fa fa-check-circle"></i> SetOff Payment
                     </button>
@@ -567,29 +567,34 @@ $active_tab = 'accounts';
     }
 
     function setFullPendingFees() {
+        let typedVal = parseFloat($('#txt_pay_amount').val() || 0);
         selectedSpecificRecId = 0;
         selectedAllPending = true;
         $('#selected_item_hint').remove();
         $('.rec-item-card').removeClass('selected-setoff-card');
 
-        if (currentOutstandingDue > 0) {
-            $('#txt_pay_amount').val(currentOutstandingDue);
+        let amtToSet = typedVal > 0 ? typedVal : currentOutstandingDue;
+
+        if (amtToSet > 0) {
+            $('#txt_pay_amount').val(amtToSet);
             $('.rec-item-card.is-pending').addClass('selected-setoff-card');
 
             let hintHtm = '<div id="selected_item_hint" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:10px 14px; border-radius:12px; font-size:12.5px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; font-family:\'Inter\',sans-serif;">' +
-                '<span><i class="fa fa-check-circle"></i> All pending dues set for SetOff (<strong>₹' + currentOutstandingDue.toFixed(2) + '</strong>)</span>' +
+                '<span><i class="fa fa-check-circle"></i> Fees set for SetOff (<strong>₹' + amtToSet.toFixed(2) + '</strong>)</span>' +
                 '<a href="javascript:void(0)" onclick="clearSelectedItem()" style="color:#ef4444; font-weight:800; text-decoration:none; margin-left:8px;">✕ Clear</a>' +
               '</div>';
             if ($('.action-card > div:first').length) {
                 $(hintHtm).insertBefore('.action-card > div:first');
             }
             updateDuesLogSetOffCalculations();
+            $('#setoff_action_buttons').fadeIn(200);
         } else {
             if (typeof swal !== 'undefined') {
                 swal("No Dues", "No pending dues for this member.", "info");
             } else {
                 alert('No pending dues for this member.');
             }
+            $('#setoff_action_buttons').hide();
         }
     }
 
@@ -614,6 +619,7 @@ $active_tab = 'accounts';
             $(hintHtm).insertBefore('.action-card > div:first');
         }
         updateDuesLogSetOffCalculations();
+        $('#setoff_action_buttons').fadeIn(200);
     }
 
     function clearSelectedItem() {
@@ -623,6 +629,7 @@ $active_tab = 'accounts';
         $('.rec-item-card').removeClass('selected-setoff-card');
         $('#txt_pay_amount').val('');
         updateDuesLogSetOffCalculations();
+        $('#setoff_action_buttons').hide();
     }
 
     function buildReceivedArray(payAmount) {
@@ -907,6 +914,14 @@ $active_tab = 'accounts';
         loadReceivablesList();
 
         $('#txt_pay_amount').on('input keyup change', function() {
+            let val = parseFloat($(this).val() || 0);
+            if (val <= 0) {
+                selectedSpecificRecId = 0;
+                selectedAllPending = false;
+                $('#selected_item_hint').remove();
+                $('.rec-item-card').removeClass('selected-setoff-card');
+                $('#setoff_action_buttons').hide();
+            }
             updateDuesLogSetOffCalculations();
         });
     });
