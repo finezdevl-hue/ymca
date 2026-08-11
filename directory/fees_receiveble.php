@@ -808,6 +808,8 @@ $is_guest_desktop = ($member_type === 1);
                         contentType: false,
                         success: function(response) {
                             closesetOffform();
+                            $('#txt_AmountPaid').val('');
+                            $('#setoff_buttuon').hide();
                             alertsuccess('Payment processed successfully');
                             loadData($('#hdn_current_page').val());
                         },
@@ -889,6 +891,8 @@ $is_guest_desktop = ($member_type === 1);
                         data: data,
                         success: function(response) {
                             closesetOffformforWallet();
+                            $('#txt_wallet_amount_input').val('');
+                            $('#setoff_buttuon_wallet').hide();
                             alertsuccess('Payment processed from wallet');
                             loadData($('#hdn_current_page').val());
                         },
