@@ -195,6 +195,15 @@ $active_tab = 'accounts';
         }
         .mem-pick-row:hover { background: #ecfdf5; }
 
+        .rec-item-card {
+            transition: all 0.25s ease;
+        }
+        .rec-item-card.selected-setoff-card {
+            border: 2px solid #4f46e5 !important;
+            background: #f8fafc !important;
+            box-shadow: 0 4px 18px rgba(79, 70, 229, 0.18) !important;
+        }
+
         /* Member Picker Modal */
         .picker-search {
             width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 13px;
@@ -411,6 +420,7 @@ $active_tab = 'accounts';
 
     let raw_receivables_data = [];
     let selectedSpecificRecId = 0;
+    let selectedAllPending = false;
 
     function loadReceivablesList() {
         $.post('../api/fees_receiveble.php', { action: 'load_data', page: 1, member_id: ACTIVE_MEMBER_ID }, function(res) {
@@ -437,8 +447,13 @@ $active_tab = 'accounts';
                     let statusText = isComplete ? 'PAID / COMPLETED' : 'PENDING DUE';
                     let dateStr = r.date ? new Date(r.date).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '--';
 
+                    let isCardSelected = (selectedSpecificRecId > 0 && parseInt(r.recieveble_id, 10) === parseInt(selectedSpecificRecId, 10)) ||
+                                         (selectedAllPending && !isComplete && due > 0);
+                    let cardSelectClass = isCardSelected ? 'selected-setoff-card' : '';
+                    let itemTypeClass = isComplete ? 'is-complete' : 'is-pending';
+
                     htm += `
-                        <div class="rec-item-card">
+                        <div class="rec-item-card ${itemTypeClass} ${cardSelectClass}" id="rec_card_${r.recieveble_id}">
                             <div class="rec-item-header">
                                 <span class="rec-item-date"><i class="fa fa-calendar"></i> ${dateStr}</span>
                                 <span class="status-pill ${statusClass}">${statusText}</span>
@@ -476,33 +491,57 @@ $active_tab = 'accounts';
 
     function setFullPendingFees() {
         selectedSpecificRecId = 0;
+        selectedAllPending = true;
         $('#selected_item_hint').remove();
+        $('.rec-item-card').removeClass('selected-setoff-card');
+
         if (currentOutstandingDue > 0) {
             $('#txt_pay_amount').val(currentOutstandingDue);
+            $('.rec-item-card.is-pending').addClass('selected-setoff-card');
+
+            let hintHtm = '<div id="selected_item_hint" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:10px 14px; border-radius:12px; font-size:12.5px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; font-family:\'Inter\',sans-serif;">' +
+                '<span><i class="fa fa-check-circle"></i> All pending dues set for SetOff (<strong>₹' + currentOutstandingDue.toFixed(2) + '</strong>)</span>' +
+                '<a href="javascript:void(0)" onclick="clearSelectedItem()" style="color:#ef4444; font-weight:800; text-decoration:none; margin-left:8px;">✕ Clear</a>' +
+              '</div>';
+            if ($('.action-card > div:first').length) {
+                $(hintHtm).insertBefore('.action-card > div:first');
+            }
         } else {
-            alert('No pending dues for this member.');
+            if (typeof swal !== 'undefined') {
+                swal("No Dues", "No pending dues for this member.", "info");
+            } else {
+                alert('No pending dues for this member.');
+            }
         }
     }
 
     function setOffSpecificItem(recId, dueAmt, headId, flagId, desc) {
         selectedSpecificRecId = recId;
+        selectedAllPending = false;
         $('#txt_pay_amount').val(dueAmt);
+
+        $('.rec-item-card').removeClass('selected-setoff-card');
+        $('#rec_card_' + recId).addClass('selected-setoff-card');
+
         $('html, body').animate({ scrollTop: 0 }, 'fast');
 
         let cleanDesc = desc || 'Receivable Item';
-        if ($('#selected_item_hint').length === 0) {
-            $('<div id="selected_item_hint" style="background:#eef2ff; color:#4f46e5; border:1px solid #c7d2fe; padding:10px 14px; border-radius:12px; font-size:12.5px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; font-family:\'Inter\',sans-serif;">' +
-                '<span><i class="fa fa-info-circle"></i> Item selected: <strong>' + cleanDesc + '</strong> (₹' + dueAmt.toFixed(2) + ')</span>' +
-                '<a href="javascript:void(0)" onclick="clearSelectedItem()" style="color:#ef4444; font-weight:800; text-decoration:none; margin-left:8px;">✕ Clear</a>' +
-              '</div>').insertBefore('.pay-form-card .form-group:first');
-        } else {
-            $('#selected_item_hint span').html('<i class="fa fa-info-circle"></i> Item selected: <strong>' + cleanDesc + '</strong> (₹' + dueAmt.toFixed(2) + ')');
+        let hintHtm = '<div id="selected_item_hint" style="background:#eef2ff; color:#4f46e5; border:1px solid #c7d2fe; padding:10px 14px; border-radius:12px; font-size:12.5px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; font-family:\'Inter\',sans-serif;">' +
+            '<span><i class="fa fa-info-circle"></i> Item selected for SetOff: <strong>' + cleanDesc + '</strong> (₹' + dueAmt.toFixed(2) + ')</span>' +
+            '<a href="javascript:void(0)" onclick="clearSelectedItem()" style="color:#ef4444; font-weight:800; text-decoration:none; margin-left:8px;">✕ Clear</a>' +
+          '</div>';
+
+        $('#selected_item_hint').remove();
+        if ($('.action-card > div:first').length) {
+            $(hintHtm).insertBefore('.action-card > div:first');
         }
     }
 
     function clearSelectedItem() {
         selectedSpecificRecId = 0;
+        selectedAllPending = false;
         $('#selected_item_hint').remove();
+        $('.rec-item-card').removeClass('selected-setoff-card');
         $('#txt_pay_amount').val('');
     }
 
@@ -595,13 +634,20 @@ $active_tab = 'accounts';
 
             $.post('../api/fees_receiveble.php', payload, function(res) {
                 if (typeof close_overlay === 'function') close_overlay();
+                clearSelectedItem();
+                loadMemberProfile();
+                loadReceivablesList();
                 if (typeof swal !== 'undefined') {
                     swal({ title: "Saved!", text: "Payment setoff recorded successfully!", type: "success" }, function() {
-                        location.reload();
+                        if ($('#receivables_list_container').length) {
+                            $('html, body').animate({ scrollTop: $('#receivables_list_container').offset().top - 80 }, 'smooth');
+                        }
                     });
                 } else {
                     alert('Payment setoff recorded successfully!');
-                    location.reload();
+                    if ($('#receivables_list_container').length) {
+                        $('html, body').animate({ scrollTop: $('#receivables_list_container').offset().top - 80 }, 'smooth');
+                    }
                 }
             }).fail(function(xhr) {
                 if (typeof close_overlay === 'function') close_overlay();
@@ -692,13 +738,20 @@ $active_tab = 'accounts';
 
             $.post('../api/fees_receiveble.php', payload, function(res) {
                 if (typeof close_overlay === 'function') close_overlay();
+                clearSelectedItem();
+                loadMemberProfile();
+                loadReceivablesList();
                 if (typeof swal !== 'undefined') {
                     swal({ title: "Saved!", text: "Wallet setoff recorded successfully!", type: "success" }, function() {
-                        location.reload();
+                        if ($('#receivables_list_container').length) {
+                            $('html, body').animate({ scrollTop: $('#receivables_list_container').offset().top - 80 }, 'smooth');
+                        }
                     });
                 } else {
                     alert('Wallet setoff recorded successfully!');
-                    location.reload();
+                    if ($('#receivables_list_container').length) {
+                        $('html, body').animate({ scrollTop: $('#receivables_list_container').offset().top - 80 }, 'smooth');
+                    }
                 }
             }).fail(function(xhr) {
                 if (typeof close_overlay === 'function') close_overlay();
