@@ -648,6 +648,16 @@ $is_guest_desktop = ($member_type === 1);
         function setFees(){
             var balAmt=0;
             var TotalAmount=parseFloat($('#txt_AmountPaid').val()) || 0;
+            if (TotalAmount <= 0) {
+                if (typeof alertinfo === 'function') {
+                    alertinfo("Please enter an amount before clicking Set Fees.");
+                } else if (typeof swal !== 'undefined') {
+                    swal("Amount Required", "Please enter an amount before clicking Set Fees.", "warning");
+                } else {
+                    alert("Please enter an amount before clicking Set Fees.");
+                }
+                return;
+            }
             
             // First, reset all rows to their original remaining balance state
             $('#tbl_receiveble tbody tr').each(function() {
@@ -676,6 +686,16 @@ $is_guest_desktop = ($member_type === 1);
         function setFeesFromWallet(){
             var balAmt=0;
             var TotalAmount=parseFloat($('#txt_wallet_amount_input').val()) || 0;
+            if (TotalAmount <= 0) {
+                if (typeof alertinfo === 'function') {
+                    alertinfo("Please enter a wallet amount before clicking Set Fees.");
+                } else if (typeof swal !== 'undefined') {
+                    swal("Amount Required", "Please enter a wallet amount before clicking Set Fees.", "warning");
+                } else {
+                    alert("Please enter a wallet amount before clicking Set Fees.");
+                }
+                return;
+            }
             
             // First, reset all rows to their original remaining balance state
             $('#tbl_receiveble tbody tr').each(function() {

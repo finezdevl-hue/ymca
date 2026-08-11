@@ -570,34 +570,33 @@ $active_tab = 'accounts';
 
     function setFullPendingFees() {
         let typedVal = parseFloat($('#txt_pay_amount').val() || 0);
+
+        if (typedVal <= 0) {
+            if (typeof swal !== 'undefined') {
+                swal("Amount Required", "Please enter an amount before clicking Set Fees.", "warning");
+            } else {
+                alert('Please enter an amount before clicking Set Fees.');
+            }
+            return;
+        }
+
         selectedSpecificRecId = 0;
         selectedAllPending = true;
         $('#selected_item_hint').remove();
         $('.rec-item-card').removeClass('selected-setoff-card');
 
-        let amtToSet = typedVal > 0 ? typedVal : currentOutstandingDue;
+        $('#txt_pay_amount').val(typedVal);
+        $('.rec-item-card.is-pending').addClass('selected-setoff-card');
 
-        if (amtToSet > 0) {
-            $('#txt_pay_amount').val(amtToSet);
-            $('.rec-item-card.is-pending').addClass('selected-setoff-card');
-
-            let hintHtm = '<div id="selected_item_hint" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:10px 14px; border-radius:12px; font-size:12.5px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; font-family:\'Inter\',sans-serif;">' +
-                '<span><i class="fa fa-check-circle"></i> Fees set for SetOff (<strong>₹' + amtToSet.toFixed(2) + '</strong>)</span>' +
-                '<a href="javascript:void(0)" onclick="clearSelectedItem()" style="color:#ef4444; font-weight:800; text-decoration:none; margin-left:8px;">✕ Clear</a>' +
-              '</div>';
-            if ($('.action-card > div:first').length) {
-                $(hintHtm).insertBefore('.action-card > div:first');
-            }
-            updateDuesLogSetOffCalculations();
-            $('#setoff_action_buttons').fadeIn(200);
-        } else {
-            if (typeof swal !== 'undefined') {
-                swal("No Dues", "No pending dues for this member.", "info");
-            } else {
-                alert('No pending dues for this member.');
-            }
-            $('#setoff_action_buttons').hide();
+        let hintHtm = '<div id="selected_item_hint" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:10px 14px; border-radius:12px; font-size:12.5px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; font-family:\'Inter\',sans-serif;">' +
+            '<span><i class="fa fa-check-circle"></i> Fees set for SetOff (<strong>₹' + typedVal.toFixed(2) + '</strong>)</span>' +
+            '<a href="javascript:void(0)" onclick="clearSelectedItem()" style="color:#ef4444; font-weight:800; text-decoration:none; margin-left:8px;">✕ Clear</a>' +
+          '</div>';
+        if ($('.action-card > div:first').length) {
+            $(hintHtm).insertBefore('.action-card > div:first');
         }
+        updateDuesLogSetOffCalculations();
+        $('#setoff_action_buttons').fadeIn(200);
     }
 
     function setOffSpecificItem(recId, dueAmt, headId, flagId, desc) {
