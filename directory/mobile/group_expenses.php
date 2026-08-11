@@ -105,9 +105,9 @@ $res = app_exec_query($sql);
                             <?php endif; ?>
                             <?php if (!empty($r['bill_photo'])): ?>
                                 <div style="margin-top:4px;">
-                                    <a href="../../image_upload/bills/<?php echo htmlspecialchars($r['bill_photo']); ?>" target="_blank" class="btn btn-xs btn-outline-danger" style="border-radius:6px; font-weight:700; font-size:10.5px; padding:2px 8px;">
+                                    <button type="button" onclick="openBillModal('<?php echo $r['id']; ?>', '<?php echo date('d M Y', strtotime($r['date'])); ?>', '<?php echo addslashes(htmlspecialchars($r['head_name'] ?: 'Expense')); ?>', '<?php echo number_format((float)$r['amount'], 2); ?>', '<?php echo addslashes(htmlspecialchars($r['particuler'] ?: 'Expense')); ?>', '<?php echo addslashes($r['bill_photo']); ?>')" class="btn btn-xs btn-outline-danger" style="border-radius:6px; font-weight:700; font-size:10.5px; padding:2px 8px;">
                                         <i class="fa fa-file-text-o"></i> View Bill
-                                    </a>
+                                    </button>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -173,6 +173,35 @@ $res = app_exec_query($sql);
                         <button type="submit" class="btn btn-danger" style="border-radius:10px; font-weight:800;">Save Expense</button>
                     </div>
                 </form>
+            </div>
+    <!-- View Bill Modal -->
+    <div class="modal fade" id="viewBillModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" style="border-radius:20px; border:none; box-shadow:0 15px 35px rgba(0,0,0,0.2);">
+                <div class="modal-header" style="border-bottom:1px solid #f1f5f9; background:#fff1f2; border-top-left-radius:20px; border-top-right-radius:20px; padding:16px 20px;">
+                    <h5 class="modal-title" style="font-weight:800; color:#9f1239; font-size:15px;">
+                        <i class="fa fa-file-text-o" style="color:#e11d48; margin-right:6px;"></i> Expense Bill Voucher
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" style="opacity:0.8;">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:20px;">
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:14px; margin-bottom:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span id="vch_date" style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;"></span>
+                            <span id="vch_amount" style="font-size:16px; font-weight:900; color:#e11d48;"></span>
+                        </div>
+                        <div id="vch_head" style="font-size:14px; font-weight:800; color:#0f172a;"></div>
+                        <div id="vch_desc" style="font-size:12px; color:#475569; margin-top:2px; font-weight:600;"></div>
+                    </div>
+
+                    <div style="font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:8px;">Attached Bill Attachment</div>
+                    <div id="vch_photo_container" style="text-align:center; padding:12px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:14px;">
+                        <!-- Injected dynamically -->
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid #f1f5f9; padding:12px 20px;">
+                    <button type="button" class="btn btn-secondary btn-block" data-dismiss="modal" style="border-radius:12px; font-weight:700;">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -296,6 +325,67 @@ $res = app_exec_query($sql);
             });
         });
     });
+
+    function openBillModal(id, date, head, amount, desc, photo) {
+        $('#vch_date').text(date);
+        $('#vch_head').text(head);
+        $('#vch_amount').text('₹ ' + amount);
+        $('#vch_desc').text(desc || 'Expense');
+
+        let cleanPhoto = (photo && typeof photo === 'string') ? photo.trim() : '';
+        if (cleanPhoto !== '' && cleanPhoto !== '0' && cleanPhoto !== 'null' && cleanPhoto !== 'undefined') {
+            resolveBillPath(cleanPhoto, function(foundPath) {
+                let ext = cleanPhoto.split('.').pop().toLowerCase();
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                    $('#vch_photo_container').html(`
+                        <a href="${foundPath}" target="_blank">
+                            <img src="${foundPath}" style="max-width:100%; max-height:220px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1);" onerror="this.onerror=null; this.parentNode.innerHTML='<div style=\\'color:#ef4444; font-size:12px; font-weight:700; padding:10px; background:#fef2f2; border-radius:10px; border:1px solid #fca5a5;\\'><i class=\\'fa fa-exclamation-triangle\\'></i> Bill file (${cleanPhoto}) missing on server</div>';">
+                        </a>
+                        <div style="font-size:11px; color:#64748b; margin-top:8px;"><a href="${foundPath}" target="_blank" style="color:#e11d48; font-weight:800;"><i class="fa fa-external-link"></i> Open Full Image</a></div>
+                    `);
+                } else {
+                    $('#vch_photo_container').html(`
+                        <a href="${foundPath}" target="_blank" class="btn btn-sm btn-danger" style="border-radius:10px; font-weight:800; padding:10px 18px; color:#fff;">
+                            <i class="fa fa-file-pdf-o"></i> View Document (${ext.toUpperCase()})
+                        </a>
+                    `);
+                }
+            });
+        } else {
+            $('#vch_photo_container').html(`
+                <div style="color:#94a3b8; font-size:12.5px; font-weight:600;">
+                    <i class="fa fa-file-o" style="font-size:24px; margin-bottom:6px; display:block; color:#cbd5e1;"></i>
+                    No digital bill photo attached
+                </div>
+            `);
+        }
+
+        $('#viewBillModal').modal('show');
+    }
+
+    function resolveBillPath(cleanPhoto, callback) {
+        let path1 = '../../image_upload/bills/' + cleanPhoto;
+        fetch(path1, { method: 'HEAD' })
+            .then(function(res1) {
+                if (res1.ok) {
+                    callback(path1);
+                } else {
+                    let path2 = '../../image_upload/payments/' + cleanPhoto;
+                    fetch(path2, { method: 'HEAD' })
+                        .then(function(res2) {
+                            if (res2.ok) {
+                                callback(path2);
+                            } else {
+                                callback('../../image_upload/bills/' + cleanPhoto);
+                            }
+                        }).catch(function() {
+                            callback(path1);
+                        });
+                }
+            }).catch(function() {
+                callback(path1);
+            });
+    }
     </script>
 </body>
 </html>
