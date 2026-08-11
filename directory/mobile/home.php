@@ -204,11 +204,11 @@ session_write_close();
             font-weight: 700;
         }
 
-        /* ─── 3-Column Mark Attendance Buttons ─── */
-        .att-grid-3 {
+        /* ─── 2-Column Mark Attendance Buttons ─── */
+        .att-grid-2 {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
             width: 100%;
         }
         .att-big-btn {
@@ -657,10 +657,6 @@ session_write_close();
                 <div class="slbl">✅ Present</div>
             </div>
             <div class="gs-stat-chip">
-                <div class="sval" id="gs-half-count">0</div>
-                <div class="slbl">⚡ Half Chance</div>
-            </div>
-            <div class="gs-stat-chip">
                 <div class="sval" id="gs-absent-count">0</div>
                 <div class="slbl">❌ Absent</div>
             </div>
@@ -895,22 +891,12 @@ function fetchStatus(){
                         actionHtm += '  <div class="src-actions"><button class="src-btn-green" onclick="mobMarkAttendance()"><i class="fa fa-check-circle"></i> Mark Present</button><button class="src-btn-ghost" onclick="mobClearTempStatus()"><i class="fa fa-refresh"></i> Clear</button></div>';
                         actionHtm += '</div>';
 
-                    } else if(tempStatus === 'half_chance'){
-                        actionHtm  = '<div class="status-result-card src-half">';
-                        actionHtm += '  <div class="src-icon"><i class="fa fa-adjust"></i></div>';
-                        actionHtm += '  <div class="src-title">Half Chance ⚡</div>';
-                        // actionHtm += '  <div class="src-sub">Temporary · auto-clears in 2 days</div>';
-                        actionHtm += etaHtml;
-                        actionHtm += '  <div class="src-actions"><button class="src-btn-green" onclick="mobMarkAttendance()"><i class="fa fa-check-circle"></i> Mark Present</button><button class="src-btn-ghost" onclick="mobClearTempStatus()"><i class="fa fa-refresh"></i> Clear</button></div>';
-                        actionHtm += '</div>';
-
                     } else {
                         actionHtm  = '<div style="display:flex;flex-direction:column;gap:14px;width:100%;">';
                         actionHtm += '  <div class="att-section-divider"><i class="fa fa-calendar-check-o" style="color:#4f46e5;"></i> Mark Attendance</div>';
-                        actionHtm += '  <div class="att-grid-3">';
+                        actionHtm += '  <div class="att-grid-2">';
                         actionHtm += '    <button class="att-big-btn btn-present" onclick="openHCModal(\'present\')"><div class="btn-icon-wrap"><i class="fa fa-check-circle"></i></div>Present</button>';
                         actionHtm += '    <button class="att-big-btn btn-absent"  onclick="mobMarkTempStatus(\'absent\')"><div class="btn-icon-wrap"><i class="fa fa-times-circle"></i></div>Absent</button>';
-                        actionHtm += '    <button class="att-big-btn btn-half"    onclick="openHCModal(\'half_chance\')"><div class="btn-icon-wrap"><i class="fa fa-pie-chart"></i></div>Half Chance</button>';
                         actionHtm += '  </div>';
                         actionHtm += '</div>';
                     }
@@ -989,7 +975,7 @@ function loadGameStatus(date, group) {
         var list = [];
         try { list = (typeof data === 'string') ? JSON.parse(data) : data; } catch(e) { list = []; }
 
-        var presentCount = 0, halfCount = 0, absentCount = 0;
+        var presentCount = 0, absentCount = 0;
         var timings = [];
 
         if (list && list.length > 0) {
@@ -997,20 +983,17 @@ function loadGameStatus(date, group) {
                 var name = [m.first_name, m.middle_name, m.last_name].filter(Boolean).join(' ');
                 if (m.status === 'present') {
                     presentCount++;
-                } else if (m.status === 'half_chance') {
-                    halfCount++;
                 } else if (m.status === 'absent') {
                     absentCount++;
                 }
 
-                if (m.expected_time && (m.status === 'present' || m.status === 'half_chance')) {
+                if (m.expected_time && m.status === 'present') {
                     timings.push({ time: m.expected_time, name: name, status: m.status });
                 }
             });
         }
 
         $('#gs-present-count').text(presentCount);
-        $('#gs-half-count').text(halfCount);
         $('#gs-absent-count').text(absentCount);
 
         // Sort timings chronologically ascending (e.g. 11:00 AM, 11:15 AM)
@@ -1032,7 +1015,7 @@ function loadGameStatus(date, group) {
         } else if (presentCount === 1) {
             $('#gs-start-time').text('TBD');
             $('#gs-start-sub').text('1 member present · Minimum 2 members required');
-        } else if (presentCount > 0 || halfCount > 0) {
+        } else if (presentCount > 0) {
             $('#gs-start-time').text('TBD');
             $('#gs-start-sub').text('Minimum 2 present members required');
         } else {
@@ -1103,8 +1086,6 @@ function loadPresentMembers(date, group, count){
             var badgeHtm = '';
             if (m.status === 'present') {
                 badgeHtm = '<span class="mob-chip mob-chip-green"><i class="fa fa-check"></i>' + timeStr + '</span>';
-            } else if (m.status === 'half_chance') {
-                badgeHtm = '<span class="mob-chip" style="background:rgba(245,158,11,0.12); color:#d97706; border:1px solid rgba(245,158,11,0.25);">50 - 50' + timeStr + '</span>';
             } else if (m.status === 'absent') {
                 badgeHtm = '<span class="mob-chip" style="background:rgba(239,68,68,0.12); color:#dc2626; border:1px solid rgba(239,68,68,0.25);"><i class="fa fa-times"></i></span>';
             }
@@ -1120,21 +1101,15 @@ function loadPresentMembers(date, group, count){
     });
 }
 
-/* ── Half-Chance & Present Modal ──────────────────────────── */
-var currentAttModalStatus = 'half_chance';
+/* ── Expected Time & Present Modal ──────────────────────────── */
+var currentAttModalStatus = 'present';
 
 function openHCModal(status) {
-    currentAttModalStatus = status || 'half_chance';
+    currentAttModalStatus = 'present';
 
-    if (currentAttModalStatus === 'present') {
-        $('#hc-modal-title').text('⏰ Expected Arrival Time');
-        $('#hc-modal-sub').text('Let your group know when you will likely arrive for Present check-in');
-        $('#hc-btn-confirm').html('<i class="fa fa-check-circle"></i> Confirm Present').css('background', 'linear-gradient(135deg,#10b981,#059669)');
-    } else {
-        $('#hc-modal-title').text('⏰ Expected Arrival Time');
-        $('#hc-modal-sub').text('Let your group know when you will likely arrive (optional)');
-        $('#hc-btn-confirm').html('⚡ Confirm Half Chance').css('background', 'linear-gradient(135deg,#f59e0b,#d97706)');
-    }
+    $('#hc-modal-title').text('⏰ Expected Arrival Time');
+    $('#hc-modal-sub').text('Let your group know when you will likely arrive for Present check-in');
+    $('#hc-btn-confirm').html('<i class="fa fa-check-circle"></i> Confirm Present').css('background', 'linear-gradient(135deg,#10b981,#059669)');
 
     var now = new Date();
     var hours24 = now.getHours();
@@ -1199,11 +1174,7 @@ function submitHalfChance() {
     }
 
     closeHCModal();
-    if (currentAttModalStatus === 'present') {
-        mobMarkAttendance(timeVal);
-    } else {
-        mobMarkTempStatus('half_chance', timeVal);
-    }
+    mobMarkAttendance(timeVal);
 }
 
 </script>

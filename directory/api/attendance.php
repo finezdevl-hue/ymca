@@ -360,12 +360,12 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
                 exit();
             }
 
-            if (!in_array($status, ['absent', 'half_chance'])) {
+            if ($status !== 'absent') {
                 echo json_encode(['status' => 'error', 'message' => 'Invalid status option.']);
                 exit();
             }
 
-            // Unmark present from tbl_attendance if marking absent or half chance
+            // Unmark present from tbl_attendance if marking absent
             $del_att = "DELETE FROM tbl_attendance WHERE date = ? AND group_id = ? AND member_id = ?";
             app_exec_nonquery($del_att, [$date, $group_id, $member_id], "sii");
 
@@ -375,7 +375,7 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
                         ON DUPLICATE KEY UPDATE status = VALUES(status), expected_time = VALUES(expected_time), created_at = CURRENT_TIMESTAMP";
             app_exec_nonquery($ins_sql, [$login_id, $member_id, $group_id, $status, $expected_time, $date], "iiisss");
 
-            $status_label = ($status === 'absent') ? 'Marked Absent (Temporary 2 Days)' : 'Marked Half Chance (Temporary 2 Days)';
+            $status_label = 'Marked Absent (Temporary 2 Days)';
             echo json_encode(['status' => 'success', 'message' => $status_label, 'temp_status' => $status, 'expected_time' => $expected_time]);
             exit();
         } catch (Throwable $e) {
@@ -435,7 +435,7 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
                 }
             }
 
-            // 2. Fetch Temp Status Members (Half Chance / Absent) from tbl_temp_attendance_status
+            // 2. Fetch Temp Status Members (Absent) from tbl_temp_attendance_status
             $sqlTemp = "SELECT t.member_id, t.status, t.expected_time,
                                COALESCE(NULLIF(m.first_name, ''), l.name) AS first_name, 
                                m.middle_name, 
@@ -444,8 +444,8 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
                         FROM tbl_temp_attendance_status t
                         LEFT JOIN tbl_members m ON t.member_id = m.id OR LTRIM(RTRIM(LOWER(m.email))) = (SELECT LTRIM(RTRIM(LOWER(email))) FROM tbl_login WHERE login_id = t.login_id LIMIT 1)
                         LEFT JOIN tbl_login l ON t.login_id = l.login_id
-                        WHERE t.group_id = ? AND t.status_date = ? AND t.status IN ('half_chance', 'absent')
-                        ORDER BY FIELD(t.status, 'half_chance', 'absent'), first_name ASC";
+                        WHERE t.group_id = ? AND t.status_date = ? AND t.status = 'absent'
+                        ORDER BY first_name ASC";
             $resTemp = app_exec_getresult($sqlTemp, [$group, $date], "is");
 
             if ($resTemp && $resTemp->num_rows > 0) {
