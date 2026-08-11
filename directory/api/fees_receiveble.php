@@ -619,6 +619,7 @@
         if ($action == "setoff_receiveble") {
             try {
                 $tm->begin();
+                $target_member_id = !empty($_POST['member_id']) ? (int)$_POST['member_id'] : $member_id;
 
                 // Handle file upload
                 $bill_photo_name = null;
@@ -663,7 +664,7 @@
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
                     $parameters = [
-                        $member_id, // assuming the member inserting
+                        $target_member_id,
                         $received,
                         $_POST['date'],
                         $_SESSION['login_id'],
@@ -743,6 +744,7 @@
         if ($action == "setoff_receiveble_from_wallet") {
             try {
                 $tm->begin();
+                $target_member_id = !empty($_POST['member_id']) ? (int)$_POST['member_id'] : $member_id;
 
                 // Get the array and decode it
                 $receivedArray = json_decode($_POST['received_array'], true);
@@ -760,7 +762,7 @@
                             VALUES (?, ?, ?, ?, ?, 1, ?, ?)";
 
                     $parameters = [
-                        $member_id, // assuming the member inserting
+                        $target_member_id,
                         $received,
                         $_POST['date'],
                         $_SESSION['login_id'],
@@ -789,15 +791,15 @@
                     }
 
                     $sql = "INSERT INTO tbl_wallet (client_id,date, amount,type) VALUES (?, ?, ?, 'debit')";
-                        $parameters = [
-                            $member_id,
-                            $_POST['date'],
-                            $received,
-                        ];
-                        $types="isi";
-                        if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
-                            throw new Exception("Error in Updation");
-                        }
+                    $parameters = [
+                        $target_member_id,
+                        $_POST['date'],
+                        $received,
+                    ];
+                    $types="isd";
+                    if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                        throw new Exception("Error updating wallet balance.");
+                    }
 
                     if($_POST['transaction_type']==2){
                         $sql = "SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '$db_name' AND TABLE_NAME = 'tbl_payable'";

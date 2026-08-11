@@ -409,11 +409,15 @@ $active_tab = 'accounts';
         });
     }
 
+    let raw_receivables_data = [];
+    let selectedSpecificRecId = 0;
+
     function loadReceivablesList() {
         $.post('../api/fees_receiveble.php', { action: 'load_data', page: 1, member_id: ACTIVE_MEMBER_ID }, function(res) {
             try {
                 let parsed = typeof res === 'string' ? JSON.parse(res) : res;
                 let items = parsed[1] || [];
+                raw_receivables_data = items;
                 let htm = '';
 
                 $('#lbl_dues_count').text(items.length + ' Records');
@@ -455,7 +459,7 @@ $active_tab = 'accounts';
                                 </div>
                             </div>
                             ${!isComplete ? `
-                                <button type="button" class="btn-setoff-sm" onclick="setOffSpecificItem(${r.recieveble_id}, ${due}, ${r.head}, ${r.flag}, '${r.discription || ''}')">
+                                <button type="button" class="btn-setoff-sm" onclick="setOffSpecificItem(${r.recieveble_id}, ${due}, ${r.head}, ${r.flag}, '${(r.discription || '').replace(/'/g, "\\'")}')">
                                     <i class="fa fa-check"></i> SetOff ₹${due.toFixed(2)}
                                 </button>
                             ` : ''}
@@ -471,6 +475,8 @@ $active_tab = 'accounts';
     }
 
     function setFullPendingFees() {
+        selectedSpecificRecId = 0;
+        $('#selected_item_hint').remove();
         if (currentOutstandingDue > 0) {
             $('#txt_pay_amount').val(currentOutstandingDue);
         } else {
@@ -479,8 +485,81 @@ $active_tab = 'accounts';
     }
 
     function setOffSpecificItem(recId, dueAmt, headId, flagId, desc) {
+        selectedSpecificRecId = recId;
         $('#txt_pay_amount').val(dueAmt);
         $('html, body').animate({ scrollTop: 0 }, 'fast');
+
+        let cleanDesc = desc || 'Receivable Item';
+        if ($('#selected_item_hint').length === 0) {
+            $('<div id="selected_item_hint" style="background:#eef2ff; color:#4f46e5; border:1px solid #c7d2fe; padding:10px 14px; border-radius:12px; font-size:12.5px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; font-family:\'Inter\',sans-serif;">' +
+                '<span><i class="fa fa-info-circle"></i> Item selected: <strong>' + cleanDesc + '</strong> (₹' + dueAmt.toFixed(2) + ')</span>' +
+                '<a href="javascript:void(0)" onclick="clearSelectedItem()" style="color:#ef4444; font-weight:800; text-decoration:none; margin-left:8px;">✕ Clear</a>' +
+              '</div>').insertBefore('.pay-form-card .form-group:first');
+        } else {
+            $('#selected_item_hint span').html('<i class="fa fa-info-circle"></i> Item selected: <strong>' + cleanDesc + '</strong> (₹' + dueAmt.toFixed(2) + ')');
+        }
+    }
+
+    function clearSelectedItem() {
+        selectedSpecificRecId = 0;
+        $('#selected_item_hint').remove();
+        $('#txt_pay_amount').val('');
+    }
+
+    function buildReceivedArray(payAmount) {
+        let receivedArray = [];
+        let remAmt = payAmount;
+
+        if (!raw_receivables_data || raw_receivables_data.length === 0) {
+            return receivedArray;
+        }
+
+        if (selectedSpecificRecId > 0) {
+            let item = raw_receivables_data.find(function(r) {
+                return parseInt(r.recieveble_id, 10) === parseInt(selectedSpecificRecId, 10);
+            });
+
+            if (item) {
+                let totalRec = parseFloat(item.receiveble_fees || 0);
+                let paid = parseFloat(item.total_received_fees || 0);
+                let due = totalRec - paid;
+                if (due < 0) due = 0;
+
+                let alloc = Math.min(remAmt, due);
+                let bal = Math.max(0, due - alloc);
+                receivedArray.push({
+                    receiveble_id: item.recieveble_id,
+                    flag: item.flag || 1,
+                    received: alloc,
+                    balance: bal
+                });
+                return receivedArray;
+            }
+        }
+
+        for (let i = 0; i < raw_receivables_data.length; i++) {
+            let r = raw_receivables_data[i];
+            let totalRec = parseFloat(r.receiveble_fees || 0);
+            let paid = parseFloat(r.total_received_fees || 0);
+            let due = totalRec - paid;
+            if (due < 0) due = 0;
+            let isComplete = (parseInt(r.iscomplete, 10) === 1 || due === 0);
+
+            if (!isComplete && due > 0) {
+                let alloc = Math.min(remAmt, due);
+                let bal = Math.max(0, due - alloc);
+                receivedArray.push({
+                    receiveble_id: r.recieveble_id,
+                    flag: r.flag || 1,
+                    received: alloc,
+                    balance: bal
+                });
+                remAmt -= alloc;
+                if (remAmt <= 0) break;
+            }
+        }
+
+        return receivedArray;
     }
 
     function submitCashPayment() {
@@ -494,20 +573,28 @@ $active_tab = 'accounts';
             return;
         }
 
+        let receivedArray = buildReceivedArray(amt);
+        if (receivedArray.length === 0) {
+            if (typeof swal !== 'undefined') {
+                swal("No Dues", "No pending receivable dues found for this member.", "info");
+            } else {
+                alert('No pending receivable dues found.');
+            }
+            return;
+        }
+
         let performSubmit = function() {
+            if (typeof load_overlay === 'function') load_overlay();
             let payload = {
-                action: 'save_payment',
-                id: 0,
+                action: 'setoff_receiveble',
                 member_id: ACTIVE_MEMBER_ID,
                 date: $('#txt_pay_date').val(),
-                amount: amt,
-                transaction_type: $('#txt_trans_type').val(),
-                head: 1,
-                flag: 1,
-                discription: 'Fee SetOff Payment'
+                received_array: JSON.stringify(receivedArray),
+                transaction_type: $('#txt_trans_type').val()
             };
 
             $.post('../api/fees_receiveble.php', payload, function(res) {
+                if (typeof close_overlay === 'function') close_overlay();
                 if (typeof swal !== 'undefined') {
                     swal({ title: "Saved!", text: "Payment setoff recorded successfully!", type: "success" }, function() {
                         location.reload();
@@ -516,11 +603,18 @@ $active_tab = 'accounts';
                     alert('Payment setoff recorded successfully!');
                     location.reload();
                 }
-            }).fail(function() {
+            }).fail(function(xhr) {
+                if (typeof close_overlay === 'function') close_overlay();
+                let msg = 'Error recording payment setoff.';
+                try {
+                    let errObj = typeof xhr.responseText === 'string' ? JSON.parse(xhr.responseText) : xhr.responseText;
+                    if (errObj && errObj.Message) msg = errObj.Message;
+                } catch(e) {}
+
                 if (typeof swal !== 'undefined') {
-                    swal("Error", "Error recording payment setoff.", "error");
+                    swal("Error", msg, "error");
                 } else {
-                    alert('Error recording payment setoff.');
+                    alert(msg);
                 }
             });
         };
@@ -576,20 +670,28 @@ $active_tab = 'accounts';
             return;
         }
 
+        let receivedArray = buildReceivedArray(amt);
+        if (receivedArray.length === 0) {
+            if (typeof swal !== 'undefined') {
+                swal("No Dues", "No pending receivable dues found for this member.", "info");
+            } else {
+                alert('No pending receivable dues found.');
+            }
+            return;
+        }
+
         let performWalletSubmit = function() {
+            if (typeof load_overlay === 'function') load_overlay();
             let payload = {
-                action: 'save_payment_from_wallet',
-                id: 0,
+                action: 'setoff_receiveble_from_wallet',
                 member_id: ACTIVE_MEMBER_ID,
                 date: $('#txt_pay_date').val(),
-                amount: amt,
-                transaction_type: $('#txt_trans_type').val(),
-                head: 1,
-                flag: 1,
-                discription: 'Wallet SetOff Payment'
+                received_array: JSON.stringify(receivedArray),
+                transaction_type: $('#txt_trans_type').val()
             };
 
             $.post('../api/fees_receiveble.php', payload, function(res) {
+                if (typeof close_overlay === 'function') close_overlay();
                 if (typeof swal !== 'undefined') {
                     swal({ title: "Saved!", text: "Wallet setoff recorded successfully!", type: "success" }, function() {
                         location.reload();
@@ -599,6 +701,7 @@ $active_tab = 'accounts';
                     location.reload();
                 }
             }).fail(function(xhr) {
+                if (typeof close_overlay === 'function') close_overlay();
                 let errMsg = 'Error recording wallet setoff.';
                 try {
                     let errObj = typeof xhr.responseText === 'string' ? JSON.parse(xhr.responseText) : xhr.responseText;
