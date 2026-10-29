@@ -1,8 +1,6 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
+require_once __DIR__ . '/api_bootstrap.php';
+require_attendance_master();
 if (empty($_SESSION['login_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
@@ -92,22 +90,33 @@ if (isset($_POST['action'])) {
             $end_date   = date("Y-m-t", strtotime($start_date));
             $total_days = (int)date("t", strtotime($start_date));
 
-            // 0. Get monthly shuttle cost summary from item entries
-            $item_sql = "SELECT SUM(no_of_shuttle) AS total_shuttles,
-                                SUM(total_item_amount) AS total_amount
-                         FROM tbl_items
-                         WHERE used_date BETWEEN ? AND ?";
-            $res_items = app_exec_getresult($item_sql, [$start_date, $end_date], "ss");
+            // 0. Get monthly shuttle cock readings summary from tbl_shuttle_cock_readings
+            $shuttle_sql = "SELECT 
+                                SUM(shuttles_used) AS total_shuttles,
+                                SUM(total_amount) AS total_amount,
+                                MIN(start_shuttle) AS min_start,
+                                MAX(end_shuttle) AS max_end,
+                                AVG(per_shuttle_price) AS avg_price
+                            FROM tbl_shuttle_cock_readings
+                            WHERE reading_date BETWEEN ? AND ?
+                              AND (? = 0 OR group_id = ? OR group_id = 0)";
+            $res_shuttle = app_exec_getresult($shuttle_sql, [$start_date, $end_date, $group_id, $group_id], "ssii");
             $month_total_shuttles = 0;
             $month_total_amount = 0.0;
             $month_avg_shuttle_price = null;
-            if ($res_items && $row_item = $res_items->fetch_assoc()) {
-                $month_total_shuttles = !empty($row_item['total_shuttles']) ? (int)$row_item['total_shuttles'] : 0;
-                $month_total_amount = !empty($row_item['total_amount']) ? (double)$row_item['total_amount'] : 0.0;
+            $group_start_shuttle = null;
+            $group_end_shuttle = null;
+            if ($res_shuttle && $row_s = $res_shuttle->fetch_assoc()) {
+                $month_total_shuttles = !empty($row_s['total_shuttles']) ? (int)$row_s['total_shuttles'] : 0;
+                $month_total_amount = !empty($row_s['total_amount']) ? (double)$row_s['total_amount'] : 0.0;
+                $group_start_shuttle = !empty($row_s['min_start']) ? (int)$row_s['min_start'] : null;
+                $group_end_shuttle = !empty($row_s['max_end']) ? (int)$row_s['max_end'] : null;
                 if ($month_total_shuttles > 0) {
                     $month_avg_shuttle_price = round($month_total_amount / $month_total_shuttles, 2);
                 }
             }
+            $group_shuttle_price = $month_total_amount;
+            $group_avg_shuttle_price = $month_avg_shuttle_price;
 
             // 1. Get all distinct session dates for each group in the month
             $session_sql = "SELECT DISTINCT group_id, DATE_FORMAT(date,'%d') as day_num
@@ -134,7 +143,8 @@ if (isset($_POST['action'])) {
             $allowed_groups = getUserAllowedGroupIds($lid);
 
             $member_sql = "SELECT m.id, m.first_name, m.middle_name, m.last_name,
-                                  gmm.group_id, g.name as group_name
+                                  gmm.group_id, g.name as group_name,
+                                  (SELECT COUNT(DISTINCT a.date) FROM tbl_attendance a WHERE a.member_id = m.id AND a.date BETWEEN ? AND ?) AS month_att_count
                            FROM tbl_members m
                            JOIN tbl_group_member_map gmm ON m.id = gmm.member_id
                            JOIN tbl_groups g ON gmm.group_id = g.id AND g.status = 1
@@ -143,15 +153,15 @@ if (isset($_POST['action'])) {
             if (!$is_admin) {
                 $my_member_id = getLoggedInMemberId();
                 $member_sql .= " AND m.id = ?";
-                $member_sql .= " ORDER BY g.name, m.first_name, m.middle_name, m.last_name";
-                $res_members = app_exec_getresult($member_sql, [$group_id, $group_id, $my_member_id], "iii");
+                $member_sql .= " ORDER BY g.name, month_att_count DESC, m.first_name, m.middle_name, m.last_name";
+                $res_members = app_exec_getresult($member_sql, [$start_date, $end_date, $group_id, $group_id, $my_member_id], "ssiii");
             } else {
                 if (!in_array('ALL', $allowed_groups, true) && !empty($allowed_groups)) {
                     $in = implode(',', array_map('intval', $allowed_groups));
                     $member_sql .= " AND gmm.group_id IN ($in)";
                 }
-                $member_sql .= " ORDER BY g.name, m.first_name, m.middle_name, m.last_name";
-                $res_members = app_exec_getresult($member_sql, [$group_id, $group_id], "ii");
+                $member_sql .= " ORDER BY g.name, month_att_count DESC, m.first_name, m.middle_name, m.last_name";
+                $res_members = app_exec_getresult($member_sql, [$start_date, $end_date, $group_id, $group_id], "ssii");
             }
 
             $members = [];
@@ -288,11 +298,21 @@ if (isset($_POST['action'])) {
 
 if (isset($_POST['action']) && $_POST['action'] == 'check_fixed_status') {
     try {
-        $month = $_POST['month']; // YYYY-MM
+        $month = trim($_POST['month'] ?? ''); // YYYY-MM
+        $month = substr($month, 0, 7);
         $sql = "SELECT id FROM tbl_fixed_months WHERE fixed_month = ?";
         $res = app_exec_getresult($sql, [$month], "s");
         $is_fixed = ($res && $res->num_rows > 0) ? true : false;
-        echo json_encode(['is_fixed' => $is_fixed]);
+        
+        $is_month_ended = isMonthEnded($month);
+        $month_end_date = !empty($month) ? date('Y-m-t', strtotime($month . '-01')) : '';
+        
+        echo json_encode([
+            'is_fixed' => $is_fixed,
+            'is_month_ended' => $is_month_ended,
+            'month' => $month,
+            'month_end_date' => $month_end_date
+        ]);
         exit();
     } catch (Throwable $e) {
         http_response_code(500);
@@ -310,26 +330,37 @@ if (isset($_POST['action']) && $_POST['action'] == 'toggle_fixed_status') {
             exit();
         }
         
-        $month = $_POST['month']; // YYYY-MM
-        $sql = "SELECT id FROM tbl_fixed_months WHERE fixed_month = ?";
-        $res = app_exec_getresult($sql, [$month], "s");
+        $month = trim($_POST['month'] ?? ''); // YYYY-MM
+        $month = substr($month, 0, 7);
+        
+        if (empty($month) || !preg_match('/^\d{4}-\d{2}$/', $month)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Invalid month parameter provided.']);
+            exit();
+        }
         
         $dateObj = DateTime::createFromFormat('Y-m', $month);
         $monthName = $dateObj ? $dateObj->format('F Y') : $month;
+        
+        // Strict business rule: Attendance can ONLY be fixed after the month has completed/ended
+        if (!isMonthEnded($month)) {
+            $month_end_date = date('Y-m-t', strtotime($month . '-01'));
+            $nextDayFormatted = date('d M Y', strtotime($month_end_date . ' +1 day'));
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => "Attendance for $monthName can only be fixed after the month ends (available from $nextDayFormatted)."
+            ]);
+            exit();
+        }
+        
+        $sql = "SELECT id FROM tbl_fixed_months WHERE fixed_month = ?";
+        $res = app_exec_getresult($sql, [$month], "s");
         
         if ($res && $res->num_rows > 0) {
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => "Attendance for $monthName is already fixed and cannot be unfixed or changed."]);
         } else {
-            // Check if Coke readings are saved for this month
-            $chk_readings_sql = "SELECT id FROM tbl_monthly_shuttle_readings WHERE month = ? AND start_shuttle IS NOT NULL AND end_shuttle IS NOT NULL";
-            $chk_readings_res = app_exec_getresult($chk_readings_sql, [$month], "s");
-            if (!$chk_readings_res || $chk_readings_res->num_rows == 0) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'error' => "Attendance can only be fixed after adding the Coke Readings. Please enter and save the Coke Readings first."]);
-                exit();
-            }
-
             $sql_ins = "INSERT INTO tbl_fixed_months (fixed_month) VALUES (?)";
             app_exec_nonquery($sql_ins, [$month], "s");
             echo json_encode(['success' => true, 'message' => "Attendance for $monthName has been locked/fixed successfully."]);

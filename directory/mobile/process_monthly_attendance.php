@@ -136,14 +136,37 @@ $default_month = date('Y-m', strtotime('first day of last month'));
 
                 <div>
                     <label style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Select Group</label>
-                    <select id="proc_group" class="form-control" style="border-radius:10px; font-weight:600;" onchange="loadCompiledList()"></select>
+                    <select id="proc_group" class="form-control" style="border-radius:10px; font-weight:600;" onchange="loadCompiledList()">
+                        <?php
+                        $g_sql = "SELECT id, name FROM tbl_groups WHERE status = 1 ORDER BY name ASC";
+                        if (!in_array('ALL', $allowed_groups, true) && !empty($allowed_groups)) {
+                            $ph = implode(',', array_fill(0, count($allowed_groups), '?'));
+                            $types = str_repeat('i', count($allowed_groups));
+                            $g_res = app_exec_getresult("SELECT id, name FROM tbl_groups WHERE id IN ($ph) AND status = 1 ORDER BY name ASC", $allowed_groups, $types);
+                        } else {
+                            $g_res = app_exec_query($g_sql);
+                        }
+                        if ($g_res && $g_res->num_rows > 0) {
+                            while ($grp = $g_res->fetch_assoc()) {
+                                echo '<option value="' . $grp['id'] . '">' . htmlspecialchars($grp['name']) . '</option>';
+                            }
+                        } else {
+                            $fallback_res = app_exec_query("SELECT id, name FROM tbl_groups WHERE status = 1 ORDER BY name ASC");
+                            if ($fallback_res) {
+                                while ($grp = $fallback_res->fetch_assoc()) {
+                                    echo '<option value="' . $grp['id'] . '">' . htmlspecialchars($grp['name']) . '</option>';
+                                }
+                            }
+                        }
+                        ?>
+                    </select>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
                     <button type="button" id="btn_process_monthly_att" class="btn-action-primary" onclick="compileMonthlyAttendance()">
-                        <i class="fa fa-cogs"></i> 1. Process Monthly Attendance
+                        <i class="fa fa-cogs"></i> Process Monthly Attendance & Receivables
                     </button>
-                    <button type="button" class="btn-action-secondary" onclick="generateAllReceivables()">
-                        <i class="fa fa-check-square-o"></i> 2. Generate All Fee Receivables
+                    <button type="button" id="btn_undo_monthly_att" class="btn btn-outline-danger" style="border-radius:12px; font-size:13px; font-weight:800; width:100%; border:1.5px solid #ef4444; color:#ef4444; background:#fff5f5; display:none;" onclick="undoMonthlyAttendanceMobile()">
+                        <i class="fa fa-undo"></i> Undo Processed Month
                     </button>
                 </div>
             </div>
@@ -226,8 +249,8 @@ $default_month = date('Y-m', strtotime('first day of last month'));
                     $('#btn_fix_attendance').html('<i class="fa fa-check-circle"></i> Attendance Fixed').removeClass('btn-warning btn-secondary').addClass('btn-success').prop('disabled', true);
                 } else {
                     isCurrentMonthFixed = false;
-                    $('#fix_status_badge').html('<span style="color:#d97706;"><i class="fa fa-unlock"></i> Not Fixed (Fix Required)</span>');
-                    $('#btn_fix_attendance').html('<i class="fa fa-lock"></i> Fix Attendance').removeClass('btn-success btn-secondary').addClass('btn-warning').prop('disabled', false);
+                    $('#fix_status_badge').html('<span style="color:#10b981;"><i class="fa fa-calendar-check-o"></i> Ready to Process (Auto-locks previous month)</span>');
+                    $('#btn_fix_attendance').html('<i class="fa fa-lock"></i> Lock Month Now').removeClass('btn-success btn-secondary').addClass('btn-warning').prop('disabled', false);
                 }
             } catch(e) {}
         });
@@ -248,6 +271,7 @@ $default_month = date('Y-m', strtotime('first day of last month'));
 
     function loadCompiledList() {
         checkFixedStatus();
+        loadPendingMonths();
         let monthVal = $('#proc_month').val();
         let groupId = $('#proc_group').val() || 0;
         if (!monthVal) return;
@@ -258,10 +282,12 @@ $default_month = date('Y-m', strtotime('first day of last month'));
                 let pData = typeof pRes === 'string' ? JSON.parse(pRes) : pRes;
                 if (pData && pData.is_processed) {
                     isCurrentMonthProcessed = true;
-                    $('#btn_process_monthly_att').removeClass('btn-action-primary').addClass('btn-secondary').prop('disabled', true).html('<i class="fa fa-check-circle"></i> 1. Attendance Already Processed');
+                    $('#btn_process_monthly_att').removeClass('btn-action-primary').addClass('btn-secondary').prop('disabled', true).html('<i class="fa fa-check-circle"></i> Attendance & Receivables Processed');
+                    $('#btn_undo_monthly_att').show();
                 } else {
                     isCurrentMonthProcessed = false;
-                    $('#btn_process_monthly_att').removeClass('btn-secondary').addClass('btn-action-primary').prop('disabled', false).html('<i class="fa fa-cogs"></i> 1. Process Monthly Attendance');
+                    $('#btn_process_monthly_att').removeClass('btn-secondary').addClass('btn-action-primary').prop('disabled', false).html('<i class="fa fa-cogs"></i> Process Monthly Attendance & Receivables');
+                    $('#btn_undo_monthly_att').hide();
                 }
             } catch(e) {}
         });
@@ -275,7 +301,7 @@ $default_month = date('Y-m', strtotime('first day of last month'));
         $('#lbl_month_tag').text(new Date(fromDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
         $('#compiled_roster_container').html('<div style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa fa-spinner fa-spin" style="font-size:24px; margin-bottom:8px; display:block;"></i>Loading compiled attendance...</div>');
 
-        $.post('../api/monthly_attendance.php', { action: 'load_data', page: 1, group_id: groupId, month: monthVal }, function(res) {
+        $.post('../api/monthly_attendance.php', { action: 'load_data', page: 1, group_id: groupId, month: monthVal, no_limit: 1 }, function(res) {
             try {
                 let parsed = typeof res === 'string' ? JSON.parse(res) : res;
                 let items = parsed[1] || [];
@@ -285,7 +311,7 @@ $default_month = date('Y-m', strtotime('first day of last month'));
                 let doneCount = 0;
 
                 if (!items || items.length === 0) {
-                    $('#compiled_roster_container').html('<div style="text-align:center; padding:35px 20px; color:#94a3b8;"><i class="fa fa-info-circle" style="font-size:32px; margin-bottom:8px; display:block;"></i>No compiled monthly attendance records found. Click <strong>Process Monthly Attendance</strong> above to compile logs.</div>');
+                    $('#compiled_roster_container').html('<div style="text-align:center; padding:35px 20px; color:#94a3b8;"><i class="fa fa-info-circle" style="font-size:32px; margin-bottom:8px; display:block;"></i>No compiled monthly attendance records found. Click <strong>Process Monthly Attendance & Receivables</strong> above to compile logs.</div>');
                     $('#stat_members_count').text(0);
                     $('#stat_attended_count').text(0);
                     $('#stat_receivable_count').text('0 Done');
@@ -293,15 +319,17 @@ $default_month = date('Y-m', strtotime('first day of last month'));
                 }
 
                 isCurrentMonthProcessed = true;
-                $('#btn_process_monthly_att').removeClass('btn-action-primary').addClass('btn-secondary').prop('disabled', true).html('<i class="fa fa-check-circle"></i> 1. Attendance Already Processed');
+                $('#btn_process_monthly_att').removeClass('btn-action-primary').addClass('btn-secondary').prop('disabled', true).html('<i class="fa fa-check-circle"></i> Attendance & Receivables Processed');
 
                 items.forEach(function(r) {
+                    let name = [r.first_name, r.middle_name, r.last_name].filter(function(p){ return p && p.trim(); }).join(' ');
                     let att = parseInt(r.attendance, 10) || 0;
                     totalAttended += att;
                     let isRec = parseInt(r.isreceiveble, 10) === 1;
                     if (isRec) doneCount++;
 
-                    let statusClass = isRec ? 'pill-done' : 'pill-pending';
+                    let statusClass = isRec ? 'pill-done' : (att > 0 ? 'pill-pending' : 'pill-done');
+                    let statusText = isRec ? 'Receivable Generated' : (att > 0 ? 'Processing...' : 'No Fee (0 Days)');
                     let isGuest = parseInt(r.member_type, 10) === 1;
                     let guestBadge = isGuest ? '<span style="background:#fff7ed; color:#c2410c; border:1px solid #ffedd5; font-size:10px; font-weight:800; padding:2px 6px; border-radius:6px; margin-left:6px;"><i class="fa fa-user-circle"></i> GUEST</span>' : '';
 
@@ -376,28 +404,6 @@ $default_month = date('Y-m', strtotime('first day of last month'));
             return;
         }
 
-        // Rule 3: Check if attendance is fixed for ended month
-        if (!isCurrentMonthFixed) {
-            if (typeof swal !== 'undefined') {
-                swal({
-                    title: "Fix Attendance Required",
-                    text: "Attendance for " + monthLabel + " must be fixed before processing. Would you like to go to the Monthly Attendance Report page to fix attendance now?",
-                    type: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#f59e0b",
-                    confirmButtonText: "Go to Fix Attendance",
-                    cancelButtonText: "Cancel"
-                }, function(isConfirm) {
-                    if (isConfirm) {
-                        goToFixAttendancePage();
-                    }
-                });
-            } else {
-                alert("Attendance for " + monthLabel + " must be fixed before processing. Please click 'Fix Attendance' first.");
-            }
-            return;
-        }
-
         let executeCompile = function() {
             let guestFees = {};
             $('.guest-fee-input').each(function() {
@@ -416,11 +422,11 @@ $default_month = date('Y-m', strtotime('first day of last month'));
                 custom_guest_fees: JSON.stringify(guestFees)
             }, function(res) {
                 if (typeof swal !== 'undefined') {
-                    swal({ title: "Processed!", text: "Monthly attendance processed successfully!", type: "success" }, function() {
+                    swal({ title: "Processed!", text: "Monthly attendance processed and fee receivables generated successfully!", type: "success" }, function() {
                         loadCompiledList();
                     });
                 } else {
-                    alert('Monthly attendance processed successfully!');
+                    alert('Monthly attendance processed and fee receivables generated successfully!');
                     loadCompiledList();
                 }
             }).fail(function(xhr) {
@@ -440,8 +446,8 @@ $default_month = date('Y-m', strtotime('first day of last month'));
 
         if (typeof swal !== 'undefined') {
             swal({
-                title: "Process Attendance?",
-                text: "Do you want to process total attendance days for " + monthLabel + "?",
+                title: "Process Attendance & Receivables?",
+                text: "Compile attendance and automatically generate fee receivables for " + monthLabel + "?",
                 type: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#10b981",
@@ -452,64 +458,79 @@ $default_month = date('Y-m', strtotime('first day of last month'));
                 if (isConfirm) executeCompile();
             });
         } else {
-            if (confirm("Do you want to process total attendance days for " + monthLabel + "?")) {
+            if (confirm("Compile attendance and automatically generate fee receivables for " + monthLabel + "?")) {
                 executeCompile();
             }
         }
     }
 
-    function generateAllReceivables() {
-        let groupId = $('#proc_group').val() || 0;
+    function undoMonthlyAttendanceMobile() {
         let monthVal = $('#proc_month').val();
-        let monthLabel = monthVal ? new Date(monthVal + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '';
+        let groupId = $('#proc_group').val() || 0;
+        if (!monthVal) return;
 
-        let executeGenerate = function() {
-            $.post('../api/monthly_attendance.php', {
-                action: 'save_all_receivables',
-                head: $('#hdn_head_id').val(),
-                discription: 'Monthly Fee - ' + monthLabel,
-                selected_year: $('#hdn_flag_id').val(),
-                group_id: groupId
-            }, function(res) {
-                if (typeof swal !== 'undefined') {
-                    swal({ title: "Receivables Generated!", text: "All monthly fee receivables created successfully!", type: "success" }, function() {
-                        loadCompiledList();
-                    });
-                } else {
-                    alert('All monthly fee receivables created successfully!');
+        let parts = monthVal.split('-');
+        let year = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10);
+        let fromDateStr = year + "-" + ("0" + month).slice(-2) + "-01";
+        let lastDayDate = new Date(year, month, 0);
+        let toDateStr = year + "-" + ("0" + month).slice(-2) + "-" + ("0" + lastDayDate.getDate()).slice(-2);
+        let monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let monthLabel = monthNames[month - 1] + " " + year;
+
+        let doUndo = function() {
+            $.ajax({
+                type: "POST",
+                url: "../api/monthly_attendance.php",
+                data: {
+                    action: 'undo_monthly_attendance',
+                    from_date: fromDateStr,
+                    to_date: toDateStr,
+                    group_id: groupId
+                },
+                success: function(response) {
+                    if (typeof swal === 'function') {
+                        swal("Success", "Attendance and receivables for " + monthLabel + " reset successfully", "success");
+                    } else {
+                        alert("Attendance and receivables for " + monthLabel + " reset successfully");
+                    }
                     loadCompiledList();
-                }
-            }).fail(function(xhr) {
-                let errMsg = 'Error generating fee receivables.';
-                try {
-                    let parsed = JSON.parse(xhr.responseText);
-                    if (parsed.Message) errMsg = parsed.Message;
-                } catch(e) {}
-
-                if (typeof swal !== 'undefined') {
-                    swal("Error", errMsg, "error");
-                } else {
-                    alert(errMsg);
+                },
+                error: function(xhr) {
+                    try {
+                        let msgObj = JSON.parse(xhr.responseText);
+                        if (typeof swal === 'function') {
+                            swal("Error", msgObj.Message || "Failed to reset", "error");
+                        } else {
+                            alert(msgObj.Message || "Failed to reset");
+                        }
+                    } catch(e) {
+                        if (typeof swal === 'function') {
+                            swal("Error", "Unexpected error occurred", "error");
+                        } else {
+                            alert("Unexpected error occurred");
+                        }
+                    }
                 }
             });
         };
 
-        if (typeof swal !== 'undefined') {
+        if (typeof swal === 'function') {
             swal({
-                title: "Generate Receivables?",
-                text: "Create monthly fee receivables for all attending members for " + monthLabel + "?",
+                title: "Undo Processed Month?",
+                text: "Are you sure you want to reset attendance and uncollected fee receivables for " + monthLabel + "?",
                 type: "warning",
                 showCancelButton: true,
-                confirmButtonColor: "#6366f1",
-                confirmButtonText: "Yes, Generate!",
+                confirmButtonColor: "#ef4444",
+                confirmButtonText: "Yes, Reset & Undo",
                 cancelButtonText: "Cancel",
                 closeOnConfirm: false
             }, function(isConfirm) {
-                if (isConfirm) executeGenerate();
+                if (isConfirm) doUndo();
             });
         } else {
-            if (confirm("Create monthly fee receivables for all attending members for " + monthLabel + "?")) {
-                executeGenerate();
+            if (confirm("Are you sure you want to reset attendance and uncollected fee receivables for " + monthLabel + "?")) {
+                doUndo();
             }
         }
     }
@@ -519,8 +540,9 @@ $default_month = date('Y-m', strtotime('first day of last month'));
         loadCompiledList();
     }
 
-    $(document).ready(function() {
-        $.post('../api/monthly_attendance.php', { action: 'load_pending_months' }, function(res) {
+    function loadPendingMonths() {
+        let groupId = $('#proc_group').val() || 0;
+        $.post('../api/monthly_attendance.php', { action: 'load_pending_months', group_id: groupId }, function(res) {
             try {
                 let parsed = typeof res === 'string' ? JSON.parse(res) : res;
                 if (Array.isArray(parsed) && parsed.length > 0) {
@@ -532,23 +554,30 @@ $default_month = date('Y-m', strtotime('first day of last month'));
                     });
                     $('#pending_months_pills').html(htm);
                     $('#pending_months_wrapper').show();
-
-                    if (parsed[0] && parsed[0].month_val) {
-                        $('#proc_month').val(parsed[0].month_val);
-                    }
+                } else {
+                    $('#pending_months_pills').html('');
+                    $('#pending_months_wrapper').hide();
                 }
-            } catch(e) {}
+            } catch(e) {
+                $('#pending_months_wrapper').hide();
+            }
         });
+    }
 
+    $(document).ready(function() {
         $.post('../api/attendance.php', { action: 'load_groups' }, function(data) {
             try {
                 let parsed = typeof data === 'string' ? JSON.parse(data) : data;
                 let groups = Array.isArray(parsed[0]) ? parsed[0] : (Array.isArray(parsed) ? parsed : []);
-                let htm = '<option value="0">All Groups</option>';
-                groups.forEach(function(g) { htm += '<option value="' + g.id + '">' + g.name + '</option>'; });
-                $('#proc_group').html(htm);
+                if (groups && groups.length > 0) {
+                    let htm = '';
+                    groups.forEach(function(g) { htm += '<option value="' + g.id + '">' + g.name + '</option>'; });
+                    $('#proc_group').html(htm);
+                }
                 loadCompiledList();
-            } catch(e) {}
+            } catch(e) {
+                loadCompiledList();
+            }
         });
 
         $.post('../api/payable.php', { action: 'load_closing_years' }, function(data) {

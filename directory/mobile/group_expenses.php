@@ -21,16 +21,17 @@ $active_tab = 'accounts';
 
 // Fetch recent group expenses / payables
 $sql = "
-    SELECT p.id, p.date, p.amount, p.particuler, p.bill_photo, phm.name as head_name
+    SELECT p.id, p.date, p.amount, p.particuler, p.bill_photo, p.head, p.group_id, p.transaction_type, phm.name as head_name, g.name as group_name
     FROM tbl_paid p
     LEFT JOIN tbl_payment_head_master phm ON p.head = phm.id
+    LEFT JOIN tbl_groups g ON p.group_id = g.id
     WHERE (p.cancel IS NULL OR p.cancel = 0)
 ";
 if (!in_array('ALL', $allowed_groups, true) && !empty($allowed_groups)) {
     $in = implode(',', array_map('intval', $allowed_groups));
     $sql .= " AND p.group_id IN ($in)";
 }
-$sql .= " ORDER BY p.date DESC LIMIT 40";
+$sql .= " ORDER BY p.date DESC, p.id DESC LIMIT 40";
 $res = app_exec_query($sql);
 ?>
 <!DOCTYPE html>
@@ -43,6 +44,7 @@ $res = app_exec_query($sql);
     <link href="../../css/bootstrap.min.css" rel="stylesheet">
     <link href="../../font-awesome/css/font-awesome.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="../../css/plugins/sweetalert/sweetalert.css" rel="stylesheet">
     <link href="mobile_layout.css" rel="stylesheet">
 
     <style>
@@ -57,13 +59,25 @@ $res = app_exec_query($sql);
 
         .rcp-card {
             background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 14px 16px;
-            margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            display: flex; flex-direction: column; gap: 10px;
         }
+        .rcp-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
         .rcp-date { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
-        .rcp-name { font-size: 14px; font-weight: 800; color: #0f172a; margin: 2px 0 0 0; }
-        .rcp-head { font-size: 11.5px; color: #64748b; font-weight: 600; margin-top: 2px; }
-        .rcp-amt { font-size: 16px; font-weight: 800; color: #ef4444; text-align: right; }
+        .rcp-name { font-size: 14.5px; font-weight: 800; color: #0f172a; margin: 2px 0 0 0; }
+        .rcp-head { font-size: 12px; color: #64748b; font-weight: 600; margin-top: 2px; }
+        .rcp-amt { font-size: 16px; font-weight: 800; color: #ef4444; text-align: right; white-space: nowrap; }
+
+        .rcp-actions {
+            display: flex; align-items: center; justify-content: space-between;
+            padding-top: 10px; border-top: 1px dashed #f1f5f9; margin-top: 2px;
+        }
+        .btn-act-sm {
+            border-radius: 8px; font-weight: 800; font-size: 11px; padding: 4px 10px; cursor: pointer; border: none;
+        }
+        .btn-act-bill { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; }
+        .btn-act-edit { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+        .btn-act-del { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
     </style>
 </head>
 <body class="mob-body">
@@ -88,7 +102,7 @@ $res = app_exec_query($sql);
                 <h2>Group Expenses</h2>
                 <p>Expense vouchers & vendor payouts log</p>
             </div>
-            <button class="btn btn-light btn-sm" style="border-radius:12px; font-weight:800; color:#ef4444;" data-toggle="modal" data-target="#addExpenseModal">
+            <button class="btn btn-light btn-sm" style="border-radius:12px; font-weight:800; color:#ef4444;" onclick="openAddModal()">
                 <i class="fa fa-plus"></i> Add
             </button>
         </div>
@@ -97,22 +111,43 @@ $res = app_exec_query($sql);
             <?php if ($res && $res->num_rows > 0): ?>
                 <?php while ($r = $res->fetch_assoc()): ?>
                     <div class="rcp-card">
-                        <div>
-                            <div class="rcp-date"><i class="fa fa-calendar"></i> <?php echo date('d M Y', strtotime($r['date'])); ?></div>
-                            <h4 class="rcp-name"><?php echo htmlspecialchars($r['head_name'] ?: 'Expense'); ?></h4>
-                            <?php if (!empty($r['particuler'])): ?>
-                                <div class="rcp-head"><?php echo htmlspecialchars($r['particuler']); ?></div>
-                            <?php endif; ?>
-                            <?php if (!empty($r['bill_photo'])): ?>
-                                <div style="margin-top:4px;">
-                                    <button type="button" onclick="openBillModal('<?php echo $r['id']; ?>', '<?php echo date('d M Y', strtotime($r['date'])); ?>', '<?php echo addslashes(htmlspecialchars($r['head_name'] ?: 'Expense')); ?>', '<?php echo number_format((float)$r['amount'], 2); ?>', '<?php echo addslashes(htmlspecialchars($r['particuler'] ?: 'Expense')); ?>', '<?php echo addslashes($r['bill_photo']); ?>')" class="btn btn-xs btn-outline-danger" style="border-radius:6px; font-weight:700; font-size:10.5px; padding:2px 8px;">
+                        <div class="rcp-header">
+                            <div>
+                                <div class="rcp-date">
+                                    <i class="fa fa-calendar"></i> <?php echo date('d M Y', strtotime($r['date'])); ?>
+                                    <?php if (!empty($r['group_name'])): ?>
+                                        &bull; <span style="color:#059669; font-weight:800;"><?php echo htmlspecialchars($r['group_name']); ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <h4 class="rcp-name"><?php echo htmlspecialchars($r['head_name'] ?: 'Expense'); ?></h4>
+                                <?php if (!empty($r['particuler'])): ?>
+                                    <div class="rcp-head"><?php echo htmlspecialchars($r['particuler']); ?></div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="rcp-amt">
+                                -₹<?php echo number_format((float)$r['amount'], 2); ?>
+                            </div>
+                        </div>
+
+                        <div class="rcp-actions">
+                            <div>
+                                <?php if (!empty($r['bill_photo'])): ?>
+                                    <button type="button" onclick="openBillModal('<?php echo $r['id']; ?>', '<?php echo date('d M Y', strtotime($r['date'])); ?>', '<?php echo addslashes(htmlspecialchars($r['head_name'] ?: 'Expense')); ?>', '<?php echo number_format((float)$r['amount'], 2); ?>', '<?php echo addslashes(htmlspecialchars($r['particuler'] ?: 'Expense')); ?>', '<?php echo addslashes($r['bill_photo']); ?>')" class="btn-act-sm btn-act-bill">
                                         <i class="fa fa-file-text-o"></i> View Bill
                                     </button>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="rcp-amt">
-                            -₹<?php echo number_format((float)$r['amount'], 2); ?>
+                                <?php else: ?>
+                                    <span style="font-size:11px; color:#cbd5e1; font-weight:600;"><i class="fa fa-file-o"></i> No Bill</span>
+                                <?php endif; ?>
+                            </div>
+
+                            <div style="display:flex; gap:6px;">
+                                <button type="button" onclick='openEditModal(<?php echo htmlspecialchars(json_encode($r), ENT_QUOTES, "UTF-8"); ?>)' class="btn-act-sm btn-act-edit">
+                                    <i class="fa fa-pencil"></i> Edit
+                                </button>
+                                <button type="button" onclick="deleteExpense(<?php echo $r['id']; ?>)" class="btn-act-sm btn-act-del">
+                                    <i class="fa fa-trash"></i> Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
                 <?php endwhile; ?>
@@ -126,15 +161,18 @@ $res = app_exec_query($sql);
 
     </div>
 
-    <!-- Modal for Add Expense -->
+    <!-- Modal for Add / Edit Expense -->
     <div class="modal fade" id="addExpenseModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content" style="border-radius:20px; border:none;">
                 <div class="modal-header" style="border-bottom:1px solid #f1f5f9;">
-                    <h5 class="modal-title" style="font-weight:800; color:#0f172a;"><i class="fa fa-plus-circle" style="color:#ef4444;"></i> Add New Expense</h5>
+                    <h5 class="modal-title" style="font-weight:800; color:#0f172a;" id="modalExpenseTitle">
+                        <i class="fa fa-plus-circle" style="color:#ef4444;"></i> Add New Expense
+                    </h5>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <form id="mob_expense_form" enctype="multipart/form-data">
+                    <input type="hidden" id="exp_id" name="id" value="0">
                     <div class="modal-body" style="padding:20px; display:flex; flex-direction:column; gap:12px;">
                         <div>
                             <label style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Date</label>
@@ -166,14 +204,18 @@ $res = app_exec_query($sql);
                         <div>
                             <label style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Attach Bill / Receipt Photo (Optional)</label>
                             <input type="file" id="exp_bill" accept="image/*,.pdf" class="form-control" style="border-radius:10px; font-size:12px;">
+                            <div id="exp_current_bill_lbl" style="font-size:11px; font-weight:700; color:#059669; margin-top:4px;"></div>
                         </div>
                     </div>
                     <div class="modal-footer" style="border-top:1px solid #f1f5f9;">
                         <button type="button" class="btn btn-light" data-dismiss="modal" style="border-radius:10px; font-weight:700;">Cancel</button>
-                        <button type="submit" class="btn btn-danger" style="border-radius:10px; font-weight:800;">Save Expense</button>
+                        <button type="submit" class="btn btn-danger" style="border-radius:10px; font-weight:800;" id="btnSubmitExpense">Save Expense</button>
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+
     <!-- View Bill Modal -->
     <div class="modal fade" id="viewBillModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
@@ -211,7 +253,17 @@ $res = app_exec_query($sql);
 
     <script src="../../js/jquery-3.1.1.min.js"></script>
     <script src="../../js/bootstrap.min.js"></script>
+    <script src="../../js/plugins/sweetalert/sweetalert.min.js"></script>
+    
     <script>
+    function updateCustomSelectLabel(selectSelector) {
+        let $select = $(selectSelector);
+        if (!$select.length) return;
+        let labelId = $select.attr('id') + '_custom_label';
+        let selText = $select.find('option:selected').text() || $select.find('option').first().text() || 'Select...';
+        $('#' + labelId).text(selText);
+    }
+
     function makeCustomSelect(selectSelector, title) {
         let $select = $(selectSelector);
         if (!$select.length) return;
@@ -235,7 +287,7 @@ $res = app_exec_query($sql);
             });
 
             let currentVal = $select.val();
-            let htm = '<div id="customPickerModal" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.6); z-index:999999; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px);">';
+            let htm = '<div id="customPickerModal" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.6); z-index:2000000; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px);">';
             htm += '<div style="background:#ffffff; border-radius:24px; width:100%; max-width:340px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.3); max-height:80vh; display:flex; flex-direction:column;">';
             htm += '<div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">';
             htm += '<h4 style="margin:0; font-size:15px; font-weight:800; color:#0f172a;">' + title + '</h4>';
@@ -297,17 +349,19 @@ $res = app_exec_query($sql);
             e.preventDefault();
             let formData = new FormData();
             formData.append('action', 'save_payment');
+            formData.append('id', $('#exp_id').val());
             formData.append('date', $('#exp_date').val());
             formData.append('group_id', $('#exp_group_id').val());
             formData.append('head', $('#exp_head').val());
             formData.append('transaction_type', $('#exp_transaction_type').val());
             formData.append('particuler', $('#exp_particuler').val());
             formData.append('amount', $('#exp_amount').val());
-            formData.append('id', 0);
             
             if ($('#exp_bill')[0].files[0]) {
                 formData.append('bill', $('#exp_bill')[0].files[0]);
             }
+
+            $('#btnSubmitExpense').prop('disabled', true).text('Saving...');
 
             $.ajax({
                 url: '../api/payable.php',
@@ -316,15 +370,87 @@ $res = app_exec_query($sql);
                 processData: false,
                 contentType: false,
                 success: function(res) {
-                    alert('Expense saved successfully!');
-                    location.reload();
+                    swal("Success!", "Expense saved successfully!", "success");
+                    setTimeout(function() { location.reload(); }, 1200);
                 },
                 error: function() {
-                    alert('Error saving expense.');
+                    $('#btnSubmitExpense').prop('disabled', false).text('Save Expense');
+                    swal("Error", "Error saving expense.", "error");
                 }
             });
         });
     });
+
+    function openAddModal() {
+        $('#exp_id').val(0);
+        $('#modalExpenseTitle').html('<i class="fa fa-plus-circle" style="color:#ef4444;"></i> Add New Expense');
+        $('#btnSubmitExpense').text('Save Expense').prop('disabled', false);
+        $('#exp_date').val(new Date().toISOString().slice(0, 10));
+        $('#exp_particuler').val('');
+        $('#exp_amount').val('');
+        $('#exp_bill').val('');
+        $('#exp_current_bill_lbl').html('');
+        
+        let firstGroup = $('#exp_group_id option:first').val();
+        if (firstGroup) $('#exp_group_id').val(firstGroup);
+        updateCustomSelectLabel('#exp_group_id');
+
+        let firstHead = $('#exp_head option:first').val();
+        if (firstHead) $('#exp_head').val(firstHead);
+        updateCustomSelectLabel('#exp_head');
+
+        $('#exp_transaction_type').val('1');
+        updateCustomSelectLabel('#exp_transaction_type');
+
+        $('#addExpenseModal').modal('show');
+    }
+
+    function openEditModal(item) {
+        $('#exp_id').val(item.id);
+        $('#modalExpenseTitle').html('<i class="fa fa-pencil" style="color:#ef4444;"></i> Edit Expense');
+        $('#btnSubmitExpense').text('Update Expense').prop('disabled', false);
+        $('#exp_date').val(item.date);
+        $('#exp_particuler').val(item.particuler || '');
+        $('#exp_amount').val(item.amount);
+        $('#exp_bill').val('');
+
+        if (item.bill_photo) {
+            $('#exp_current_bill_lbl').html('<i class="fa fa-paperclip"></i> Current file: ' + item.bill_photo);
+        } else {
+            $('#exp_current_bill_lbl').html('');
+        }
+
+        if (item.group_id) $('#exp_group_id').val(item.group_id);
+        updateCustomSelectLabel('#exp_group_id');
+
+        if (item.head) $('#exp_head').val(item.head);
+        updateCustomSelectLabel('#exp_head');
+
+        if (item.transaction_type) $('#exp_transaction_type').val(item.transaction_type);
+        updateCustomSelectLabel('#exp_transaction_type');
+
+        $('#addExpenseModal').modal('show');
+    }
+
+    function deleteExpense(id) {
+        swal({
+            title: "Delete Expense?",
+            text: "Are you sure you want to delete this expense record?",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#dc2626",
+            confirmButtonText: "Yes, Delete",
+            cancelButtonText: "Cancel",
+            closeOnConfirm: false
+        }, function() {
+            $.post('../api/payable.php', { action: 'delete_payment', id: id }, function(res) {
+                swal("Deleted!", "Expense record has been deleted.", "success");
+                setTimeout(function() { location.reload(); }, 1200);
+            }).fail(function() {
+                swal("Error", "Could not delete expense record.", "error");
+            });
+        });
+    }
 
     function openBillModal(id, date, head, amount, desc, photo) {
         $('#vch_date').text(date);

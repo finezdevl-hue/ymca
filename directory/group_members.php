@@ -6,7 +6,7 @@ if(empty($_SESSION['login_id'])){
 }
 
 if(isset($_POST['id'])){
-    $_SESSION['id']=$_POST['id'];
+    $_SESSION['selected_group_id']=(int)$_POST['id'];
 }
 
 include_once '../app_common/auth_helper.php';
@@ -17,10 +17,10 @@ if (isNormalMember($login_id)) {
 }
 $allowed_groups = getUserAllowedGroupIds($login_id);
 
-$group_id = !empty($_SESSION['id']) ? (int)$_SESSION['id'] : 0;
+$group_id = !empty($_SESSION['selected_group_id']) ? (int)$_SESSION['selected_group_id'] : 0;
 if ($group_id == 0 && !in_array('ALL', $allowed_groups, true) && !empty($allowed_groups)) {
     $group_id = (int)$allowed_groups[0];
-    $_SESSION['id'] = $group_id;
+    $_SESSION['selected_group_id'] = $group_id;
 }
 
 $group_name = "Group Members";

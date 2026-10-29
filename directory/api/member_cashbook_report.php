@@ -1,6 +1,5 @@
 <?php
-session_start();
-include_once __DIR__ . '/../../app_common/db_connect.php';
+require_once __DIR__ . '/api_bootstrap.php';
 include_once __DIR__ . '/../../app_pagination/pagination.php';
 
 // Check user authentication
@@ -367,13 +366,11 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
 
                 if (count($found_recs) > 0) {
                     foreach ($found_recs as $fr) {
-                        $trans_date = !empty($m_key) ? ($m_key . "-01") : $fr['date'];
+                        $trans_date = !empty($fr['date']) ? $fr['date'] : ($m_key . "-01");
                         $rec_title = trim($fr['discription'] ?? '');
-                        if (empty($rec_title) && !empty($fr['date'])) {
-                            $rtime = strtotime($fr['date']);
-                            if ($rtime) $rec_title = date('F Y', $rtime) . " Fee";
+                        if (empty($rec_title)) {
+                            $rec_title = "Monthly Fee $month_name $m_year";
                         }
-                        if (empty($rec_title)) $rec_title = "$month_name $m_year Fee";
 
                         $final_transactions[] = [
                             "date" => $trans_date,
@@ -382,12 +379,13 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
                             "debit" => (double)$fr['fees'],
                             "credit" => 0.0,
                             "sort_date" => $trans_date,
-                            "attendance" => $att_count
+                            "attendance" => $att_count,
+                            "month_key" => $m_key
                         ];
                     }
                 } else if ($m_key <= $current_ym) {
                     // Show past or current months
-                    $particulars = "$month_name $m_year Fee";
+                    $particulars = "Monthly Fee $month_name $m_year";
                     $final_transactions[] = [
                         "date" => $m_key . "-01",
                         "type" => "Receivable",
@@ -395,7 +393,8 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
                         "debit" => 0.0,
                         "credit" => 0.0,
                         "sort_date" => $m_key . "-01",
-                        "attendance" => $att_count
+                        "attendance" => $att_count,
+                        "month_key" => $m_key
                     ];
                 }
             }
@@ -552,6 +551,7 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
                 }
 
                 $t_ym = substr($trans['date'], 0, 7);
+                $m_lookup_ym = !empty($trans['month_key']) ? $trans['month_key'] : $t_ym;
 
                 $transactions[] = [
                     "date" => $trans['date'],
@@ -560,8 +560,9 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
                     "debit" => $debit,
                     "credit" => $credit,
                     "balance" => $running_balance,
-                    "attendance" => isset($monthly_attendance[$t_ym]) ? $monthly_attendance[$t_ym] : 0,
-                    "is_processed" => !empty($processed_months[$t_ym])
+                    "attendance" => isset($monthly_attendance[$m_lookup_ym]) ? $monthly_attendance[$m_lookup_ym] : 0,
+                    "is_processed" => !empty($processed_months[$m_lookup_ym]),
+                    "month_key" => $m_lookup_ym
                 ];
             }
 

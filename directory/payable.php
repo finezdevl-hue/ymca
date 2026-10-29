@@ -18,6 +18,7 @@ include '../app_common/enums.php';
     <link href="../css/animate.css" rel="stylesheet">
     <link href="../css/style.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
     <link href="../css/plugins/sweetalert/sweetalert.css" rel="stylesheet">
     <script src="../js/plugins/sweetalert/sweetalert.min.js"></script>
     <script src="../app_js/sweetalert-finez.js"></script>
@@ -55,9 +56,8 @@ include '../app_common/enums.php';
                 
                },
                 success: function(data) {
-
-                    var obj = jQuery.parseJSON(data);
-                    // console.log(obj);
+                    var obj = typeof data === 'string' ? JSON.parse(data) : data;
+                    if (!obj || !obj[0]) return;
                                        
                     var totalrows = obj[0].total_rows;
                     var htm="";
@@ -413,8 +413,6 @@ include '../app_common/enums.php';
     </div>
        
     <!-- Mainly scripts -->
-    <script src="../js/jquery-3.1.1.min.js"></script>
-    <script src="../js/bootstrap.min.js"></script>
     <script src="../js/plugins/metisMenu/jquery.metisMenu.js"></script>
     <script src="../js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
 

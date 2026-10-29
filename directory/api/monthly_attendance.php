@@ -1,8 +1,8 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-    include_once __DIR__ . '/attendance_fix_helper.php';
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_attendance_master();
+include_once __DIR__ . '/attendance_fix_helper.php';
+    include_once __DIR__ . '/../../app_pagination/pagination.php';
 
     // actions start
     if(isset($_POST['action']) && !empty($_POST['action'])) {
@@ -10,7 +10,8 @@
 
         // action to save monthly attendance start
         if($action=="save_attendance"){ 
-            requireMonthFixed($_POST['from_date']);
+            // Auto-fix previous month when processing current month
+            autoFixPreviousMonth($_POST['from_date']);
             
             // Limit attendance compiled to a single calendar month at a time
             $from_yr_mo = date('Y-m', strtotime($_POST['from_date']));
@@ -22,10 +23,14 @@
                 exit;
             }
 
+            // Ensure to_date is strictly the end of the month
+            $expected_to_date = date('Y-m-t', strtotime($_POST['from_date']));
+            if ($_POST['to_date'] !== $expected_to_date) {
+                $_POST['to_date'] = $expected_to_date;
+            }
+
             // Block processing attendance before the month has ended
-            $compile_month_end = date('Y-m-t', strtotime($_POST['from_date']));
-            $current_date = date('Y-m-d');
-            if ($current_date <= $compile_month_end) {
+            if (!isMonthEnded($_POST['from_date'])) {
                 $month_name = date('F Y', strtotime($_POST['from_date']));
                 http_response_code(400);
                 header('Content-Type: application/json');
@@ -67,6 +72,35 @@
                 $from_date = $_POST['from_date'];
                 $to_date   = $_POST['to_date'];
                 $group_id  = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+                $login_id  = !empty($_SESSION['login_id']) ? (int)$_SESSION['login_id'] : 1;
+
+                date_default_timezone_set('Asia/Kolkata');
+                $currentDate = date('Y-m-d');
+                $month_label = date('F Y', strtotime($from_date));
+                $row_description = "Monthly Fee - " . $month_label;
+
+                // Active financial year & closing year ID
+                $active_year_start = '2000-04-01';
+                $selected_year = 1;
+                $active_yr_res = app_exec_query("SELECT id, from_year FROM tbl_closing ORDER BY from_year DESC LIMIT 1");
+                if ($active_yr_res && $row_yr = $active_yr_res->fetch_assoc()) {
+                    $active_year_start = $row_yr['from_year'] . "-04-01";
+                    $selected_year = (int)$row_yr['id'];
+                }
+
+                // Default monthly fee head with exact matching priority
+                $head = 1;
+                $head_res = app_exec_query("SELECT id FROM tbl_payment_head_master WHERE LOWER(name) = 'monthly fee' OR name LIKE '%monthly%' ORDER BY (LOWER(name) = 'monthly fee') DESC, id ASC LIMIT 1");
+                if ($head_res && $row_head = $head_res->fetch_assoc()) {
+                    $head = (int)$row_head['id'];
+                }
+
+                // Custom guest fees if passed
+                $guest_fees = [];
+                if (!empty($_POST['custom_guest_fees'])) {
+                    $guest_fees = is_array($_POST['custom_guest_fees']) ? $_POST['custom_guest_fees'] : json_decode($_POST['custom_guest_fees'], true);
+                    if (!is_array($guest_fees)) $guest_fees = [];
+                }
 
                 if ($group_id > 0) {
                     $sql = "SELECT DISTINCT a.member_id AS id, COUNT(DISTINCT a.date) AS totalattendance 
@@ -92,22 +126,84 @@
 
                 if ($result && mysqli_num_rows($result) > 0) {
                     while($row = mysqli_fetch_assoc($result)) {
-                        $member_id = $row["id"];
-                        $totalattendance = $row["totalattendance"];
+                        $member_id = (int)$row["id"];
+                        $totalattendance = (int)$row["totalattendance"];
                         $processed_members[] = $member_id;
 
+                        // Determine fee amount using configured fee rule / method
+                        $custom_fee = null;
+                        if (isset($guest_fees[$member_id]) && is_numeric($guest_fees[$member_id])) {
+                            $custom_fee = (float)$guest_fees[$member_id];
+                        }
+
+                        // Determine member group id if general (ordered deterministically)
+                        $mem_group_id = $group_id;
+                        if ($mem_group_id <= 0) {
+                            $g_res = app_exec_getresult("SELECT group_id FROM tbl_group_member_map WHERE member_id = ? ORDER BY id ASC LIMIT 1", [$member_id], "i");
+                            if ($g_res && $g_row = $g_res->fetch_assoc()) {
+                                $mem_group_id = (int)$g_row['group_id'];
+                            }
+                        }
+
+                        $fee_calc = computeMemberMonthlyFee($member_id, $mem_group_id, $from_date, $to_date, $totalattendance, $custom_fee, $active_year_start);
+                        $receiveble = $fee_calc['fee'];
+
                         // Check if record already exists in monthly attendance for this member and period
-                        $chk_sql = "SELECT id FROM tbl_monthly_attendance WHERE member_id = ? AND from_date = ? AND to_date = ?";
+                        $chk_sql = "SELECT id, isreceiveble FROM tbl_monthly_attendance WHERE member_id = ? AND from_date = ? AND to_date = ?";
                         $chk_res = app_exec_getresult($chk_sql, [$member_id, $from_date, $to_date], "iss");
                         
+                        $is_already_receivable = 0;
+                        $monthly_att_id = 0;
+
                         if ($chk_res && $chk_row = $chk_res->fetch_assoc()) {
+                            $monthly_att_id = (int)$chk_row['id'];
+                            $is_already_receivable = (int)$chk_row['isreceiveble'];
                             // Update existing record
-                            $upd_sql = "UPDATE tbl_monthly_attendance SET attendance = ? WHERE id = ?";
-                            app_exec_nonquery($upd_sql, [$totalattendance, $chk_row['id']], "ii");
+                            $upd_sql = "UPDATE tbl_monthly_attendance SET attendance = ?, isreceiveble = 1 WHERE id = ?";
+                            app_exec_nonquery($upd_sql, [$totalattendance, $monthly_att_id], "ii");
                         } else {
-                            // Insert new record
-                            $ins_sql = "INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble) VALUES (?, ?, ?, ?, 0)";
-                            app_exec_nonquery($ins_sql, [$member_id, $from_date, $to_date, $totalattendance], "issi");
+                            // Insert new record with isreceiveble = 1
+                            $ins_sql = "INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble) VALUES (?, ?, ?, ?, 1)";
+                            $monthly_att_id = app_exec_getlast_id($ins_sql, [$member_id, $from_date, $to_date, $totalattendance], "issi");
+                        }
+
+                        // Automatically create fee receivable if not already created and member attended
+                        if ($totalattendance > 0 && $is_already_receivable === 0) {
+                            // Check if receivable already exists in tbl_member_recievable for this member & description to prevent duplicate
+                            $chk_rec_sql = "SELECT id FROM tbl_member_recievable WHERE member_id = ? AND head = ? AND discription = ? AND flag = ? LIMIT 1";
+                            $chk_rec_res = app_exec_getresult($chk_rec_sql, [$member_id, $head, $row_description, $selected_year], "iisi");
+                            
+                            if (!$chk_rec_res || $chk_rec_res->num_rows === 0) {
+                                $sql_rec = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete, flag, group_id) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)";
+                                $parameters_rec = [
+                                    $member_id,
+                                    $receiveble,
+                                    $currentDate,
+                                    $login_id,
+                                    $head,
+                                    $row_description,
+                                    $selected_year,
+                                    $mem_group_id
+                                ];
+                                $types_rec = "idsiisii";
+                                $recieveble_id = app_exec_getlast_id($sql_rec, $parameters_rec, $types_rec);
+
+                                if ($recieveble_id !== null) {
+                                    $sql_rev = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, flag, group_id) VALUES (?, 0.00, ?, ?, ?, ?, ?, ?, ?)";
+                                    $parameters_rev = [
+                                        $member_id,
+                                        $currentDate,
+                                        $login_id,
+                                        $head,
+                                        $row_description,
+                                        $recieveble_id,
+                                        $selected_year,
+                                        $mem_group_id
+                                    ];
+                                    $types_rev = "isiisiii";
+                                    app_exec_nonquery($sql_rev, $parameters_rev, $types_rev);
+                                }
+                            }
                         }
                     }
                 }
@@ -136,7 +232,7 @@
                     }
                 }
 
-                echo json_encode(["status" => "success", "message" => "Monthly attendance saved successfully."]);
+                echo json_encode(["status" => "success", "message" => "Monthly attendance processed and fee receivables generated successfully."]);
                 exit;
             }
             catch (Exception $e) {
@@ -176,14 +272,132 @@
             }
         }
 
+        // action to undo / reset processed monthly attendance
+        if ($action == "undo_monthly_attendance") {
+            try {
+                $from_date = $_POST['from_date'] ?? '';
+                $to_date   = $_POST['to_date'] ?? '';
+                $month     = $_POST['month'] ?? '';
+                $group_id  = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+
+                if (empty($from_date) && !empty($month)) {
+                    $from_date = $month . '-01';
+                    $to_date   = date('Y-m-t', strtotime($from_date));
+                }
+
+                if (empty($from_date) || empty($to_date)) {
+                    http_response_code(400);
+                    echo json_encode(["Message" => "Please select a valid month to undo."]);
+                    exit();
+                }
+
+                $month_label = date('F Y', strtotime($from_date));
+
+                // 1. Find member IDs affected if group_id is specified
+                $mem_filter_sql = "";
+                $mem_params = [];
+                $mem_types = "";
+                if ($group_id > 0) {
+                    $mem_filter_sql = " AND member_id IN (SELECT member_id FROM tbl_group_member_map WHERE group_id = ?)";
+                    $mem_params = [$group_id];
+                    $mem_types = "i";
+                }
+
+                // 2. Check if any paid records exist for this month
+                $chk_paid_sql = "SELECT r.id, r.fees, r.member_id FROM tbl_member_recieved r 
+                                 INNER JOIN tbl_member_recievable rec ON r.receiveble_id = rec.id 
+                                 WHERE (rec.discription LIKE ? OR rec.discription LIKE ?) AND r.fees > 0" . ($group_id > 0 ? " AND rec.member_id IN (SELECT member_id FROM tbl_group_member_map WHERE group_id = ?)" : "");
+                $chk_paid_params = ["%" . $month_label . "%", "%" . date('Y-m', strtotime($from_date)) . "%"];
+                $chk_paid_types = "ss";
+                if ($group_id > 0) {
+                    $chk_paid_params[] = $group_id;
+                    $chk_paid_types .= "i";
+                }
+                $chk_paid_res = app_exec_getresult($chk_paid_sql, $chk_paid_params, $chk_paid_types);
+                if ($chk_paid_res && $chk_paid_res->num_rows > 0) {
+                    http_response_code(400);
+                    echo json_encode(["Message" => "Cannot undo processing for $month_label because some members have already made payments towards their fees. Please reverse the payments first."]);
+                    exit();
+                }
+
+                // 3. Find matching receivables to delete
+                $find_rec_sql = "SELECT id FROM tbl_member_recievable WHERE (discription LIKE ? OR discription LIKE ?) AND iscomplete = 0" . $mem_filter_sql;
+                $find_params = array_merge(["%" . $month_label . "%", "%" . date('Y-m', strtotime($from_date)) . "%"], $mem_params);
+                $find_types = "ss" . $mem_types;
+                $rec_res = app_exec_getresult($find_rec_sql, $find_params, $find_types);
+
+                $del_recv_ids = [];
+                if ($rec_res && $rec_res->num_rows > 0) {
+                    while ($r = $rec_res->fetch_assoc()) {
+                        $del_recv_ids[] = (int)$r['id'];
+                    }
+                }
+
+                if (!empty($del_recv_ids)) {
+                    $ids_str = implode(',', array_map('intval', $del_recv_ids));
+                    // Delete placeholder received records
+                    app_exec_query("DELETE FROM tbl_member_recieved WHERE receiveble_id IN ($ids_str) AND fees = 0");
+                    // Delete receivables
+                    app_exec_query("DELETE FROM tbl_member_recievable WHERE id IN ($ids_str)");
+                }
+
+                // 4. Delete monthly attendance records
+                $del_att_sql = "DELETE FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?" . $mem_filter_sql;
+                $del_att_params = array_merge([$from_date, $to_date], $mem_params);
+                $del_att_types = "ss" . $mem_types;
+                app_exec_nonquery($del_att_sql, $del_att_params, $del_att_types);
+
+                echo json_encode(["status" => "success", "message" => "Monthly attendance and fee receivables for $month_label have been reset successfully."]);
+                exit();
+            } catch (Exception $e) {
+                http_response_code(500);
+                echo json_encode(["Message" => "Error: " . $e->getMessage()]);
+                exit();
+            }
+        }
+
         // action to load pending months to process attendance start
         if ($action == "load_pending_months") {
             try {
+                $login_id = !empty($_SESSION['login_id']) ? (int)$_SESSION['login_id'] : 0;
+                $allowed = getUserAllowedGroupIds($login_id);
+
                 $active_year_start = '2000-04-01';
                 $active_yr_res = app_exec_query("SELECT from_year FROM tbl_closing ORDER BY from_year DESC LIMIT 1");
                 if ($active_yr_res && $row_yr = $active_yr_res->fetch_assoc()) {
                     $active_year_start = $row_yr['from_year'] . "-04-01";
                 }
+
+                $group_id = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
+
+                $where_clauses = ["a.date >= ?", "a.member_id IN (SELECT id FROM tbl_members WHERE member_type = 0 OR member_type IS NULL)"];
+                $params = [$active_year_start];
+                $types = "s";
+
+                if ($group_id > 0) {
+                    if (in_array('ALL', $allowed, true) || hasGroupAccess($login_id, $group_id)) {
+                        $where_clauses[] = "(gmm.group_id = ? OR a.group_id = ?)";
+                        $params[] = $group_id;
+                        $params[] = $group_id;
+                        $types .= "ii";
+                    } else {
+                        echo json_encode([]);
+                        exit();
+                    }
+                } else if (!in_array('ALL', $allowed, true)) {
+                    if (!empty($allowed)) {
+                        $placeholders = implode(',', array_fill(0, count($allowed), '?'));
+                        $where_clauses[] = "(gmm.group_id IN ($placeholders) OR a.group_id IN ($placeholders))";
+                        foreach ($allowed as $gid) { $params[] = (int)$gid; }
+                        foreach ($allowed as $gid) { $params[] = (int)$gid; }
+                        $types .= str_repeat('i', count($allowed) * 2);
+                    } else {
+                        echo json_encode([]);
+                        exit();
+                    }
+                }
+
+                $where_sql = implode(" AND ", $where_clauses);
 
                 $sql = "SELECT 
                             DATE_FORMAT(a.date, '%Y-%m') AS month_val,
@@ -191,14 +405,13 @@
                             MIN(a.date) AS min_date,
                             MAX(a.date) AS max_date,
                             COALESCE(g.id, 0) AS group_id,
-                            COALESCE(g.name, 'General / All Members') AS group_name,
+                            COALESCE(g.name, 'General') AS group_name,
                             COUNT(DISTINCT a.member_id) AS total_members,
                             COUNT(DISTINCT a.date) AS attendance_days
                         FROM tbl_attendance AS a
                         LEFT JOIN tbl_group_member_map AS gmm ON a.member_id = gmm.member_id
                         LEFT JOIN tbl_groups AS g ON gmm.group_id = g.id
-                        WHERE a.date >= ?
-                          AND a.member_id IN (SELECT id FROM tbl_members WHERE member_type = 0 OR member_type IS NULL)
+                        WHERE $where_sql
                           AND NOT EXISTS (
                               SELECT 1 FROM tbl_monthly_attendance AS ma 
                               WHERE ma.member_id = a.member_id 
@@ -207,11 +420,12 @@
                         GROUP BY DATE_FORMAT(a.date, '%Y-%m'), g.id
                         ORDER BY month_val DESC, group_name ASC";
 
-                $res = app_exec_getresult($sql, [$active_year_start], "s");
+                $res = app_exec_getresult($sql, $params, $types);
                 $data = [];
                 if ($res && $res->num_rows > 0) {
                     while ($row = $res->fetch_assoc()) {
                         $row['is_fixed'] = isMonthFixed($row['month_val']);
+                        $row['is_month_ended'] = isMonthEnded($row['month_val']);
                         $data[] = $row;
                     }
                 }
@@ -330,46 +544,57 @@
                             }
                         }
 
-                        // Calculate fees
-                        if ($custom_fee !== null && $custom_fee >= 0) {
-                            $receiveble = $custom_fee;
-                        } elseif ($from_date >= $active_year_start) {
-                            $receiveble = 300;
-                        } else {
-                            if ($attendance <= 5) {
-                                $receiveble = 150;
-                            } else {
-                                $receiveble = 300;
+                        // Calculate fees using configured fee rule / method
+                        $rec_group_id = $group_id;
+                        if ($rec_group_id <= 0) {
+                            $g_res = app_exec_getresult("SELECT group_id FROM tbl_group_member_map WHERE member_id = ? ORDER BY id ASC LIMIT 1", [$member_id], "i");
+                            if ($g_res && $g_row = $g_res->fetch_assoc()) {
+                                $rec_group_id = (int)$g_row['group_id'];
                             }
                         }
 
-                        // Insert into tbl_member_recievable
-                        $sql_rec = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete, flag) VALUES (?, ?, ?, ?, ?, ?, 0, ?)";
+                        $fee_calc = computeMemberMonthlyFee($member_id, $rec_group_id, $from_date, $to_date, $attendance, $custom_fee, $active_year_start);
+                        $receiveble = (float)$fee_calc['fee'];
+
+                        // Determine formatted description (e.g. "Monthly Fee August 2026")
+                        $month_label = date('F Y', strtotime($from_date));
+                        $row_description = trim($description ?? '');
+                        if (empty($row_description) || preg_match('/\btest\b/i', $row_description) || $row_description === 'Monthly Fee') {
+                            $row_description = "Monthly Fee - " . $month_label;
+                        } else if (stripos($row_description, $month_label) === false && stripos($row_description, date('M Y', strtotime($from_date))) === false) {
+                            $row_description = $row_description . " - " . $month_label;
+                        }
+
+                        // Insert into tbl_member_recievable with today's processing date
+                        $sql_rec = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete, flag, group_id) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)";
                         $parameters_rec = [
                             $member_id,
                             $receiveble,
-                            $to_date,
+                            $currentDate,
                             $_SESSION['login_id'],
                             $head,
-                            $description,
-                            $selected_year
+                            $row_description,
+                            $selected_year,
+                            $rec_group_id
                         ];
-                        $types_rec = "iisiisi";
+                        $types_rec = "idsiisii";
 
                         $recieveble_id = app_exec_getlast_id($sql_rec, $parameters_rec, $types_rec);
 
                         if ($recieveble_id !== null) {
                             // Insert into tbl_member_recieved
-                            $sql_rev = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, flag) VALUES (?, 0, '0000-00-00', ?, ?, ?, ?, ?)";
+                            $sql_rev = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, flag, group_id) VALUES (?, 0.00, ?, ?, ?, ?, ?, ?, ?)";
                             $parameters_rev = [
                                 $member_id,
+                                $currentDate,
                                 $_SESSION['login_id'],
                                 $head,
-                                $description,
+                                $row_description,
                                 $recieveble_id,
-                                $selected_year
+                                $selected_year,
+                                $rec_group_id
                             ];
-                            $types_rev = "iiisii";
+                            $types_rev = "isiisiii";
                             app_exec_nonquery($sql_rev, $parameters_rev, $types_rev);
 
                             // Update isreceiveble in tbl_monthly_attendance
@@ -396,11 +621,13 @@
 
         if($action=="save_recieveble"){ 
             try{
-                $id = $_POST['id'];
-                $res_chk = app_exec_query("SELECT from_date FROM tbl_monthly_attendance WHERE id = $id");
+                $id = (int)($_POST['id'] ?? 0);
+                $res_chk = app_exec_getresult("SELECT from_date, to_date FROM tbl_monthly_attendance WHERE id = ?", [$id], "i");
                 $from_date = '';
+                $to_date = '';
                 if ($res_chk && $row_chk = $res_chk->fetch_assoc()) {
                     $from_date = $row_chk['from_date'];
+                    $to_date = !empty($row_chk['to_date']) ? $row_chk['to_date'] : date('Y-m-t', strtotime($from_date));
                 }
                 
                 $active_year_start = '2000-04-01';
@@ -409,71 +636,82 @@
                     $active_year_start = $row_yr['from_year'] . "-04-01";
                 }
 
-                $attendance = $_POST['attendance'];
-                if ($from_date >= $active_year_start) {
-                    $receiveble = 300;
-                } else {
-                    if ($attendance <= 5) {
-                         $receiveble = 150;
-                    } else {
-                        $receiveble = 300;
-                    }
-                }
+                $attendance = (int)($_POST['attendance'] ?? 0);
+                $mem_id = (int)$_POST['member_id'];
+                $gid_chk = app_exec_getresult("SELECT group_id FROM tbl_group_member_map WHERE member_id = ? ORDER BY id ASC LIMIT 1", [$mem_id], "i");
+                $mem_group_id = ($gid_chk && $grow = $gid_chk->fetch_assoc()) ? (int)$grow['group_id'] : 0;
+                
+                $fee_calc = computeMemberMonthlyFee($mem_id, $mem_group_id, $from_date, $to_date, $attendance, null, $active_year_start);
+                $receiveble = (float)$fee_calc['fee'];
 
                 date_default_timezone_set('Asia/Kolkata');
                 $currentDate = date('Y-m-d');
+                $rec_date = !empty($_POST['date']) ? trim($_POST['date']) : $currentDate;
+
+                $month_label = !empty($from_date) ? date('F Y', strtotime($from_date)) : date('F Y');
+                $row_description = trim($_POST['discription'] ?? '');
+                if (empty($row_description) || preg_match('/\btest\b/i', $row_description) || $row_description === 'Monthly Fee') {
+                    $row_description = "Monthly Fee - " . $month_label;
+                } else if (stripos($row_description, $month_label) === false && stripos($row_description, date('M Y', strtotime($from_date))) === false) {
+                    $row_description = $row_description . " - " . $month_label;
+                }
             
-                $sql = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete, flag) VALUES (?, ?, ?, ?, ?, ?, 0,?)";
+                $tm->begin();
+
+                $sql = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete, flag, group_id) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)";
                 
                 $parameters = [
-                    $_POST['member_id'],
+                    $mem_id,
                     $receiveble,
-                    $_POST['date'],
+                    $rec_date,
                     $_SESSION['login_id'],
                     $_POST['head'],
-                    $_POST['discription'],
+                    $row_description,
                     $_POST['selected_year'],
-                    
+                    $mem_group_id
                 ];
-                $types="iisiisi";
+                $types="idsiisii";
                     
-                // Use custom insert function that returns insert ID
-                $recieveble_id = app_exec_getlast_id($sql, $parameters, $types);
-                    $received_date = !empty($_POST['received_date']) 
+                $recieveble_id = app_exec_getlast_id_roll_back($conn, $sql, $parameters, $types);
+                if ($recieveble_id === null) {
+                    throw new Exception("Error creating fee receivable");
+                }
+
+                $received_date = !empty($_POST['received_date']) 
                     ? $_POST['received_date'] 
-                    : '0000-00-00';
-                if ($recieveble_id !== null) {
-                    $sql = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, flag) VALUES (?, 0, ?, ?, ?, ?, ?, ?)";
-                    $parameters = [
-                        $_POST['member_id'],
-                        $received_date,
-                        $_SESSION['login_id'],
-                        $_POST['head'],
-                        $_POST['discription'],
-                        $recieveble_id,
-                        $_POST['selected_year'],
-                    ];
-                    $types="isiisii";
+                    : $rec_date;
 
-                    // Saving Query as  text file end
-                    app_exec_nonquery($sql, $parameters, $types);
+                $sql_rev = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, flag, group_id) VALUES (?, 0.00, ?, ?, ?, ?, ?, ?, ?)";
+                $parameters_rev = [
+                    $mem_id,
+                    $received_date,
+                    $_SESSION['login_id'],
+                    $_POST['head'],
+                    $row_description,
+                    $recieveble_id,
+                    $_POST['selected_year'],
+                    $mem_group_id
+                ];
+                $types_rev="isiisiii";
 
-                    $sql = "UPDATE tbl_monthly_attendance SET isreceiveble = 1 WHERE id= ?";
-                    $parameters = [
-                        $_POST['id'],
-                       
-                    ];
-                    $types="i";
+                if (!app_exec_roll_back_nonquery($conn, $sql_rev, $parameters_rev, $types_rev)) {
+                    throw new Exception("Error creating received placeholder record");
+                }
 
-                    // Saving Query as  text file end
-                    app_exec_nonquery($sql, $parameters, $types);
+                $sql_upd = "UPDATE tbl_monthly_attendance SET isreceiveble = 1 WHERE id = ?";
+                if (!app_exec_roll_back_nonquery($conn, $sql_upd, [$id], "i")) {
+                    throw new Exception("Error updating monthly attendance status");
                 }
                 
+                $tm->commit();
+                echo json_encode(["status" => "success", "message" => "Fee receivable created successfully."]);
+                exit;
             }
              catch (Exception $e) {
+                $tm->rollback();
                 http_response_code(500);   
-                echo "Oops! Something went wrong." . $e->getMessage();
-                return;
+                echo json_encode(["status" => "error", "Message" => "Oops! Something went wrong: " . $e->getMessage()]);
+                exit;
             }
     
         }
@@ -481,63 +719,15 @@
         // action to load monthly attendance details start
         if($action=="load_data"){
             try{
-                $rowsPerPage = 8;
-                $current_page = (int)$_POST['page'];
+                $no_limit = isset($_POST['no_limit']) && ($_POST['no_limit'] == 1 || $_POST['no_limit'] === 'true');
+                $rowsPerPage = isset($_POST['rows_per_page']) && (int)$_POST['rows_per_page'] > 0 ? (int)$_POST['rows_per_page'] : 8;
+                $current_page = max(1, isset($_POST['page']) && (int)$_POST['page'] > 0 ? (int)$_POST['page'] : 1);
                 $offset = ($current_page - 1) * $rowsPerPage;
-
-                // Get the distinct periods for the current page to only sync those (highly optimized)
-                $periods_res = app_exec_getresult(
-                    "SELECT DISTINCT from_date, to_date FROM (
-                        SELECT from_date, to_date FROM tbl_monthly_attendance 
-                        ORDER BY from_date DESC, id
-                        LIMIT ?, ?
-                    ) AS tmp_p",
-                    [$offset, $rowsPerPage],
-                    "ii"
-                );
-
-                if ($periods_res && $periods_res->num_rows > 0) {
-                    while ($period = $periods_res->fetch_assoc()) {
-                        $f_date = $period['from_date'];
-                        $t_date = $period['to_date'];
-                        
-                        // Skip if month is fixed/locked
-                        if (isMonthFixed($f_date)) {
-                            continue;
-                        }
-                        
-                        // 1. Bulk insert any missing members for this period (highly optimized)
-                        $ins_sql = "INSERT INTO tbl_monthly_attendance (member_id, from_date, to_date, attendance, isreceiveble)
-                                    SELECT a.member_id, ? AS from_date, ? AS to_date, COUNT(DISTINCT a.date) AS attendance, 0 AS isreceiveble
-                                    FROM tbl_attendance AS a
-                                    WHERE a.date BETWEEN ? AND ?
-                                      AND a.member_id NOT IN (
-                                          SELECT tmp.member_id FROM (
-                                              SELECT member_id FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?
-                                          ) AS tmp
-                                      )
-                                    GROUP BY a.member_id";
-                        app_exec_nonquery($ins_sql, [$f_date, $t_date, $f_date, $t_date, $f_date, $t_date], "ssssss");
-                        
-                        // 2. Bulk update attendance counts for all existing members in this period (highly optimized)
-                        $upd_sql = "UPDATE tbl_monthly_attendance AS ma
-                                    SET ma.attendance = (
-                                        SELECT COUNT(DISTINCT a.date)
-                                        FROM tbl_attendance AS a 
-                                        WHERE a.member_id = ma.member_id 
-                                          AND a.date BETWEEN ma.from_date AND ma.to_date
-                                    )
-                                    WHERE ma.from_date = ? AND ma.to_date = ?";
-                        app_exec_nonquery($upd_sql, [$f_date, $t_date], "ss");
-                    }
-                }
 
                 // Pagination logic
                 $sql="";  
                 $sqlcountrows="";
                 $sqldatarows="";   
-        
-                $offset = ($current_page - 1) * $rowsPerPage;
                 
                 $group_id = isset($_POST['group_id']) ? (int)$_POST['group_id'] : 0;
                 $status   = isset($_POST['status']) ? trim($_POST['status']) : 'all';
@@ -579,14 +769,16 @@
                                 LEFT JOIN tbl_groups AS g ON gmm.group_id = g.id 
                                 $where_cond 
                                 GROUP BY ma.id 
-                                ORDER BY ma.from_date DESC, m.first_name, m.middle_name, m.last_name";
+                                ORDER BY ma.from_date DESC, ma.attendance DESC, m.first_name, m.middle_name, m.last_name";
 
                 $sqlcountrows = "SELECT COUNT(DISTINCT ma.id) AS total 
                                  FROM tbl_monthly_attendance AS ma 
                                  INNER JOIN tbl_members AS m ON ma.member_id = m.id
                                  $where_cond";
 
-                $sqldatarows .= " LIMIT $offset , $rowsPerPage ";
+                if (!$no_limit) {
+                    $sqldatarows .= " LIMIT $offset , $rowsPerPage ";
+                }
 
                 if (!empty($params)) {
                     $result = app_exec_getresult($sqldatarows, $params, $types);
@@ -689,9 +881,9 @@
                             $parameters = [
                                 $_POST['member_id'],
                                 $currentDate,   
-                                $total_recieved_amount,
+                                (float)$total_recieved_amount,
                             ];
-                            $types = "isi"; // int, int, double (decimal)
+                            $types = "isd"; // int, string, double (decimal)
 
                             if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
                                 throw new Exception("Error inserting into wallet");

@@ -1,6 +1,6 @@
 <?php
-session_start();
-include '../../app_common/db_connect.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_super_admin();
 include '../../app_pagination/pagination.php';
 
     // action starts

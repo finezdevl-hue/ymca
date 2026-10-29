@@ -1,4 +1,8 @@
 <?php
+require_once __DIR__ . '/../../includes/api_auth.php';
+start_secure_session();
+require_login();
+
 header('Content-Type: application/json');
 error_reporting(0);
 ini_set('display_errors', 0);
@@ -10,40 +14,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $uploadDir = 'uploads/';
             $thumbnailDir = 'thumbnails/';
 
-            // Set the correct time zone
             date_default_timezone_set('Asia/Kolkata');
 
-            // Validate uploaded file type
             $fileInfo = getimagesize($file['tmp_name']);
             if ($fileInfo === false) {
                 echo json_encode(['status' => 'error', 'message' => 'Invalid file type.']);
                 exit;
             }
 
-            $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            if (!in_array($fileInfo['mime'], $allowedMimeTypes)) {
-                echo json_encode(['status' => 'error', 'message' => 'Unsupported file format. Only JPEG, PNG, and GIF are supported.']);
+            $mimeMap = [
+                'image/jpeg'  => 'jpg',
+                'image/jpg'   => 'jpg',
+                'image/pjpeg' => 'jpg',
+                'image/png'   => 'png',
+                'image/gif'   => 'gif',
+                'image/webp'  => 'webp'
+            ];
+            $detectedMime = strtolower($fileInfo['mime']);
+            if (!isset($mimeMap[$detectedMime])) {
+                echo json_encode(['status' => 'error', 'message' => 'Unsupported file format. Only JPEG, PNG, GIF, and WEBP are supported.']);
                 exit;
             }
 
-            // Create directories if they don't exist
-            if (!is_dir($uploadDir) && !mkdir($uploadDir, 0777, true)) {
+            if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
                 echo json_encode(['status' => 'error', 'message' => 'Failed to create upload directory.']);
                 exit;
             }
-            if (!is_dir($thumbnailDir) && !mkdir($thumbnailDir, 0777, true)) {
+            if (!is_dir($thumbnailDir) && !mkdir($thumbnailDir, 0755, true)) {
                 echo json_encode(['status' => 'error', 'message' => 'Failed to create thumbnail directory.']);
                 exit;
             }
 
-            // Generate unique file name
             $currentDateTime = date('Y-m-d_H-i-s');
-            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-            $fileName = $currentDateTime . '.' . $extension;
+            $extension = $mimeMap[$detectedMime];
+            $fileName = $currentDateTime . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
             $filePath = $uploadDir . $fileName;
             $thumbnailPath = $thumbnailDir . $fileName;
 
-            // Move uploaded file and create thumbnail
             if (move_uploaded_file($file['tmp_name'], $filePath)) {
                 if (createThumbnail($filePath, $thumbnailPath, $fileInfo['mime'], 200, 200)) {
                     echo json_encode(['status' => 'success','filename' => $fileName, 'message' => 'Image uploaded successfully!', 'path' => $filePath, 'thumbnail' => $thumbnailPath]);
@@ -64,24 +71,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 function createThumbnail($sourcePath, $destPath, $mimeType, $width, $height) {
+    if (!extension_loaded('gd') || !function_exists('imagecreatetruecolor')) {
+        return @copy($sourcePath, $destPath);
+    }
+
     try {
-        // Load image based on MIME type
+        $mimeType = strtolower($mimeType);
+        $image = false;
         switch ($mimeType) {
             case 'image/jpeg':
-                $image = @imagecreatefromjpeg($sourcePath);
+            case 'image/jpg':
+            case 'image/pjpeg':
+                if (function_exists('imagecreatefromjpeg')) $image = @imagecreatefromjpeg($sourcePath);
                 break;
             case 'image/png':
-                $image = @imagecreatefrompng($sourcePath);
+                if (function_exists('imagecreatefrompng')) $image = @imagecreatefrompng($sourcePath);
                 break;
             case 'image/gif':
-                $image = @imagecreatefromgif($sourcePath);
+                if (function_exists('imagecreatefromgif')) $image = @imagecreatefromgif($sourcePath);
                 break;
-            default:
-                return false;
+            case 'image/webp':
+                if (function_exists('imagecreatefromwebp')) $image = @imagecreatefromwebp($sourcePath);
+                break;
         }
 
         if (!$image) {
-            return false;
+            return @copy($sourcePath, $destPath);
         }
 
         $originalWidth = imagesx($image);
@@ -89,8 +104,7 @@ function createThumbnail($sourcePath, $destPath, $mimeType, $width, $height) {
 
         $thumbnail = imagecreatetruecolor($width, $height);
 
-        // Preserve transparency for PNG and GIF
-        if ($mimeType === 'image/png' || $mimeType === 'image/gif') {
+        if ($mimeType === 'image/png' || $mimeType === 'image/gif' || $mimeType === 'image/webp') {
             imagecolortransparent($thumbnail, imagecolorallocatealpha($thumbnail, 0, 0, 0, 127));
             imagealphablending($thumbnail, false);
             imagesavealpha($thumbnail, true);
@@ -99,12 +113,14 @@ function createThumbnail($sourcePath, $destPath, $mimeType, $width, $height) {
         if (!imagecopyresampled($thumbnail, $image, 0, 0, 0, 0, $width, $height, $originalWidth, $originalHeight)) {
             imagedestroy($image);
             imagedestroy($thumbnail);
-            return false;
+            return @copy($sourcePath, $destPath);
         }
 
-        // Save the thumbnail based on MIME type
+        $success = false;
         switch ($mimeType) {
             case 'image/jpeg':
+            case 'image/jpg':
+            case 'image/pjpeg':
                 $success = imagejpeg($thumbnail, $destPath, 90);
                 break;
             case 'image/png':
@@ -113,18 +129,18 @@ function createThumbnail($sourcePath, $destPath, $mimeType, $width, $height) {
             case 'image/gif':
                 $success = imagegif($thumbnail, $destPath);
                 break;
-            default:
-                $success = false;
+            case 'image/webp':
+                if (function_exists('imagewebp')) $success = imagewebp($thumbnail, $destPath);
+                break;
         }
 
         imagedestroy($image);
         imagedestroy($thumbnail);
 
-        return $success;
+        return $success ? true : @copy($sourcePath, $destPath);
     }
-     catch (Throwable $e) {
-        return false;
+    catch (Throwable $e) {
+        return @copy($sourcePath, $destPath);
     }
 }
-
 ?>

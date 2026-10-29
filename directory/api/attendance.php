@@ -1,17 +1,19 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-include_once __DIR__ . '/../../app_common/db_connect.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_attendance_master();
 include_once __DIR__ . '/attendance_fix_helper.php';
 include_once __DIR__ . '/../../app_pagination/pagination.php';
 include_once __DIR__ . '/../../app_common/auth_helper.php';
 
 $is_admin = false;
+$is_only_attendance_master = false;
 if (isset($_SESSION['login_id'])) {
     $login_id = (int)$_SESSION['login_id'];
-    if (isSuperAdmin($login_id) || isGroupAdmin($login_id) || isAttendanceMaster($login_id)) {
+    if (isSuperAdmin($login_id) || isGroupAdmin($login_id)) {
         $is_admin = true;
+    } else if (isAttendanceMaster($login_id) || isExecutiveMember($login_id)) {
+        $is_admin = true;
+        $is_only_attendance_master = true;
     } else {
         $sql_perm = "SELECT id FROM tbl_menu_map WHERE login_id = ? AND (menu_id = 11 OR menu_id = 12) AND is_active = 1";
         $res_perm = app_exec_getresult($sql_perm, [$login_id], "i");
@@ -19,6 +21,18 @@ if (isset($_SESSION['login_id'])) {
             $is_admin = true;
         }
     }
+}
+
+// Release session lock early for read-only actions so concurrent browser AJAX requests run in parallel
+$req_action = $_POST['action'] ?? $_GET['action'] ?? '';
+$read_only_actions = [
+    'load_groups', 'load_game_status', 'check_holiday',
+    'get_shuttle_reading', 'fetch_Attendance_details',
+    'fetch_temp_status', 'load_member_data', 'load_all_today_members',
+    'load_today_present'
+];
+if (in_array($req_action, $read_only_actions, true)) {
+    session_write_close();
 }
 
 // Helper to get logged-in member's ID from tbl_members
@@ -47,7 +61,7 @@ function getLoggedInMemberId() {
         }
     }
     // Fallback: pick first active member
-    $resFirst = app_exec_getresult("SELECT id FROM tbl_members WHERE inactive = 0 ORDER BY id ASC LIMIT 1");
+    $resFirst = app_exec_query("SELECT id FROM tbl_members WHERE inactive = 0 ORDER BY id ASC LIMIT 1");
     if ($resFirst && $rowFirst = $resFirst->fetch_assoc()) {
         return (int)$rowFirst['id'];
     }
@@ -86,6 +100,99 @@ function isTomorrowAttendanceAllowed($group_id, $target_date) {
     return true;
 }
 
+// Helper to save or update shuttle cock reading
+function saveShuttleReadingInternal(mysqli $conn, int $group_id, string $date, int $shuttles_used, ?TransactionManager $tm = null, ?string $notes = null): array {
+    if ($shuttles_used < 0) {
+        return ['status' => 'error', 'message' => 'Shuttle count cannot be negative.'];
+    }
+
+    // Check stock balance for this group (or shared pool)
+    $sum_in_res = app_exec_getresult("SELECT SUM(total_shuttles) as tot_in FROM tbl_shuttle_cock_stock_in WHERE group_id = ? OR group_id = 0", [$group_id], "i");
+    $total_in = (int)($sum_in_res ? $sum_in_res->fetch_assoc()['tot_in'] : 0);
+
+    $chk_shuttle = app_exec_getresult("SELECT id, start_shuttle FROM tbl_shuttle_cock_readings WHERE group_id = ? AND reading_date = ? LIMIT 1", [$group_id, $date], "is");
+    $ex_id = 0;
+    $ex_start_shuttle = 0;
+    if ($chk_shuttle && $sh_row = $chk_shuttle->fetch_assoc()) {
+        $ex_id = (int)$sh_row['id'];
+        $ex_start_shuttle = (int)$sh_row['start_shuttle'];
+    }
+
+    $where_id_clause = ($ex_id > 0) ? " AND id != $ex_id" : "";
+    $sum_used_res = app_exec_getresult("SELECT SUM(shuttles_used) as tot_used FROM tbl_shuttle_cock_readings WHERE group_id = ?{$where_id_clause}", [$group_id], "i");
+    $total_used = (int)($sum_used_res ? $sum_used_res->fetch_assoc()['tot_used'] : 0);
+
+    $stock_remaining = max(0, $total_in - $total_used);
+
+    if ($shuttles_used > 0) {
+        if ($stock_remaining <= 0) {
+            return ['status' => 'error', 'message' => 'Out of Stock! Available shuttle cock inventory is 0. Please add inward stock first.'];
+        }
+        if ($shuttles_used > $stock_remaining) {
+            return ['status' => 'error', 'message' => "Insufficient Stock! Only {$stock_remaining} shuttles remaining in inventory."];
+        }
+    }
+
+    $price_res = app_exec_query("SELECT per_shuttle_price, brand_name FROM tbl_shuttle_cock_stock_in ORDER BY purchase_date DESC, id DESC LIMIT 1");
+    $unit_price = 0.00;
+    $brand_name = 'Standard';
+    if ($price_res && $pr = $price_res->fetch_assoc()) {
+        $unit_price = (float)$pr['per_shuttle_price'];
+        $brand_name = $pr['brand_name'] ?: 'Standard';
+    }
+
+    if ($ex_id > 0) {
+        $end_shuttle = $ex_start_shuttle + $shuttles_used;
+        $total_amount = $shuttles_used * $unit_price;
+        $updated_by = (int)($_SESSION['login_id'] ?? 1);
+        if ($notes !== null) {
+            if ($tm !== null) {
+                app_exec_roll_back_nonquery($conn, "UPDATE tbl_shuttle_cock_readings SET shuttles_used = ?, end_shuttle = ?, per_shuttle_price = ?, total_amount = ?, notes = ?, updated_by = ?, updated_at = NOW() WHERE id = ?", [$shuttles_used, $end_shuttle, $unit_price, $total_amount, $notes, $updated_by, $ex_id], "iiddsii");
+            } else {
+                $stmt = $conn->prepare("UPDATE tbl_shuttle_cock_readings SET shuttles_used = ?, end_shuttle = ?, per_shuttle_price = ?, total_amount = ?, notes = ?, updated_by = ?, updated_at = NOW() WHERE id = ?");
+                if ($stmt) {
+                    $stmt->bind_param("iiddsii", $shuttles_used, $end_shuttle, $unit_price, $total_amount, $notes, $updated_by, $ex_id);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+            }
+        } else {
+            if ($tm !== null) {
+                app_exec_roll_back_nonquery($conn, "UPDATE tbl_shuttle_cock_readings SET shuttles_used = ?, end_shuttle = ?, per_shuttle_price = ?, total_amount = ?, updated_by = ?, updated_at = NOW() WHERE id = ?", [$shuttles_used, $end_shuttle, $unit_price, $total_amount, $updated_by, $ex_id], "iiddii");
+            } else {
+                $stmt = $conn->prepare("UPDATE tbl_shuttle_cock_readings SET shuttles_used = ?, end_shuttle = ?, per_shuttle_price = ?, total_amount = ?, updated_by = ?, updated_at = NOW() WHERE id = ?");
+                if ($stmt) {
+                    $stmt->bind_param("iiddii", $shuttles_used, $end_shuttle, $unit_price, $total_amount, $updated_by, $ex_id);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+            }
+        }
+    } else {
+        $last_res = app_exec_getresult("SELECT end_shuttle FROM tbl_shuttle_cock_readings WHERE group_id = ? ORDER BY reading_date DESC, id DESC LIMIT 1", [$group_id], "i");
+        $start_shuttle = 0;
+        if ($last_res && $lr = $last_res->fetch_assoc()) {
+            $start_shuttle = (int)$lr['end_shuttle'];
+        }
+        $end_shuttle = $start_shuttle + $shuttles_used;
+        $total_amount = $shuttles_used * $unit_price;
+        $created_by = (int)($_SESSION['login_id'] ?? 1);
+        $insert_notes = ($notes !== null) ? $notes : '';
+        if ($tm !== null) {
+            app_exec_roll_back_nonquery($conn, "INSERT INTO tbl_shuttle_cock_readings (reading_date, group_id, brand_name, start_shuttle, end_shuttle, shuttles_used, per_shuttle_price, total_amount, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [$date, $group_id, $brand_name, $start_shuttle, $end_shuttle, $shuttles_used, $unit_price, $total_amount, $insert_notes, $created_by], "sisiiiddsi");
+        } else {
+            $stmt = $conn->prepare("INSERT INTO tbl_shuttle_cock_readings (reading_date, group_id, brand_name, start_shuttle, end_shuttle, shuttles_used, per_shuttle_price, total_amount, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("sisiiiddsi", $date, $group_id, $brand_name, $start_shuttle, $end_shuttle, $shuttles_used, $unit_price, $total_amount, $insert_notes, $created_by);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+    }
+
+    return ['status' => 'success', 'message' => 'Shuttle count saved successfully.'];
+}
+
 // actions start
 if(isset($_POST['action']) && !empty($_POST['action'])) {
     $action = $_POST['action'];
@@ -93,37 +200,47 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
     //action load members in a selected group start
     if($action=="load_member_data"){
         try{
+            $group_id = (int)$_POST['val'];
             
+            // Allow full group member view if user is Super Admin, Executive Member, or has permission for this specific group (Group Cashier, Attendance Master)
+            $can_manage_group = (isSuperAdmin($login_id) || isExecutiveMember($login_id) || hasGroupAccess($login_id, $group_id));
+
             $sql="";  
             $sqlcountrows="";
             $sqldatarows="";   
     
-            $sqldatarows = "SELECT m.id, m.first_name, m.middle_name, m.last_name, m.img,
-            COUNT(att.member_id) AS total_att
-            FROM tbl_members AS m JOIN tbl_group_member_map AS gmm 
-            ON m.id = gmm.member_id
+            $sqldatarows = "SELECT m.id, m.first_name, m.middle_name, m.last_name, m.img, gmm.group_id,
+            COUNT(att.member_id) AS total_att,
+            COUNT(prev_att.member_id) AS was_prev_present
+            FROM tbl_members AS m 
+            JOIN tbl_group_member_map AS gmm ON m.id = gmm.member_id
             LEFT JOIN tbl_attendance AS att ON m.id = att.member_id 
-            AND att.date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+                 AND att.date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+            LEFT JOIN tbl_attendance AS prev_att ON m.id = prev_att.member_id 
+                 AND prev_att.group_id = gmm.group_id 
+                 AND prev_att.date = (SELECT MAX(date) FROM tbl_attendance WHERE group_id = ?)
             WHERE gmm.group_id = ? AND m.inactive = 0";
             
-            if (!$is_admin) {
+            if (!$can_manage_group) {
                 $sqldatarows .= " AND m.id = ?";
             }
             
-            $sqldatarows .= " GROUP BY m.id, m.first_name, m.middle_name, m.last_name, m.img
-            ORDER BY m.first_name, m.middle_name, m.last_name";
+            $sqldatarows .= " GROUP BY m.id, gmm.group_id, m.first_name, m.middle_name, m.last_name, m.img
+            ORDER BY was_prev_present DESC, total_att DESC, m.first_name, m.middle_name, m.last_name";
 
-            if ($is_admin) {
+            if ($can_manage_group) {
                 $parameters = [
-                    $_POST['val'],
-                ];
-                $types = "i";
-            } else {
-                $parameters = [
-                    $_POST['val'],
-                    getLoggedInMemberId(),
+                    $group_id,
+                    $group_id,
                 ];
                 $types = "ii";
+            } else {
+                $parameters = [
+                    $group_id,
+                    $group_id,
+                    getLoggedInMemberId(),
+                ];
+                $types = "iii";
             }
 
             $result = app_exec_getresult($sqldatarows,$parameters,$types);
@@ -153,9 +270,15 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
     // action to load groups for load members start
     if($action=="load_groups"){
         try{
-            if ($is_admin) {
+            $allowed = getUserAllowedGroupIds($login_id);
+            if (in_array('ALL', $allowed, true)) {
                 $sql = "SELECT id, name, allow_tomorrow_attendance FROM tbl_groups WHERE status = 1 ORDER BY id DESC";
                 $result = app_exec_query($sql);
+            } else if (!empty($allowed)) {
+                $placeholders = implode(',', array_fill(0, count($allowed), '?'));
+                $types = str_repeat('i', count($allowed));
+                $sql = "SELECT id, name, allow_tomorrow_attendance FROM tbl_groups WHERE id IN ($placeholders) AND status = 1 ORDER BY name ASC";
+                $result = app_exec_getresult($sql, $allowed, $types);
             } else {
                 $member_id = getLoggedInMemberId();
                 $sql = "SELECT g.id, g.name, g.allow_tomorrow_attendance FROM tbl_groups AS g LEFT JOIN tbl_group_member_map as gm ON g.id=gm.group_id WHERE gm.member_id = ? AND g.status = 1";
@@ -191,6 +314,15 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
     if($action=="add_attendance"){
         checkMonthFixed($_POST['date']);
         
+        // Attendance Master restriction: only today / current date (or tomorrow if enabled) allowed, not previous/past dates
+        date_default_timezone_set('Asia/Kolkata');
+        $today = date('Y-m-d');
+        if ($is_only_attendance_master && $_POST['date'] < $today) {
+            http_response_code(403);
+            echo "Attendance Masters are only permitted to mark attendance for today's date.";
+            exit();
+        }
+
         // Block marking if date is a holiday/leave for this group OR all groups (group_id = 0)
         $group_val = isset($_POST['val']) ? (int)$_POST['val'] : 0;
         $checkHoliday = "SELECT id FROM tbl_dates WHERE date = ? AND (group_id = 0 OR group_id = ?)";
@@ -224,8 +356,10 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
                     }
                     $member_ids = $_POST['member_ids'] ?? [];
                     foreach ($member_ids as $mid) {
-                        $sql = "INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?)";
-                        app_exec_roll_back_nonquery($conn, $sql, [$mid, $_POST['val'], $_POST['date']], "iis");
+                        if ((int)$mid > 0) {
+                            $sql = "INSERT INTO tbl_attendance (member_id, group_id, date) VALUES (?, ?, ?)";
+                            app_exec_roll_back_nonquery($conn, $sql, [(int)$mid, $_POST['val'], $_POST['date']], "iis");
+                        }
                     }
                 } else {
                     $member_id = getLoggedInMemberId();
@@ -268,8 +402,32 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
                         throw new Exception("Member ID not found for logged in user");
                     }
                 }
-                
+
+                // ===== Save Shuttle Cock Reading (if provided) =====
+                if (isset($_POST['shuttles_used']) && $_POST['shuttles_used'] !== '') {
+                    $att_shuttles_used = (int)$_POST['shuttles_used'];
+                    $group_val_sh = (int)$_POST['val'];
+                    $date_sh = $_POST['date'];
+                    $att_notes = isset($_POST['notes']) ? trim($_POST['notes']) : null;
+
+                    if ($att_shuttles_used >= 0) {
+                        $sh_res = saveShuttleReadingInternal($conn, $group_val_sh, $date_sh, $att_shuttles_used, $tm, $att_notes);
+                        if ($sh_res['status'] !== 'success') {
+                            $tm->rollback();
+                            http_response_code(400);
+                            echo $sh_res['message'];
+                            exit();
+                        }
+                    }
+                }
+
                 $tm->commit();
+
+                // Dynamic fee sync for processed, unfixed months
+                $sync_mids = !empty($member_ids) ? $member_ids : (isset($member_id) ? [$member_id] : []);
+                $sync_gid = isset($_POST['val']) ? (int)$_POST['val'] : 0;
+                syncMonthlyAttendanceAndReceivables($_POST['date'], $sync_mids, $sync_gid);
+
                 echo "Transaction Successful!";
                 exit();
             }
@@ -281,6 +439,193 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
         }
     }
     //action to add attendance of selected members end
+
+    // Action to save ONLY shuttle cock reading (e.g. from Mobile Home card without touching attendance)
+    if ($action == "save_shuttle_reading") {
+        try {
+            $group_val_sh = (int)($_POST['group_id'] ?? $_POST['val'] ?? 0);
+            $date_sh = trim($_POST['date'] ?? date('Y-m-d'));
+            $att_shuttles_used = isset($_POST['shuttles_used']) && $_POST['shuttles_used'] !== '' ? (int)$_POST['shuttles_used'] : 0;
+            $att_notes = isset($_POST['notes']) ? trim($_POST['notes']) : null;
+
+            if ($group_val_sh <= 0) {
+                http_response_code(400);
+                echo "Invalid group selected.";
+                exit();
+            }
+
+            $db = new Database();
+            $conn = $db->getConnection();
+            $result = saveShuttleReadingInternal($conn, $group_val_sh, $date_sh, $att_shuttles_used, null, $att_notes);
+            if ($result['status'] !== 'success') {
+                http_response_code(400);
+                echo $result['message'];
+                exit();
+            }
+
+            echo json_encode($result);
+            exit();
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo $e->getMessage();
+            exit();
+        }
+    }
+
+    // Action to fetch shuttle cock reading for attendance page
+    if ($action == "get_shuttle_reading") {
+        try {
+            $group_id = (int)($_POST['group_id'] ?? 0);
+            $date = trim($_POST['date'] ?? date('Y-m-d'));
+            $res = app_exec_getresult("SELECT id, shuttles_used, notes, created_by, updated_by FROM tbl_shuttle_cock_readings WHERE group_id = ? AND reading_date = ? LIMIT 1", [$group_id, $date], "is");
+            $used = 0;
+            $notes = '';
+            $has_record = false;
+            $ex_id = 0;
+            $created_by_id = 0;
+            $created_by_name = '';
+            $updated_by_id = 0;
+            $updated_by_name = '';
+            $is_edited = false;
+            $last_user_id = 0;
+            $last_user_name = '';
+            $current_user_id = (int)($_SESSION['login_id'] ?? 0);
+
+            if (!function_exists('resolveShuttleCreatorName')) {
+                function resolveShuttleCreatorName($cid) {
+                    if ($cid <= 0) return 'Admin';
+                    $res = app_exec_getresult("SELECT email, name FROM tbl_login WHERE login_id = ? LIMIT 1", [$cid], "i");
+                    if ($res && $lrow = $res->fetch_assoc()) {
+                        $email = $lrow['email'] ?? '';
+                        $lname = trim($lrow['name'] ?? '');
+                        if (!empty($email)) {
+                            $mres = app_exec_getresult("SELECT CONCAT(first_name, IF(middle_name IS NOT NULL AND middle_name != '', CONCAT(' ', middle_name), ''), IF(last_name IS NOT NULL AND last_name != '', CONCAT(' ', last_name), '')) as full_name FROM tbl_members WHERE LTRIM(RTRIM(LOWER(email))) = LTRIM(RTRIM(LOWER(?))) LIMIT 1", [$email], "s");
+                            if ($mres && $mrow = $mres->fetch_assoc()) {
+                                $fname = trim($mrow['full_name'] ?? '');
+                                if (!empty($fname)) return $fname;
+                            }
+                        }
+                        if (!empty($lname)) return $lname;
+                    }
+                    $mres2 = app_exec_getresult("SELECT CONCAT(first_name, IF(middle_name IS NOT NULL AND middle_name != '', CONCAT(' ', middle_name), ''), IF(last_name IS NOT NULL AND last_name != '', CONCAT(' ', last_name), '')) as full_name FROM tbl_members WHERE id = ? LIMIT 1", [$cid], "i");
+                    if ($mres2 && $mrow2 = $mres2->fetch_assoc()) {
+                        $fname2 = trim($mrow2['full_name'] ?? '');
+                        if (!empty($fname2)) return $fname2;
+                    }
+                    return 'Admin';
+                }
+            }
+
+            if ($res && $row = $res->fetch_assoc()) {
+                $used = (int)$row['shuttles_used'];
+                $notes = (string)($row['notes'] ?? '');
+                $has_record = true;
+                $ex_id = (int)$row['id'];
+                $created_by_id = (int)($row['created_by'] ?? 0);
+                $updated_by_id = (int)($row['updated_by'] ?? 0);
+
+                $created_by_name = resolveShuttleCreatorName($created_by_id);
+
+                if ($updated_by_id > 0) {
+                    $is_edited = true;
+                    $updated_by_name = resolveShuttleCreatorName($updated_by_id);
+                    $last_user_id = $updated_by_id;
+                    $last_user_name = $updated_by_name;
+                } else {
+                    $last_user_id = $created_by_id;
+                    $last_user_name = $created_by_name;
+                }
+            }
+
+            $is_created_by_me = ($last_user_id > 0 && $last_user_id === $current_user_id);
+            $action_word = $is_edited ? 'updated' : 'added';
+
+            // Query previous session's note (most recent before current date for this group or general)
+            $prev_notes = '';
+            $prev_reading_date = '';
+            $prev_formatted_date = '';
+            $prev_user_name = '';
+            $prev_shuttles_used = 0;
+
+            $prev_res = app_exec_getresult(
+                "SELECT reading_date, shuttles_used, notes, created_by, updated_by 
+                 FROM tbl_shuttle_cock_readings 
+                 WHERE (group_id = ? OR group_id = 0) 
+                   AND reading_date < ? 
+                   AND notes IS NOT NULL 
+                   AND TRIM(notes) != '' 
+                 ORDER BY reading_date DESC, id DESC LIMIT 1",
+                [$group_id, $date],
+                "is"
+            );
+
+            if ($prev_res && $prow = $prev_res->fetch_assoc()) {
+                $prev_notes = trim((string)$prow['notes']);
+                $prev_reading_date = (string)$prow['reading_date'];
+                $prev_formatted_date = date('d M Y', strtotime($prev_reading_date));
+                $prev_shuttles_used = (int)$prow['shuttles_used'];
+                $p_uid = (int)($prow['updated_by'] ?: $prow['created_by'] ?: 0);
+                $prev_user_name = resolveShuttleCreatorName($p_uid);
+            }
+
+            if (empty($prev_notes)) {
+                $prev_res2 = app_exec_getresult(
+                    "SELECT reading_date, shuttles_used, notes, created_by, updated_by 
+                     FROM tbl_shuttle_cock_readings 
+                     WHERE reading_date < ? 
+                       AND notes IS NOT NULL 
+                       AND TRIM(notes) != '' 
+                     ORDER BY reading_date DESC, id DESC LIMIT 1",
+                    [$date],
+                    "s"
+                );
+                if ($prev_res2 && $prow2 = $prev_res2->fetch_assoc()) {
+                    $prev_notes = trim((string)$prow2['notes']);
+                    $prev_reading_date = (string)$prow2['reading_date'];
+                    $prev_formatted_date = date('d M Y', strtotime($prev_reading_date));
+                    $prev_shuttles_used = (int)$prow2['shuttles_used'];
+                    $p_uid = (int)($prow2['updated_by'] ?: $prow2['created_by'] ?: 0);
+                    $prev_user_name = resolveShuttleCreatorName($p_uid);
+                }
+            }
+
+            // Calculate stock remaining for this group
+            $sum_in_res = app_exec_getresult("SELECT SUM(total_shuttles) as tot_in FROM tbl_shuttle_cock_stock_in WHERE group_id = ? OR group_id = 0", [$group_id], "i");
+            $total_in = (int)($sum_in_res ? $sum_in_res->fetch_assoc()['tot_in'] : 0);
+
+            $where_id_clause = ($ex_id > 0) ? " AND id != $ex_id" : "";
+            $sum_used_res = app_exec_getresult("SELECT SUM(shuttles_used) as tot_used FROM tbl_shuttle_cock_readings WHERE group_id = ?{$where_id_clause}", [$group_id], "i");
+            $total_used = (int)($sum_used_res ? $sum_used_res->fetch_assoc()['tot_used'] : 0);
+
+            $stock_remaining = max(0, $total_in - $total_used);
+
+            echo json_encode([
+                'status' => 'success',
+                'shuttles_used' => $used,
+                'notes' => $notes,
+                'has_record' => $has_record,
+                'created_by_id' => $created_by_id,
+                'created_by_name' => $created_by_name,
+                'updated_by_id' => $updated_by_id,
+                'updated_by_name' => $updated_by_name,
+                'is_edited' => $is_edited,
+                'last_user_id' => $last_user_id,
+                'last_user_name' => $last_user_name,
+                'action_word' => $action_word,
+                'is_created_by_me' => $is_created_by_me,
+                'stock_remaining' => $stock_remaining,
+                'prev_notes' => $prev_notes,
+                'prev_reading_date' => $prev_reading_date,
+                'prev_formatted_date' => $prev_formatted_date,
+                'prev_user_name' => $prev_user_name,
+                'prev_shuttles_used' => $prev_shuttles_used
+            ]);
+            exit();
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            exit();
+        }
+    }
 
     //action to fetch the attendance details of a given date start
     if($action=="fetch_Attendance_details"){

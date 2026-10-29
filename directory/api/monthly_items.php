@@ -1,7 +1,7 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_admin();
+include '../../app_pagination/pagination.php';
 
     // actions start
     if(isset($_POST['action']) && !empty($_POST['action'])) {
@@ -376,7 +376,7 @@
                 
                     $parameters = [
                         $member_id,
-                        $perhead_amount,
+                        (float)$perhead_amount,
                         $date,
                         $_SESSION['login_id'],
                         $head,
@@ -384,14 +384,14 @@
                         $selected_year,
                                 
                     ];
-                    $types="iisiisi";
+                    $types="idsiisi";
                             
                     // Use custom insert function that returns insert ID
                     $recieveble_id = app_exec_getlast_id_roll_back($conn, $sql, $parameters, $types);
 
                     $received_date = !empty($_POST['received_date']) 
                     ? $_POST['received_date'] 
-                    : '0000-00-00';
+                    : $date;
                     if ($recieveble_id !== null) {
                         $sql = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, flag) VALUES (?, 0, ?, ?, ?, ?, ?, ?)";
                         $parameters = [

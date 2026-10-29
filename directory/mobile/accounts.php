@@ -114,8 +114,17 @@ $active_tab = 'accounts';
         </div>
 
         <div class="acc-grid">
+            <a href="set_fees.php" class="acc-box-card">
+                <div class="acc-icon" style="background: linear-gradient(135deg, #10b981, #059669);"><i class="fa fa-inr"></i></div>
+                <div>
+                    <h3 class="acc-title">Set Monthly Fee</h3>
+                    <p class="acc-desc">Configure & update monthly group membership fee</p>
+                </div>
+                <div class="acc-action">Open Module <i class="fa fa-arrow-right"></i></div>
+            </a>
+
             <a href="fee_receipts.php" class="acc-box-card">
-                <div class="acc-icon" style="background: linear-gradient(135deg, #10b981, #059669);"><i class="fa fa-download"></i></div>
+                <div class="acc-icon" style="background: linear-gradient(135deg, #059669, #047857);"><i class="fa fa-download"></i></div>
                 <div>
                     <h3 class="acc-title">Fee Receipts</h3>
                     <p class="acc-desc">Collect member payments & fee receipts</p>
@@ -124,7 +133,7 @@ $active_tab = 'accounts';
             </a>
 
             <a href="process_monthly_attendance.php" class="acc-box-card">
-                <div class="acc-icon" style="background: linear-gradient(135deg, #059669, #047857);"><i class="fa fa-calendar-check-o"></i></div>
+                <div class="acc-icon" style="background: linear-gradient(135deg, #0284c7, #0369a1);"><i class="fa fa-calendar-check-o"></i></div>
                 <div>
                     <h3 class="acc-title">Process Attendance</h3>
                     <p class="acc-desc">Compile attendance & generate fee receivables</p>
@@ -155,6 +164,24 @@ $active_tab = 'accounts';
                 <div>
                     <h3 class="acc-title">Group Expenses</h3>
                     <p class="acc-desc">Record payables & group expenses</p>
+                </div>
+                <div class="acc-action">Open Module <i class="fa fa-arrow-right"></i></div>
+            </a>
+
+            <a href="shuttle_cock_stock.php" class="acc-box-card">
+                <div class="acc-icon" style="background: linear-gradient(135deg, #10b981, #059669);"><i class="fa fa-cubes"></i></div>
+                <div>
+                    <h3 class="acc-title">Shuttle Stock</h3>
+                    <p class="acc-desc">Inward shuttle boxes & stock log</p>
+                </div>
+                <div class="acc-action">Open Module <i class="fa fa-arrow-right"></i></div>
+            </a>
+
+            <a href="shuttle_cock_readings.php" class="acc-box-card">
+                <div class="acc-icon" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);"><i class="fa fa-circle-o-notch"></i></div>
+                <div>
+                    <h3 class="acc-title">Shuttle Readings</h3>
+                    <p class="acc-desc">Session shuttle count & consumption</p>
                 </div>
                 <div class="acc-action">Open Module <i class="fa fa-arrow-right"></i></div>
             </a>

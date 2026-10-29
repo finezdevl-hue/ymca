@@ -1,6 +1,5 @@
 <?php
-session_start();
-include '../../app_common/db_connect.php';
+require_once __DIR__ . '/api_bootstrap.php';
 include '../../app_pagination/pagination.php';
 
     // action start
@@ -195,17 +194,18 @@ include '../../app_pagination/pagination.php';
                 // Check if login already exists for this email
                 $chk_sql = "SELECT login_id FROM tbl_login WHERE email = ?";
                 $chk_res = app_exec_getresult($chk_sql, [$email], "s");
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
                 if ($chk_res && $row = $chk_res->fetch_assoc()) {
                     // Existing login -> Update password & name
                     $upd_sql = "UPDATE tbl_login SET name = ?, password = ? WHERE login_id = ?";
-                    app_exec_nonquery($upd_sql, [$name, $password, $row['login_id']], "ssi");
+                    app_exec_nonquery($upd_sql, [$name, $hashed_password, $row['login_id']], "ssi");
                     echo json_encode(['Message' => 'Password updated successfully.']);
                     exit();
                 } else {
                     // New login -> Insert new record
                     $ins_sql = "INSERT INTO tbl_login (name, email, password) VALUES (?, ?, ?)";
-                    app_exec_nonquery($ins_sql, [$name, $email, $password], "sss");
+                    app_exec_nonquery($ins_sql, [$name, $email, $hashed_password], "sss");
                     echo json_encode(['Message' => 'Login created successfully.']);
                     exit();
                 }

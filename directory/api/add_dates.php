@@ -1,8 +1,15 @@
 <?php
-session_start();
-include '../../app_common/db_connect.php';
-include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_attendance_master();
 
+include_once __DIR__ . '/../../app_pagination/pagination.php';
+
+$login_id = (int)($_SESSION['login_id'] ?? 0);
+if (empty($login_id) || isNormalMember($login_id)) {
+    http_response_code(401);
+    echo "Unauthorized";
+    exit();
+}
 
     // action start
     if(isset($_POST['action']) && !empty($_POST['action'])) {

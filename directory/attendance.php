@@ -1,18 +1,19 @@
 <?php
 session_start();
 
-if(isset($_POST['id'])){
-    $_SESSION['id']=$_POST['id'];
-}
 
 // Determine if user has admin attendance permission
 include_once '../app_common/auth_helper.php';
 
 $is_admin = false;
+$is_only_attendance_master = false;
 if (!empty($_SESSION['login_id'])) {
     $login_id = (int)$_SESSION['login_id'];
-    if (isSuperAdmin($login_id) || isGroupAdmin($login_id) || isAttendanceMaster($login_id)) {
+    if (isSuperAdmin($login_id) || isGroupAdmin($login_id)) {
         $is_admin = true;
+    } else if (isAttendanceMaster($login_id) || isExecutiveMember($login_id)) {
+        $is_admin = true;
+        $is_only_attendance_master = true;
     }
 }
 
@@ -653,6 +654,9 @@ session_write_close();
     </style>
 
     <script>
+        const IS_ONLY_ATTENDANCE_MASTER = <?php echo $is_only_attendance_master ? 'true' : 'false'; ?>;
+        const TODAY_DATE_STR = '<?php echo date('Y-m-d'); ?>';
+
         $(document).ready(function() {          
             loadMenu();
             load_groups();
@@ -681,6 +685,13 @@ session_write_close();
                     }
                     htm += '</select>';
                     $('#groups_container').html(htm);
+
+                    var urlParams = new URLSearchParams(window.location.search);
+                    var targetGroup = urlParams.get('group_id') || urlParams.get('group') || urlParams.get('val');
+                    if (targetGroup) {
+                        $('#selected_group').val(targetGroup);
+                    }
+
                     loadData(0);
                 },
                 error: function(xhr, status, error) {
@@ -727,7 +738,8 @@ session_write_close();
                             imgSrc = '../image_upload/members/thumbnails/' + m.img;
                         }
                         var fullName = [m.first_name, m.middle_name, m.last_name].filter(function(p){ return p && p.trim(); }).join(' ');
-                        htm += '<div class="att-member-card" id="card_' + m.id + '" onclick="toggleCard(this, \'' + m.id + '\')">';
+                        var fullNameEscaped = fullName.replace(/"/g, '&quot;');
+                        htm += '<div class="att-member-card" id="card_' + m.id + '" data-id="' + m.id + '" data-prev="' + (m.was_prev_present || 0) + '" data-total="' + (m.total_att || 0) + '" data-name="' + fullNameEscaped + '" onclick="toggleCard(this, \'' + m.id + '\')">';
                         htm +=   '<span class="card-tick"><i class="fa fa-check"></i></span>';
                         htm +=   '<img src="' + imgSrc + '" class="att-avatar" onerror="this.src=\'../img/customer.png\'">';
                         htm +=   '<div class="att-member-name">' + fullName + '</div>';
@@ -744,6 +756,7 @@ session_write_close();
 
                     htm += '</div>';
                     $('#members-data').html(htm);
+                    sortMemberCards();
                     checkHolidayStatus();
                 },
                 error: function(xhr, status, error) {
@@ -752,12 +765,144 @@ session_write_close();
             });
         }
 
+        var att_stock_base = 0;
+        function updateAttStockLabel(currentVal) {
+            var val = parseInt(currentVal) || 0;
+            var netRemaining = Math.max(0, att_stock_base - val);
+            var isLow = (att_stock_base <= 0 || netRemaining < 3);
+            var color = isLow ? '#dc2626' : '#059669';
+            var bg = (isLow && netRemaining <= 0) ? '#fef2f2' : '#ffffff';
+
+            $('#att_stock_box').css({
+                'border-color': color,
+                'background-color': bg,
+                'box-shadow': isLow ? '0 1px 3px rgba(220,38,38,0.2)' : '0 1px 3px rgba(5,150,105,0.2)'
+            });
+            $('#att_stock_box_lbl').css('color', color);
+            $('#att_stock_box_val').css('color', color).text(netRemaining);
+
+            if (att_stock_base <= 0 || netRemaining <= 0) {
+                $('#att_stock_box').attr('title', 'OUT OF STOCK (0 shuttles remaining)');
+            } else {
+                $('#att_stock_box').attr('title', 'Remaining Stock: ' + netRemaining + ' shuttles');
+            }
+        }
+
+        function adjustShuttleCount(inputId, delta) {
+            var $el = $('#' + inputId);
+            var val = parseInt($el.val()) || 0;
+            val = Math.min(6, Math.max(0, val + delta));
+            $el.val(val).trigger('change').trigger('input');
+            if (inputId === 'att_shuttle_used') {
+                updateAttStockLabel(val);
+            }
+        }
+
+        function saveShuttleCountOnly() {
+            var selectedDate = $('#date_search').val();
+            var selectedGroup = $('#selected_group').val() || 0;
+            var shuttlesUsed = $('#att_shuttle_used').val();
+
+            if (!selectedDate || !selectedGroup) {
+                alertwarning('Please select both a group and a date first.');
+                return;
+            }
+
+            if (IS_ONLY_ATTENDANCE_MASTER && selectedDate < TODAY_DATE_STR) {
+                swal('Restricted', 'Attendance Masters can only record shuttles for today.', 'warning');
+                return;
+            }
+
+            var countVal = parseInt(shuttlesUsed) || 0;
+            if (countVal > 0 && att_stock_base <= 0) {
+                swal('Out of Stock!', 'Available shuttle cock inventory is 0. Please add inward stock first before recording shuttle count.', 'error');
+                return;
+            }
+            if (countVal > att_stock_base && att_stock_base > 0) {
+                swal('Insufficient Stock!', 'Only ' + att_stock_base + ' shuttles remaining in inventory.', 'error');
+                return;
+            }
+
+            load_overlay();
+            $.ajax({
+                type: "POST",
+                url: "api/attendance.php",
+                data: {
+                    action: 'save_shuttle_reading',
+                    group_id: selectedGroup,
+                    date: selectedDate,
+                    shuttles_used: shuttlesUsed
+                },
+                success: function(response) {
+                    close_overlay();
+                    try {
+                        var res = (typeof response === 'object') ? response : JSON.parse(response);
+                        if (res.status === 'success') {
+                            swal({
+                                title: "Saved!",
+                                text: "Shuttle count (" + countVal + " shuttles) saved successfully.",
+                                type: "success",
+                                confirmButtonColor: "#3b82f6"
+                            });
+                            fetchShuttleReadingForAttendance();
+                        } else {
+                            swal('Error', res.message || 'Could not save shuttle count.', 'error');
+                        }
+                    } catch (e) {
+                        swal({
+                            title: "Saved!",
+                            text: "Shuttle count saved successfully.",
+                            type: "success",
+                            confirmButtonColor: "#3b82f6"
+                        });
+                        fetchShuttleReadingForAttendance();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    close_overlay();
+                    var msg = xhr.responseText || 'Could not save shuttle count.';
+                    swal('Error', msg, 'error');
+                }
+            });
+        }
+
+        function sortMemberCards() {
+            var grid = $('#att-grid');
+            if (!grid.length) return;
+            var cards = grid.children('.att-member-card:not(.att-showall-card)').get();
+            cards.sort(function(a, b) {
+                var aChecked = $(a).hasClass('checked') ? 1 : 0;
+                var bChecked = $(b).hasClass('checked') ? 1 : 0;
+                if (aChecked !== bChecked) return bChecked - aChecked;
+
+                var aPrev = parseInt($(a).attr('data-prev') || 0, 10);
+                var bPrev = parseInt($(b).attr('data-prev') || 0, 10);
+                if (aPrev !== bPrev) return bPrev - aPrev;
+
+                var aTotal = parseInt($(a).attr('data-total') || 0, 10);
+                var bTotal = parseInt($(b).attr('data-total') || 0, 10);
+                if (aTotal !== bTotal) return bTotal - aTotal;
+
+                var aName = $(a).attr('data-name') || '';
+                var bName = $(b).attr('data-name') || '';
+                return aName.localeCompare(bName);
+            });
+            $.each(cards, function(idx, card) {
+                grid.append(card);
+            });
+            var showAll = grid.children('.att-showall-card');
+            if (showAll.length) {
+                grid.append(showAll);
+            }
+        }
+
         // ---- Toggle single card ----
         function toggleCard(cardEl, memberId) {
             if ($(cardEl).hasClass('disabled-card')) return;
             var chk = document.getElementById('chk_' + memberId);
             chk.checked = !chk.checked;
             $(cardEl).toggleClass('checked', chk.checked);
+            sortMemberCards();
             updateAttendanceCount();
         }
 
@@ -775,16 +920,23 @@ session_write_close();
                     $(this).toggleClass('checked', anyUnchecked);
                 }
             });
+            sortMemberCards();
             updateAttendanceCount();
         }
 
         // ---- Add attendance ----
         function addAttendance() {
+            if (IS_ONLY_ATTENDANCE_MASTER && $('#date_search').val() < TODAY_DATE_STR) {
+                swal('Restricted', 'Attendance Masters can only mark attendance for today.', 'warning');
+                return;
+            }
+
             var member_ids = [];
             $("input[name='attendance']:checked").each(function() {
                 member_ids.push(this.value);
             });
             var session = $('#mem_session').val() || 'Morning';
+            var shuttlesUsed = $('#att_shuttle_used').val();
             load_overlay();
             $.ajax({               
                 type: "POST",
@@ -794,11 +946,27 @@ session_write_close();
                     val: $('#selected_group').val(),
                     date: $('#date_search').val(),
                     session: session,
-                    member_ids: member_ids
+                    member_ids: member_ids,
+                    shuttles_used: shuttlesUsed
                 },
                 success: function(data) {  
                     close_overlay();
-                    alertsuccess(session + ' Attendance Saved Successfully');
+                    if (!shuttlesUsed || parseInt(shuttlesUsed) <= 0) {
+                        swal({
+                            title: "Attendance Saved!",
+                            text: session + " Attendance Saved Successfully!\n\n🔴 REMINDER: Don't forget to enter the count of shuttles used after today's game!",
+                            type: "warning",
+                            confirmButtonColor: "#dc2626",
+                            confirmButtonText: "OK, I will add Shuttle Count!"
+                        });
+                    } else {
+                        swal({
+                            title: "Attendance Saved!",
+                            text: session + " Attendance Saved Successfully! (Shuttles Used: " + shuttlesUsed + ")",
+                            type: "success",
+                            confirmButtonColor: "#3b82f6"
+                        });
+                    }
                     loadData(0);
                 },
                 error: function(xhr, status, error) {
@@ -807,9 +975,46 @@ session_write_close();
             });     
         }
 
+        function fetchShuttleReadingForAttendance() {
+            var selectedDate = $('#date_search').val();
+            var selectedGroup = $('#selected_group').val() || 0;
+            $.ajax({
+                type: "POST",
+                url: "api/attendance.php",
+                data: {
+                    action: 'get_shuttle_reading',
+                    date: selectedDate,
+                    group_id: selectedGroup
+                },
+                success: function(response) {
+                    try {
+                        var res = JSON.parse(response);
+                        if (res.status === 'success') {
+                            att_stock_base = parseInt(res.stock_remaining || 0);
+                            var currentAttUsed = res.shuttles_used > 0 ? res.shuttles_used : '';
+                            $('#att_shuttle_used').val(currentAttUsed);
+                            updateAttStockLabel(currentAttUsed);
+                            if (res.has_record && (res.last_user_name || res.created_by_name)) {
+                                var lastUser = res.last_user_name || res.created_by_name;
+                                var creatorLabel = res.is_created_by_me ? 'You' : lastUser;
+                                var actWord = res.action_word || (res.is_edited ? 'updated' : 'added');
+                                var tooltipText = creatorLabel + ' ' + actWord + ' the count (' + res.shuttles_used + ' shuttles). Do you want to edit?';
+                                $('.att-shuttle-wrap').attr('title', tooltipText);
+                                $('#att_shuttle_notice').html('<span style="font-size:11px; font-weight:700; color:#1d4ed8; background:rgba(37,99,235,0.1); padding:2px 8px; border-radius:12px; margin-left:4px;"><i class="fa fa-info-circle"></i> ' + creatorLabel + ' ' + actWord + ' count (' + res.shuttles_used + ' shuttles). Do you want to edit?</span>').show();
+                            } else {
+                                $('.att-shuttle-wrap').attr('title', 'Shuttles Used After Play for this Date & Group');
+                                $('#att_shuttle_notice').hide().html('');
+                            }
+                        }
+                    } catch(e){}
+                }
+            });
+        }
+
         function checkHolidayStatus() {
             var selectedDate = $('#date_search').val();
             var selectedGroup = $('#selected_group').val() || 0;
+            fetchShuttleReadingForAttendance();
             $.ajax({
                 type: "POST",
                 url: "api/attendance.php",
@@ -934,6 +1139,7 @@ session_write_close();
                         $('#att-status-chip').html('<span class="att-status-chip unsaved"><i class="fa fa-clock-o"></i> Pending</span>');
                     }
                     updateAttendanceCount();
+                    sortMemberCards();
                 },
                 error: function(xhr, status, error) {
                     console.log('AJAX error: ', status, error);
@@ -951,6 +1157,7 @@ session_write_close();
                     action: 'add_attendance',
                     val: $('#selected_group').val(),
                     date: $('#date_search').val(),
+                    single_member: '1',
                     member_ids: [<?php echo !empty($_SESSION['user_id']) ? $_SESSION['user_id'] : 0; ?>]
                 },
                 success: function(data) {  
@@ -986,6 +1193,7 @@ session_write_close();
                             action: 'add_attendance',
                             val: $('#selected_group').val(),
                             date: $('#date_search').val(),
+                            single_member: '1',
                             member_ids: [] // Empty list to unmark
                         },
                         success: function(data) {  
@@ -1063,6 +1271,10 @@ session_write_close();
 
         // Date change → check holiday first
         $(document).on("change", "#date_search", function(){
+            if (<?php echo $is_only_attendance_master ? 'true' : 'false'; ?> && $(this).val() < "<?php echo date('Y-m-d'); ?>") {
+                swal('Restricted', 'Attendance Masters can only mark attendance for today.', 'warning');
+                $(this).val("<?php echo date('Y-m-d'); ?>");
+            }
             checkHolidayStatus();
         });
     </script>
@@ -1172,7 +1384,25 @@ session_write_close();
 
                     <!-- Date Picker -->
                     <div class="att-date-wrap">
-                        <input type="date" id="date_search" name="date_search">
+                        <input type="date" id="date_search" name="date_search" <?php if ($is_only_attendance_master) { echo 'min="' . date('Y-m-d') . '"'; } ?>>
+                    </div>
+
+                    <!-- Shuttle Cock Used Count Widget (Red Alert Highlight) -->
+                    <div class="att-shuttle-wrap" style="position: relative; display: inline-flex; align-items: center; gap: 5px; background: #fef2f2; border: 1.5px solid #ef4444; border-radius: 10px; padding: 4px 8px 4px 10px; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);" title="Shuttles Used After Play for this Date & Group">
+                        <i class="fa fa-exclamation-circle" style="color: #dc2626; font-size: 15px; margin-right: 2px;"></i>
+                        <span style="font-size: 12px; font-weight: 800; color: #dc2626; white-space: nowrap;">Shuttles: <span id="att_stock_status_lbl" style="display:none;"></span></span>
+                        <!-- Vertical Stock Box on the left side of [-] [ 0 ] [+] -->
+                        <div id="att_stock_box" style="height:30px; min-width:38px; padding:1px 5px; border-radius:6px; border:1.5px solid #059669; background:#fff; display:inline-flex; flex-direction:column; align-items:center; justify-content:center; user-select:none; box-shadow:0 1px 2px rgba(0,0,0,0.06); cursor:default; margin-right:8px;" title="Remaining stock of shuttles">
+                            <div id="att_stock_box_lbl" style="font-size:7.5px; font-weight:800; letter-spacing:0.5px; text-transform:uppercase; line-height:1; color:#059669;">STOCK</div>
+                            <div id="att_stock_box_val" style="font-size:13px; font-weight:900; line-height:1.1; color:#059669;">0</div>
+                        </div>
+                        <button type="button" onclick="adjustShuttleCount('att_shuttle_used', -1)" style="width: 26px; height: 30px; border-radius: 6px; border: 1px solid #fca5a5; background: #fff; color: #991b1b; font-weight: 900; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; user-select: none;">-</button>
+                        <input type="number" id="att_shuttle_used" min="0" max="6" placeholder="0" readonly style="width: 42px; height: 30px; border: 1px solid #fca5a5; background: #fff; border-radius: 6px; font-weight: 800; font-size: 15px; color: #b91c1c; text-align: center; outline: none; cursor: default;" title="Count of shuttles used (change using + and - buttons)">
+                        <button type="button" onclick="adjustShuttleCount('att_shuttle_used', 1)" style="width: 26px; height: 30px; border-radius: 6px; border: 1px solid #fca5a5; background: #fff; color: #991b1b; font-weight: 900; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; user-select: none;">+</button>
+                        <button type="button" id="btn_save_shuttle_only" onclick="saveShuttleCountOnly()" style="height: 30px; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; border: none; border-radius: 6px; padding: 0 10px; font-size: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25); margin-left: 2px;" title="Save only Shuttle Count for today">
+                            <i class="fa fa-save"></i> Save
+                        </button>
+                        <span id="att_shuttle_notice" style="display:none;"></span>
                     </div>
 
                     <!-- Status chip -->
@@ -1185,9 +1415,14 @@ session_write_close();
                 </div>
 
                 <!-- Action buttons (right side) -->
-                <div style="display:flex; align-items:center; gap:10px; margin-left:auto;">
+                <div style="display:flex; align-items:center; gap:10px; margin-left:auto; flex-wrap:wrap;">
+                    <?php if (isSuperAdmin($login_id)) { ?>
                     <a href="groups.php" class="att-btn att-btn-outline" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;" title="Add / Manage Groups">
                         <i class="fa fa-users"></i> Manage Groups
+                    </a>
+                    <?php } ?>
+                    <a href="add_dates.php" class="att-btn att-btn-outline" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;" title="Manage Holidays & Date Exemptions">
+                        <i class="fa fa-calendar-times-o"></i> Manage Holidays
                     </a>
                     <button class="att-btn att-btn-outline" type="button" onclick="toggleSelectAll()" title="Toggle Select All">
                         <i class="fa fa-check-square-o"></i> Select All

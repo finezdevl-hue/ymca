@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/api_bootstrap.php';
 session_write_close();
 include '../../app_common/db_connect.php';
 include_once '../../app_common/auth_helper.php';
@@ -59,12 +59,13 @@ include '../../app_pagination/pagination.php';
                 
                 if($_POST['id']==0){
                     $member_type = isset($_POST['member_type']) ? (int)$_POST['member_type'] : 0;
-                    $sql ="INSERT INTO tbl_members (first_name, middle_name,last_name,father_name,mother_name,dob,
-                    blood_group,phone,whtsapp,email,p_street,p_city,p_pincode,p_country,img,inactive,member_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    $sql ="INSERT INTO tbl_members (first_name, middle_name, last_name, gender, father_name, mother_name, dob,
+                    blood_group, phone, whtsapp, email, p_street, p_city, p_pincode, p_country, img, inactive, member_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     $parameters = [
                     $_POST['first_name'],
                     $_POST['middle_name'] ?? '',
                     $_POST['last_name'] ?? '',
+                    $_POST['gender'] ?? 'Male',
 
                     $_POST['father_name'] ?? '',
                     $_POST['mother_name'] ?? '',
@@ -84,7 +85,7 @@ include '../../app_pagination/pagination.php';
                     $member_type,
                     ];
 
-                    $types="ssssssissssisssii";
+                    $types="sssssssissssisssii";
                     app_exec_nonquery($sql, $parameters, $types);
                 }
 
@@ -100,13 +101,14 @@ include '../../app_pagination/pagination.php';
                     }
 
                     // 2. Update the member profile
-                    $sql = "UPDATE tbl_members SET  first_name = ?, middle_name = ?, last_name = ? , father_name = ?, mother_name = ?, dob =?,
-                     blood_group= ?, phone = ?, email = ?, p_street =  ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive =?  WHERE id = ?";
+                    $sql = "UPDATE tbl_members SET first_name = ?, middle_name = ?, last_name = ?, gender = ?, father_name = ?, mother_name = ?, dob = ?,
+                     blood_group = ?, phone = ?, email = ?, p_street = ?, p_city = ?, p_pincode = ?, p_country = ?, img = ?, inactive = ? WHERE id = ?";
                     
                     $parameters = [
                     $_POST['first_name'],
                     $_POST['middle_name'],
                     $_POST['last_name'],
+                    $_POST['gender'] ?? 'Male',
 
                     $_POST['father_name'],
                     $_POST['mother_name'],
@@ -126,7 +128,7 @@ include '../../app_pagination/pagination.php';
                     $_POST['id'],
                     ];
 
-                    $types="ssssssissssissii";
+                    $types="sssssssissssissii";
                     app_exec_nonquery($sql, $parameters, $types);
 
                     // Delete old image from server disk if a new image was uploaded
@@ -249,17 +251,18 @@ include '../../app_pagination/pagination.php';
                 // Check if login already exists for this email
                 $chk_sql = "SELECT login_id FROM tbl_login WHERE email = ?";
                 $chk_res = app_exec_getresult($chk_sql, [$email], "s");
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
                 if ($chk_res && $row = $chk_res->fetch_assoc()) {
                     // Existing login -> Update password & name
                     $upd_sql = "UPDATE tbl_login SET name = ?, password = ? WHERE login_id = ?";
-                    app_exec_nonquery($upd_sql, [$name, $password, $row['login_id']], "ssi");
+                    app_exec_nonquery($upd_sql, [$name, $hashed_password, $row['login_id']], "ssi");
                     echo json_encode(['Message' => 'Password updated successfully.']);
                     exit();
                 } else {
                     // New login -> Insert new record
                     $ins_sql = "INSERT INTO tbl_login (name, email, password) VALUES (?, ?, ?)";
-                    app_exec_nonquery($ins_sql, [$name, $email, $password], "sss");
+                    app_exec_nonquery($ins_sql, [$name, $email, $hashed_password], "sss");
                     echo json_encode(['Message' => 'Login created successfully.']);
                     exit();
                 }
@@ -369,7 +372,7 @@ include '../../app_pagination/pagination.php';
 
                 $where_sql = count($where_clauses) > 0 ? " WHERE " . implode(" AND ", $where_clauses) : "";
 
-                $sqldatarows = "SELECT m.id, m.first_name, m.last_name, m.middle_name, m.father_name, m.mother_name, m.dob,
+                $sqldatarows = "SELECT m.id, m.first_name, m.last_name, m.middle_name, m.gender, m.father_name, m.mother_name, m.dob,
                                        m.phone, m.whtsapp, m.email, m.p_street, m.p_city, m.p_pincode, m.p_country, m.img, m.inactive, m.blood_group, m.member_type
                                 FROM tbl_members AS m 
                                 LEFT JOIN tbl_bloodgroup_master AS b ON m.blood_group = b.id

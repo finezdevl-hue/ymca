@@ -1,0 +1,49 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# Database dumps & backups (keep repo schema)
+*.sql
+*.sql.gz
+*.zip
+!database/schema.sql
+db/backups/
+db/*.lock
+
+# Logs
+*.log
+error_log
+Error_log/
+Query_log/
+api/Queries/
+logs/*
+!logs/.htaccess
+
+# User Uploaded Content
+image_upload/payments/*
+image_upload/bills/*
+image_upload/shuttle_cock_bills/*
+image_upload/members/uploads/*
+image_upload/members/thumbnails/*
+image_upload/profile/uploads/*
+image_upload/profile/thumbnails/*
+image_upload/bulletin/uploads/*
+image_upload/bulletin/thumbnails/*
+image_upload/family/uploads/*
+image_upload/family/thumbnails/*
+pdf_upload/*
+uploads/*
+!uploads/.htaccess
+
+# Keep .htaccess in upload folders
+!image_upload/**/.htaccess
+!pdf_upload/.htaccess
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+.idea/
+.vscode/

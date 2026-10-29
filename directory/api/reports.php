@@ -1,7 +1,6 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+include '../../app_pagination/pagination.php';
 
     // actions start
     if(isset($_POST['action']) && !empty($_POST['action'])) {
@@ -13,42 +12,42 @@
             try{
                 $tm->begin();
 
+                $del_id = (int)$_POST['id'];
+                $rec_chk = app_exec_getresult("SELECT recieveble_id FROM tbl_other_recieved WHERE id = ?", [$del_id], "i");
+                $recieveble_id = ($rec_chk && $rrow = $rec_chk->fetch_assoc()) ? (int)$rrow['recieveble_id'] : (int)($_POST['recieveble_id'] ?? 0);
+
                 $sql = "DELETE FROM tbl_other_recieved WHERE id = ?";
                 $types="i";
-                $parameters = [
-                $_POST['id'],
-                ];
+                $parameters = [$del_id];
                 
-                app_exec_roll_back_nonquery($conn,$sql, $parameters, $types);
+                if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                    throw new Exception("Error deleting other received record");
+                }
 
-                $sql = "SELECT p.amount as total_recieveble_Amount,SUM(pd.amount) AS total_recieved_amount
-                FROM tbl_other_recieveble AS p
-                LEFT JOIN tbl_payment_head_master AS g ON p.head = g.id
-                LEFT JOIN tbl_other_recieved AS pd ON p.id = pd.recieveble_id where pd.recieveble_id = ?
-                GROUP BY p.id, p.date, p.particuler, p.amount, p.head, g.type, g.name";
-                $parameters = [
-                    $_POST['recieveble_id'],
-                ];
-                $types = "i";
-                
-                $result = app_exec_getresult($sql, $parameters, $types);
+                if ($recieveble_id > 0) {
+                    $sql = "SELECT p.id, p.amount as total_recieveble_Amount, COALESCE(SUM(pd.amount), 0.00) AS total_recieved_amount
+                    FROM tbl_other_recieveble AS p
+                    LEFT JOIN tbl_other_recieved AS pd ON p.id = pd.recieveble_id AND (pd.cancel = 0 OR pd.cancel IS NULL)
+                    WHERE p.id = ?
+                    GROUP BY p.id";
+                    $parameters = [$recieveble_id];
+                    $types = "i";
+                    
+                    $result = app_exec_getresult($sql, $parameters, $types);
 
-                if (mysqli_num_rows($result) > 0) {
-                    // output data of each row
-                    while($row = mysqli_fetch_assoc($result)) {
-                        $total_recieveble_Amount = (int)$row["total_recieveble_Amount"];
-                        $total_recieved_amount = $row["total_recieved_amount"] !== null ? (int)$row["total_recieved_amount"] : 0;
-                        $isComplete = ($total_recieveble_Amount - $total_recieved_amount == 0) ? 1 : 0;
+                    if ($result && $row = $result->fetch_assoc()) {
+                        $total_recieveble_Amount = (float)$row["total_recieveble_Amount"];
+                        $total_recieved_amount = (float)$row["total_recieved_amount"];
+                        $isComplete = ((int)round($total_recieved_amount * 100) >= (int)round($total_recieveble_Amount * 100)) ? 1 : 0;
                         
-                        $sql = "UPDATE tbl_other_recieveble SET iscomplete = ?  WHERE id = ?";
-                       
+                        $sql_up = "UPDATE tbl_other_recieveble SET iscomplete = ?  WHERE id = ?";
                         $parameters = [
                             $isComplete,
-                            $_POST['recieveble_id'],
+                            $recieveble_id,
                         ];
                         $types="ii";
                         
-                        if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                        if (!app_exec_roll_back_nonquery($conn, $sql_up, $parameters, $types)) {
                             throw new Exception("Error in Updation");
                         }
                     }
@@ -154,10 +153,10 @@
                 $sqldatarows="";   
         
                 $sqldatarows ="SELECT 
-                    (COALESCE((SELECT SUM(fees) FROM tbl_member_recievable), 0) + 
-                     COALESCE((SELECT SUM(fees) FROM tbl_member_recievable_old), 0)) AS receivable,
-                    (COALESCE((SELECT SUM(fees) FROM tbl_member_recieved), 0) + 
-                     COALESCE((SELECT SUM(fees) FROM tbl_member_recieved_old), 0)) AS received";
+                    (COALESCE((SELECT SUM(fees) FROM tbl_member_recievable WHERE (cancel = 0 OR cancel IS NULL)), 0) + 
+                     COALESCE((SELECT SUM(fees) FROM tbl_member_recievable_old WHERE (cancel = 0 OR cancel IS NULL)), 0)) AS receivable,
+                    (COALESCE((SELECT SUM(fees) FROM tbl_member_recieved WHERE (cancel = 0 OR cancel IS NULL)), 0) + 
+                     COALESCE((SELECT SUM(fees) FROM tbl_member_recieved_old WHERE (cancel = 0 OR cancel IS NULL)), 0)) AS received";
         
                 $sqlcountrows = "SELECT COUNT(*) AS total FROM tbl_member_recievable";
                 

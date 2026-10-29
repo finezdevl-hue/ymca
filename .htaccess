@@ -1,13 +1,52 @@
-# Apache Server Configuration for Extensionless PHP URLs
+# Apache Server Configuration
 
-RewriteEngine On
+# Disable Directory Browsing
+Options -Indexes
 
-# 1. Check if the requested filename with .php extension exists
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}\.php -f
-RewriteRule ^(.*)$ $1.php [L,QSA]
+# 1. Deny Direct Access to Sensitive Files and Directories
+<IfModule mod_authz_core.c>
+    # Block git, environment, and config files
+    <FilesMatch "(^\..*|\.env.*|\.git.*|\.sql$|\.log$|\.ini$|\.bak$|\.lock$)">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "(^\..*|\.env.*|\.git.*|\.sql$|\.log$|\.ini$|\.bak$|\.lock$)">
+        Order Deny,Allow
+        Deny from all
+    </FilesMatch>
+</IfModule>
 
-# 2. Redirect explicit .php URLs to extensionless URLs (Browser Clean Address Bar)
-RewriteCond %{THE_REQUEST} \s/+(.+?)\.php[\s?] [NC]
-RewriteCond %{REQUEST_METHOD} !POST
-RewriteRule ^ /%1 [R=301,L]
+# Block direct access to internal server directories
+RedirectMatch 403 ^/(?:\.git|db|database|config|includes|logs|Error_log|Query_log|scratch)/
+
+# 2. Security Headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# 3. URL Rewriting & Asset Fallback
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Prevent access to hidden files and directories
+    RewriteRule (^\.|/\.) - [F]
+
+    # Asset backwards compatibility rewrites
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(css|js|img|fonts|font-awesome|locales)/(.*)$ assets/$1/$2 [L]
+
+    # Check if the requested filename with .php extension exists
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteRule ^(.*)$ $1.php [L,QSA]
+
+    # Redirect explicit .php URLs to extensionless URLs (Browser Clean Address Bar)
+    RewriteCond %{THE_REQUEST} \s/+(.+?)\.php[\s?] [NC]
+    RewriteCond %{REQUEST_METHOD} !POST
+    RewriteCond %{REQUEST_URI} !^/(directory/api|api)/
+    RewriteRule ^ /%1 [R=301,L]
+</IfModule>

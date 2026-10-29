@@ -13,7 +13,8 @@ if (isNormalMember($login_id) || isExecutiveMember($login_id)) {
     header("Location: ledger.php");
     exit();
 }
-$user_member_id = (int)($_SESSION['user_id'] ?? 0);
+$user_member_id = isset($_GET['member_id']) ? (int)$_GET['member_id'] : (int)($_SESSION['user_id'] ?? 0);
+$back_url = (!empty($_GET['from']) && $_GET['from'] === 'fee_receipts') ? 'fee_receipts.php' : 'reports.php';
 $is_admin = isSuperAdmin($login_id) || isGroupAdmin($login_id) || isExecutiveMember($login_id);
 $allowed_groups = getUserAllowedGroupIds($login_id);
 $primary_role = getUserPrimaryRoleName($login_id);
@@ -94,7 +95,7 @@ $res_m = app_exec_query($sql_m);
     <!-- Header -->
     <header class="mob-header">
         <div class="mob-header-brand">
-            <a href="reports.php" style="color:#ffffff; margin-right:8px; font-size:18px;"><i class="fa fa-arrow-left"></i></a>
+            <a href="<?php echo htmlspecialchars($back_url); ?>" style="color:#ffffff; margin-right:8px; font-size:18px;"><i class="fa fa-arrow-left"></i></a>
             <div class="mob-header-title">
                 Member Cashbook <span>Ledger</span>
             </div>

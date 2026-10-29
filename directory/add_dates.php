@@ -557,8 +557,8 @@ if (isNormalMember($login_id)) {
         <nav class="navbar-default navbar-static-side" role="navigation">
             <div class="dropdown profile-element">
                 <center>
-                    <span><img alt="image" class="img-circle" src="../img/customer.png" style="padding-top: 20px;"/></span>
-                    <span class="clear"> <span class="block m-t-xs"> <strong class="font-bold"><?php echo $_SESSION['name']; ?></strong>
+                    <span><img alt="image" class="img-circle" src="../img/customer.png" style="padding-top: 20px; width:64px; height:64px; object-fit:cover;"/></span>
+                    <span class="clear"> <span class="block m-t-xs"> <strong class="font-bold"><?php echo htmlspecialchars($_SESSION['name'] ?? ''); ?></strong></span></span>
                 </center>
             </div>
             <div class="sidebar-collapse" id="divMenuContainer">
@@ -574,6 +574,11 @@ if (isNormalMember($login_id)) {
                         <a class="navbar-minimalize minimalize-styl-2 btn btn-primary" href="#"><i class="fa fa-bars"></i></a>
                     </div>
                     <ul class="nav navbar-top-links navbar-right">
+                        <li>
+                            <span style="font-weight:700; color:#475569; margin-right:15px;">
+                                <i class="fa fa-user-circle" style="color:#4f46e5;"></i> <?php echo htmlspecialchars($_SESSION['name'] ?? ''); ?>
+                            </span>
+                        </li>
                         <li>
                             <a href="../app_login_manager/logout.php" style="color:#147ad1;">
                                 <i class="fa fa-sign-out"></i> Log out
@@ -619,7 +624,7 @@ if (isNormalMember($login_id)) {
                     <div class="modal-content" style="border-radius: 16px; background-color: #ffffff !important;">
                         <div class="modal-header">
                             <button type="button" class="close" onclick="closepopupDates()"><span aria-hidden="true">&times;</span></button>
-                            <h4 class="modal-title">Configure Holiday Date</h4>
+                            <h4 class="modal-title"><i class="fa fa-calendar-plus-o" style="color:var(--primary);"></i> Configure Holiday Date</h4>
                         </div>
                         <form method="POST" id="group_form">
                             <div class="modal-body" style="background-color: #ffffff !important;">
@@ -629,7 +634,7 @@ if (isNormalMember($login_id)) {
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Select Date</label>
-                                    <input type="date" id="txt_date" name="date" class="form-control-modern" required>
+                                    <input type="date" id="txt_date" name="date" class="form-control-modern" value="<?php echo date('Y-m-d'); ?>" required>
                                 </div>
                             </div>
                             <div class="modal-footer" style="background-color: #f8fafc !important;">
@@ -647,7 +652,7 @@ if (isNormalMember($login_id)) {
                     <div class="modal-content" style="border-radius: 16px; background-color: #ffffff !important;">
                         <div class="modal-header">
                             <button type="button" class="close" onclick="closepopupRangeDates()"><span aria-hidden="true">&times;</span></button>
-                            <h4 class="modal-title">Configure Holiday Date Range</h4>
+                            <h4 class="modal-title"><i class="fa fa-calendar-plus-o" style="color:var(--primary);"></i> Configure Holiday Date Range</h4>
                         </div>
                         <form method="POST" id="range_form">
                             <div class="modal-body" style="background-color: #ffffff !important;">
@@ -657,11 +662,11 @@ if (isNormalMember($login_id)) {
                                 </div>
                                 <div class="form-group" style="margin-bottom: 20px;">
                                     <label class="form-label">Start Date</label>
-                                    <input type="date" id="txt_start_date" name="start_date" class="form-control-modern" required>
+                                    <input type="date" id="txt_start_date" name="start_date" class="form-control-modern" value="<?php echo date('Y-m-d'); ?>" required>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">End Date</label>
-                                    <input type="date" id="txt_end_date" name="end_date" class="form-control-modern" required>
+                                    <input type="date" id="txt_end_date" name="end_date" class="form-control-modern" value="<?php echo date('Y-m-d'); ?>" required>
                                 </div>
                             </div>
                             <div class="modal-footer" style="background-color: #f8fafc !important;">

@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/api_bootstrap.php';
 session_write_close();
 
 if (empty($_SESSION['login_id'])) {

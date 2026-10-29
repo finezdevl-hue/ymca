@@ -20,12 +20,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         LEFT JOIN (
             SELECT member_id, SUM(fees) AS total_receivable
             FROM tbl_member_recievable
+            WHERE (cancel = 0 OR cancel IS NULL)
             GROUP BY member_id
         ) AS r ON m.id = r.member_id
         LEFT JOIN (
             SELECT p.member_id, SUM(pd.fees) AS total_received
             FROM tbl_member_recievable AS p
             JOIN tbl_member_recieved AS pd ON p.id = pd.receiveble_id
+            WHERE (p.cancel = 0 OR p.cancel IS NULL) AND (pd.cancel = 0 OR pd.cancel IS NULL)
             GROUP BY p.member_id
         ) AS d ON m.id = d.member_id
         WHERE COALESCE(r.total_receivable, 0) > 0 OR COALESCE(d.total_received, 0) > 0

@@ -1,7 +1,6 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+include '../../app_pagination/pagination.php';
 
     // actions start
     if(isset($_POST['action']) && !empty($_POST['action'])) {
@@ -59,10 +58,11 @@
                 
                 $sqldatarows .= " LIMIT $offset , $rowsPerPage ";
             
+                $target_client_id = (int)($_SESSION['selected_wallet_client_id'] ?? 0);
                 if($_POST['val']== '') {
                     
                    $parameters = [
-                      $_SESSION['id']  ,
+                      $target_client_id,
                     ];
                     
                     $types="i";
@@ -75,7 +75,7 @@
                     $searchvalue= $_POST['val'];
                     $parameters = [
                         $searchvalue,
-                        $_SESSION['id'],
+                        $target_client_id,
                     ];
                     
                     $types="si";

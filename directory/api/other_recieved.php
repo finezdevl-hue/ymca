@@ -1,7 +1,7 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_admin();
+include '../../app_pagination/pagination.php';
     include '../../app_common/db_name.php';
     include '../../app_common/enums.php';
 
@@ -15,42 +15,42 @@
             try{
                 $tm->begin();
 
+                $del_id = (int)$_POST['id'];
+                $rec_chk = app_exec_getresult("SELECT recieveble_id FROM tbl_other_recieved WHERE id = ?", [$del_id], "i");
+                $recieveble_id = ($rec_chk && $rrow = $rec_chk->fetch_assoc()) ? (int)$rrow['recieveble_id'] : (int)($_POST['recieveble_id'] ?? 0);
+
                 $sql = "DELETE FROM tbl_other_recieved WHERE id = ?";
                 $types="i";
-                $parameters = [
-                $_POST['id'],
-                ];
+                $parameters = [$del_id];
                 
-                app_exec_roll_back_nonquery($conn,$sql, $parameters, $types);
+                if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                    throw new Exception("Error deleting other received record");
+                }
 
-                $sql = "SELECT p.amount as total_recieveble_Amount,SUM(pd.amount) AS total_recieved_amount
-                FROM tbl_other_recieveble AS p
-                LEFT JOIN tbl_payment_head_master AS g ON p.head = g.id
-                LEFT JOIN tbl_other_recieved AS pd ON p.id = pd.recieveble_id where pd.recieveble_id = ?
-                GROUP BY p.id, p.date, p.particuler, p.amount, p.head, g.type, g.name";
-                $parameters = [
-                    $_POST['recieveble_id'],
-                ];
-                $types = "i";
-                
-                $result = app_exec_getresult($sql, $parameters, $types);
+                if ($recieveble_id > 0) {
+                    $sql = "SELECT p.id, p.amount as total_recieveble_Amount, COALESCE(SUM(pd.amount), 0.00) AS total_recieved_amount
+                    FROM tbl_other_recieveble AS p
+                    LEFT JOIN tbl_other_recieved AS pd ON p.id = pd.recieveble_id AND (pd.cancel = 0 OR pd.cancel IS NULL)
+                    WHERE p.id = ?
+                    GROUP BY p.id";
+                    $parameters = [$recieveble_id];
+                    $types = "i";
+                    
+                    $result = app_exec_getresult($sql, $parameters, $types);
 
-                if (mysqli_num_rows($result) > 0) {
-                    // output data of each row
-                    while($row = mysqli_fetch_assoc($result)) {
-                        $total_recieveble_Amount = (int)$row["total_recieveble_Amount"];
-                        $total_recieved_amount = $row["total_recieved_amount"] !== null ? (int)$row["total_recieved_amount"] : 0;
-                        $isComplete = ($total_recieveble_Amount - $total_recieved_amount == 0) ? 1 : 0;
+                    if ($result && $row = $result->fetch_assoc()) {
+                        $total_recieveble_Amount = (float)$row["total_recieveble_Amount"];
+                        $total_recieved_amount = (float)$row["total_recieved_amount"];
+                        $isComplete = ((int)round($total_recieved_amount * 100) >= (int)round($total_recieveble_Amount * 100)) ? 1 : 0;
                         
-                        $sql = "UPDATE tbl_other_recieveble SET iscomplete = ?  WHERE id = ?";
-                       
+                        $sql_up = "UPDATE tbl_other_recieveble SET iscomplete = ?  WHERE id = ?";
                         $parameters = [
                             $isComplete,
-                            $_POST['recieveble_id'],
+                            $recieveble_id,
                         ];
                         $types="ii";
                         
-                        if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                        if (!app_exec_roll_back_nonquery($conn, $sql_up, $parameters, $types)) {
                             throw new Exception("Error in Updation");
                         }
                     }
@@ -82,11 +82,12 @@
               
                 
 
-                $rec_amt = $_POST['recieveble'];
-                if (empty($rec_amt) || (float)$rec_amt == 0) {
-                    $rec_amt = $_POST['recieved'];
+                $rec_amt = (float)$_POST['recieveble'];
+                $paid_amt = (float)$_POST['recieved'];
+                if (empty($rec_amt) || $rec_amt <= 0.0) {
+                    $rec_amt = $paid_amt;
                 }
-                $iscomp = ($rec_amt == $_POST['recieved']) ? 1 : 0;
+                $iscomp = ((int)round($paid_amt * 100) >= (int)round($rec_amt * 100)) ? 1 : 0;
 
                 $sql = "INSERT INTO tbl_other_recieveble (date, head, particuler, amount, iscomplete,flag) VALUES (?, ?, ?, ?, ?,?)";
                 $parameters = [
@@ -97,12 +98,8 @@
                     $iscomp,
                     $_POST['flag'],
                 ];
-                $types = "sisiii";
+                $types = "sisdii";
                     
-                // Use custom insert function that returns insert ID
-                // if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
-                //     throw new Exception("Error in Updation");
-                // }
                 $recieveble_id = app_exec_getlast_id_roll_back($conn, $sql, $parameters, $types);
                     
 
@@ -112,54 +109,42 @@
                         $_POST['recieved_date'],
                         $_POST['head'],
                         $_POST['particuler'],
-                        $_POST['recieved'],
+                        $paid_amt,
                         $recieveble_id,
                         $_POST['flag'],
                         $_POST['transaction_type'],
                     ];
-                    $types = "sisiiii";
+                    $types = "sisdiii";
 
-                    // Saving Query as  text file end
-
-                       
                     if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
                         throw new Exception("Error in Updation");
                     }
                 }
 
                 if($_POST['transaction_type']==2){
-                    // $sql = "SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '$db_name' AND TABLE_NAME = 'tbl_payable'";
-                    // $result1 = app_exec_query($sql);
-                    // $row1 = $result1->fetch_assoc();
-                    // $payable_id = htmlspecialchars($row1['AUTO_INCREMENT']);
-
-
                     $sql = "INSERT INTO tbl_payable (date, head, particuler, amount, iscomplete, flag, invoice_id) VALUES (?, 2, ?, ?, 1, ?, ?)";
                     $parameters = [
                         $_POST['recieved_date'],
                         $_POST['particuler'],
-                        $_POST['recieved'],
+                        $paid_amt,
                         $_POST['flag'],
                         $recieveble_id,
                     ];
-                    $types="sssii";
+                    $types="ssdii";
                     $payable_id = app_exec_getlast_id_roll_back($conn, $sql, $parameters, $types);
-                    // if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
-                    //     throw new Exception("Error in Updation");
-                    // }
 
                     $sql = "INSERT INTO tbl_paid (date, head, particuler, amount, payable_id, flag,transaction_type, invoice_id,is_member_trans) VALUES (?, 2, ?, ?, ?, ?, ?, ?, ?)";
                     $parameters = [
                         $_POST['recieved_date'],
                         $_POST['particuler'],
-                        $_POST['recieved'],
+                        $paid_amt,
                         $payable_id,
                         $_POST['flag'],
                         $_POST['transaction_type'],
                         $recieveble_id,
-                        MemberTransaction::other, // class for get the value of other transaction
+                        MemberTransaction::other,
                     ];
-                    $types="sssiiiii";
+                    $types="ssdiiiiii";
                     if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
                         throw new Exception("Error in Updation");
                     }

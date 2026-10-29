@@ -13,7 +13,7 @@ function loadMenu(force) {
     if (force === true) menuLoaded = false;
     if (menuLoaded) return;
     
-    var container = document.getElementById('divMenuContainer');
+    var container = document.getElementById('divMenuContainer') || document.querySelector('.sidebar-collapse') || document.getElementById('menu');
     if (!container) return;
     
     menuLoaded = true;

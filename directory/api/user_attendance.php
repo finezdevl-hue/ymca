@@ -1,6 +1,5 @@
 <?php
-session_start();
-include '../../app_common/db_connect.php';
+require_once __DIR__ . '/api_bootstrap.php';
 include_once __DIR__ . '/attendance_fix_helper.php';
 include '../../app_pagination/pagination.php';
 
@@ -109,13 +108,19 @@ include '../../app_pagination/pagination.php';
                     $types="iis";
                     app_exec_nonquery($sql, $parameters, $types);
 
+                    // Dynamic fee sync for processed, unfixed months
+                    $sync_uid = !empty($_SESSION['user_id']) ? [(int)$_SESSION['user_id']] : [];
+                    $sync_gid = isset($_POST['group']) ? (int)$_POST['group'] : 0;
+                    syncMonthlyAttendanceAndReceivables($_POST['date'], $sync_uid, $sync_gid);
                 }
                 else{
                     throw new Exception("Already Attendance Marked");
                 }
             }
             catch (Exception $e) {
-                $tm->rollback();
+                if (isset($tm)) {
+                    $tm->rollback();
+                }
                 http_response_code(500);
                 echo json_encode([
                     'Message' => $e->getMessage(),

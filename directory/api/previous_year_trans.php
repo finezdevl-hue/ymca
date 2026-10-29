@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/api_bootstrap.php';
+require_admin();
 require_once('../../invoice/tcpdf/tcpdf.php');
 include '../../app_common/db_connect.php';
 include '../../app_common/db_name.php';

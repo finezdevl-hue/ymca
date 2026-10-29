@@ -1,7 +1,7 @@
 <?php
-    session_start();
-    include_once __DIR__ . '/../../app_common/db_connect.php';
-    include_once __DIR__ . '/../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_admin();
+include_once __DIR__ . '/../../app_pagination/pagination.php';
 
     function get_year_closing_balance($year_id) {
         if ($year_id <= 0) return 0.0;

@@ -1,6 +1,5 @@
 <?php
-session_start();
-include '../../app_common/db_connect.php';
+require_once __DIR__ . '/api_bootstrap.php';
 include '../../app_pagination/pagination.php';
 
 if (isset($_POST['action']) && $_POST['action'] == 'load_data') {

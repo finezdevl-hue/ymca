@@ -1,7 +1,6 @@
 <?php
-session_start();
-include_once __DIR__ . '/../../app_common/db_connect.php';
-include_once __DIR__ . '/../../app_common/auth_helper.php';
+require_once __DIR__ . '/api_bootstrap.php';
+
 
 $login_id = !empty($_SESSION['login_id']) ? (int)$_SESSION['login_id'] : 0;
 if (!isSuperAdmin($login_id) && !isGroupAdmin($login_id)) {
@@ -56,32 +55,40 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
 
             // 2. Today's Attendance
             $today = date('Y-m-d');
-            $sql_att = "SELECT COUNT(DISTINCT member_id) as present_count FROM tbl_attendance WHERE group_id = ? AND date = ? AND is_present = 1";
-            $res_a = app_exec_getresult($sql_att, [$group_id, $today], "is");
+            $sql_att = "SELECT COUNT(DISTINCT a.member_id) as present_count 
+                        FROM tbl_attendance a 
+                        WHERE a.date = ? AND (a.group_id = ? OR a.member_id IN (SELECT member_id FROM tbl_group_member_map WHERE group_id = ?))";
+            $res_a = app_exec_getresult($sql_att, [$today, $group_id, $group_id], "sii");
             $today_present = $res_a ? (int)$res_a->fetch_assoc()['present_count'] : 0;
 
             // 3. Current Month Group Income (Fees Received)
             $cur_month = date('m');
             $cur_year = date('Y');
-            $sql_inc = "SELECT SUM(r.amount) as total_income 
+            $sql_inc = "SELECT SUM(r.fees) as total_income 
                         FROM tbl_member_recieved r 
                         JOIN tbl_group_member_map gmm ON r.member_id = gmm.member_id 
-                        WHERE gmm.group_id = ? AND MONTH(r.date) = ? AND YEAR(r.date) = ?";
+                        WHERE gmm.group_id = ? AND MONTH(r.date) = ? AND YEAR(r.date) = ? AND (r.cancel = 0 OR r.cancel IS NULL)";
             $res_inc = app_exec_getresult($sql_inc, [$group_id, $cur_month, $cur_year], "iii");
             $monthly_income = ($res_inc && ($row = $res_inc->fetch_assoc())) ? (float)$row['total_income'] : 0.00;
 
             // 4. Current Month Group Expenses (Payables / Paid)
-            $sql_exp = "SELECT SUM(amount) as total_exp FROM tbl_paid WHERE group_id = ? AND MONTH(date) = ? AND YEAR(date) = ?";
+            $sql_exp = "SELECT SUM(amount) as total_exp FROM tbl_paid WHERE group_id = ? AND MONTH(date) = ? AND YEAR(date) = ? AND (cancel = 0 OR cancel IS NULL)";
             $res_exp = app_exec_getresult($sql_exp, [$group_id, $cur_month, $cur_year], "iii");
             $monthly_exp = ($res_exp && ($row = $res_exp->fetch_assoc())) ? (float)$row['total_exp'] : 0.00;
 
             // 5. Total Group Dues Pending
-            $sql_dues = "SELECT SUM(rec.amount) - COALESCE(SUM(rec_pd.paid_amt), 0) as pending_dues 
-                         FROM tbl_member_recievable rec 
-                         JOIN tbl_group_member_map gmm ON rec.member_id = gmm.member_id 
-                         LEFT JOIN (SELECT member_id, SUM(amount) as paid_amt FROM tbl_member_recieved GROUP BY member_id) rec_pd ON rec.member_id = rec_pd.member_id 
-                         WHERE gmm.group_id = ?";
-            $res_dues = app_exec_getresult($sql_dues, [$group_id], "i");
+            $sql_dues = "SELECT (
+                            SELECT COALESCE(SUM(rec.fees), 0)
+                            FROM tbl_member_recievable rec
+                            JOIN tbl_group_member_map gmm ON rec.member_id = gmm.member_id
+                            WHERE gmm.group_id = ? AND (rec.cancel = 0 OR rec.cancel IS NULL)
+                         ) - (
+                            SELECT COALESCE(SUM(rcv.fees), 0)
+                            FROM tbl_member_recieved rcv
+                            JOIN tbl_group_member_map gmm ON rcv.member_id = gmm.member_id
+                            WHERE gmm.group_id = ? AND (rcv.cancel = 0 OR rcv.cancel IS NULL)
+                         ) AS pending_dues";
+            $res_dues = app_exec_getresult($sql_dues, [$group_id, $group_id], "ii");
             $pending_dues = ($res_dues && ($row = $res_dues->fetch_assoc())) ? (float)$row['pending_dues'] : 0.00;
             if ($pending_dues < 0) $pending_dues = 0;
 

@@ -13,9 +13,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
     $sql = "SELECT 
                 m.first_name, m.middle_name, m.last_name, m.email,
                 (
-                    COALESCE((SELECT SUM(fees) FROM tbl_member_recievable WHERE member_id = m.id), 0)
+                    COALESCE((SELECT SUM(fees) FROM tbl_member_recievable WHERE member_id = m.id AND (cancel = 0 OR cancel IS NULL)), 0)
                     -
-                    COALESCE((SELECT SUM(fees) FROM tbl_member_recieved WHERE member_id = m.id), 0)
+                    COALESCE((SELECT SUM(fees) FROM tbl_member_recieved WHERE member_id = m.id AND (cancel = 0 OR cancel IS NULL)), 0)
                 ) AS pending_balance
             FROM tbl_members AS m 
             WHERE m.id = ?";

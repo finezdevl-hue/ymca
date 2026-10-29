@@ -13,9 +13,6 @@ if (isNormalMember($login_id)) {
     exit();
 }
 
-if(isset($_POST['id'])){
-    $_SESSION['id']=$_POST['id'];
-}
 session_write_close();
 ?>
 <!DOCTYPE html>
@@ -723,7 +720,7 @@ session_write_close();
             var m = globalMembers[index];
             if (!m) return;
             fetchmemberDetails(
-                m.id, m.first_name, m.middle_name, m.last_name,
+                m.id, m.first_name, m.middle_name, m.last_name, m.gender,
                 m.father_name, m.mother_name, m.dob, m.blood_group,
                 m.email, m.phone, m.whtsapp, m.p_street,
                 m.p_city, m.p_pincode, m.p_country, m.img, m.inactive
@@ -736,8 +733,9 @@ session_write_close();
             popuCreateLogin(m.first_name, m.middle_name, m.last_name, m.email);
         }
 
-        function fetchmemberDetails(id,first_name,middle_name,last_name,father_name,mother_name,dob,blood_group,email,phone,whtsapp,p_street,p_city,p_pincode,p_country,img,inactive){
+        function fetchmemberDetails(id,first_name,middle_name,last_name,gender,father_name,mother_name,dob,blood_group,email,phone,whtsapp,p_street,p_city,p_pincode,p_country,img,inactive){
             $("#txt_first_name").val(first_name);$("#txt_middle_name").val(middle_name);$("#txt_last_name").val(last_name);
+            $("#selected_gender").val(gender ? gender : "Male");
             $("#txt_father_name").val(father_name);$("#txt_mother_name").val(mother_name);$("#dob").val(dob);
             $("#selected_blood_group").val(blood_group);$("#txt_phone").val(phone);$("#txt_email").val(email);
             $("#txt_whtsapp").val(whtsapp);$("#txt_p_street").val(p_street);$("#txt_p_city").val(p_city);
@@ -755,7 +753,7 @@ session_write_close();
             swal({title:"Are you sure?",text:"Do you want to save this data!",type:"warning",showCancelButton:true,confirmButtonColor:"#DD6B55",confirmButtonText:"Yes,Save!",cancelButtonText:"Cancel",closeOnConfirm:false,closeOnCancel:true},
             function(isConfirm){
                 if(isConfirm){
-                    var data={action:'save_members',first_name:$('#txt_first_name').val(),middle_name:$('#txt_middle_name').val(),last_name:$('#txt_last_name').val(),father_name:$('#txt_father_name').val(),mother_name:$('#txt_mother_name').val(),dob:$('#dob').val(),blood_group:$("#selected_blood_group").val(),phone:$('#txt_phone').val(),whtsapp:$('#txt_whtsapp').val(),email:$('#txt_email').val(),p_street:$('#txt_p_street').val(),p_city:$('#txt_p_city').val(),p_pincode:$('#txt_p_pincode').val(),p_country:$('#txt_p_country').val(),inactive:$('#inactive').is(':checked')?1:0,id:$("#hdn_id").val(),img:$("#hdn_file_upload").val()};
+                    var data={action:'save_members',first_name:$('#txt_first_name').val(),middle_name:$('#txt_middle_name').val(),last_name:$('#txt_last_name').val(),gender:$('#selected_gender').val(),father_name:$('#txt_father_name').val(),mother_name:$('#txt_mother_name').val(),dob:$('#dob').val(),blood_group:$("#selected_blood_group").val(),phone:$('#txt_phone').val(),whtsapp:$('#txt_whtsapp').val(),email:$('#txt_email').val(),p_street:$('#txt_p_street').val(),p_city:$('#txt_p_city').val(),p_pincode:$('#txt_p_pincode').val(),p_country:$('#txt_p_country').val(),inactive:$('#inactive').is(':checked')?1:0,id:$("#hdn_id").val(),img:$("#hdn_file_upload").val()};
                     $.ajax({type:"POST",url:"api/members.php",data:data,
                         success:function(response){closepopupMemberDetails();alertsuccess('Saved Successfully');loadData($('#hdn_current_page').val());},
                         error:function(xhr,status){var m=JSON.parse(xhr.responseText);alerterror(m,xhr);$('#member_form')[0].reset();$("#photoInput").val('');}
@@ -877,21 +875,29 @@ session_write_close();
                                     <input type="text" id="txt_last_name" name="last_name" placeholder="Last Name" class="form-control" oninput="nameValidation()">
                                 </div>
                                 <div class="form-field">
-                                    <label class="form-label">Father's Name</label>
-                                    <input type="text" id="txt_father_name" name="father_name" placeholder="Father's Name" class="form-control" oninput="nameValidation()">
+                                    <label class="form-label">Gender</label>
+                                    <select id="selected_gender" name="gender" class="form-control">
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="form-row-pair">
+                                <div class="form-field">
+                                    <label class="form-label">Father's Name</label>
+                                    <input type="text" id="txt_father_name" name="father_name" placeholder="Father's Name" class="form-control" oninput="nameValidation()">
+                                </div>
                                 <div class="form-field">
                                     <label class="form-label">Mother's Name</label>
                                     <input type="text" id="txt_mother_name" name="mother_name" placeholder="Mother's Name" class="form-control" oninput="nameValidation()">
                                 </div>
+                            </div>
+                            <div class="form-row-pair">
                                 <div class="form-field">
                                     <label class="form-label">Date of Birth</label>
                                     <input type="date" id="dob" name="dob" class="form-control">
                                 </div>
-                            </div>
-                            <div class="form-row-pair">
                                 <div class="form-field">
                                     <label class="form-label">Blood Group</label>
                                     <div id="blood_groups">

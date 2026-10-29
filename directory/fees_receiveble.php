@@ -535,7 +535,8 @@ $is_guest_desktop = ($member_type === 1);
                url: "api/fees_receiveble.php",
                data: {
                 action: 'load_data',
-                page: page, 
+                page: page,
+                member_id: msdActiveMemberId
                },
                 success: function(data) {
 
@@ -565,9 +566,14 @@ $is_guest_desktop = ($member_type === 1);
 
                         var recFees = parseFloat(obj[1][i].receiveble_fees) || 0;
                         var totRcvd = parseFloat(obj[1][i].total_received_fees) || 0;
-                        var balance = recFees - totRcvd;
+                        var isCancelled = (parseInt(obj[1][i].cancel) === 1);
+                        var balance = isCancelled ? 0 : (recFees - totRcvd);
+                        if (balance < 0) balance = 0;
 
-                        htm += "<tr id='tr_" + i + "' data-receiveble-id='" + obj[1][i].recieveble_id + "' data-flag='" + obj[1][i].flag + "' data-remaining-balance='" + balance + "'>";
+                        var rowClass = isCancelled ? "row-cancelled" : "";
+                        var rowStyle = isCancelled ? "style='opacity: 0.65; background-color: rgba(241, 245, 249, 0.6);'" : "";
+
+                        htm += "<tr id='tr_" + i + "' class='" + rowClass + "' " + rowStyle + " data-receiveble-id='" + obj[1][i].recieveble_id + "' data-flag='" + obj[1][i].flag + "' data-remaining-balance='" + balance + "'>";
 
                         var monthYear = getMonthNameFromRecord(obj[1][i].date, obj[1][i].discription);
                         htm=htm+ "<td style='vertical-align:middle; font-weight:600; color:var(--text-muted);'>"+obj[1][i].date+"</td>";
@@ -578,16 +584,18 @@ $is_guest_desktop = ($member_type === 1);
                         var particularHtml = '';
 
                         if (headName.toLowerCase() === 'monthly fee' || headName.toLowerCase() === 'monthly fees') {
-                            // For Monthly Fee: show "Monthly Fee — Month Year" derived from the record date only
-                            var monthYearFromDate = getMonthNameFromRecord(obj[1][i].date, null);
-                            var monthLabel = monthYearFromDate ? headName + ' \u2014 ' + monthYearFromDate : headName;
+                            var monthLabel = monthYear ? headName + ' \u2014 ' + monthYear : headName;
                             particularHtml = "<strong style='color:var(--text-primary);'>" + monthLabel + "</strong>";
-                            // Append extra description below if it exists and isn't just the head name
-                            if (rawDesc && rawDesc.toLowerCase() !== headName.toLowerCase()) {
+                            // Append extra description below if it exists and isn't just the head name or standard monthly fee label
+                            if (rawDesc && rawDesc.toLowerCase() !== headName.toLowerCase() && !rawDesc.toLowerCase().startsWith('monthly fee')) {
                                 particularHtml += "<br><span style='font-size:11px; color:var(--text-muted);'>" + rawDesc + "</span>";
                             }
                         } else {
                             particularHtml = rawDesc || '\u2014';
+                        }
+
+                        if (isCancelled) {
+                            particularHtml += " <span class='badge' style='margin-top: 4px; font-size: 10px; padding: 3px 8px; border-radius: 6px; background-color: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 700;'><i class='fa fa-ban'></i> Cancelled</span>";
                         }
 
                         var groupName = obj[1][i].group_name ? obj[1][i].group_name.trim() : '';
@@ -599,9 +607,16 @@ $is_guest_desktop = ($member_type === 1);
 
                         htm = htm + "<td style='vertical-align:middle; font-weight:700;'>₹ " + recFees.toFixed(2) + "</td>";
                         htm = htm + "<td style='vertical-align:middle; font-weight:700; color:#10b981;'>₹ 0.00</td>";
-                        htm=htm+ "<td style='vertical-align:middle; font-weight:700; color:#ef4444;' id='bal_"+i+"'>₹ " + balance.toFixed(2) + "</td>";
+                        if (isCancelled) {
+                            htm=htm+ "<td style='vertical-align:middle; font-weight:700; color:var(--text-muted);' id='bal_"+i+"'>—</td>";
+                        } else {
+                            htm=htm+ "<td style='vertical-align:middle; font-weight:700; color:#ef4444;' id='bal_"+i+"'>₹ " + balance.toFixed(2) + "</td>";
+                        }
                         
-                        if(obj[1][i].iscomplete == 0){
+                        if (isCancelled) {
+                            htm=htm+ "<td style='vertical-align:middle;'><button type='button' class='status-badge-custom' style='background:rgba(239, 68, 68, 0.1); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.2);' disabled><i class='fa fa-ban'></i> Cancelled</button></td>";
+                        }
+                        else if(obj[1][i].iscomplete == 0){
                             htm=htm+ "<td style='vertical-align:middle;'><button type='button' class='status-badge-custom pending' disabled><i class='fa fa-clock-o'></i> Pending</button></td>";
                         }
                         else{
@@ -609,13 +624,12 @@ $is_guest_desktop = ($member_type === 1);
                         }
                         
                         htm=htm+ "<td style='vertical-align:middle; text-align: right;'>";
-                        htm=htm+ "<button type='button' class='btn btn-table-action-edit' onclick='editReceiveble("+i+");'><i class='fa fa-pencil'></i> Edit</button>";
-                        
-                        if(obj[1][i].cancel == 1){
-                            htm=htm+ "<button type='button' class='btn btn-table-action-cancel proceed' style='margin-left:6px;' onclick='cancelFeeDetails("+obj[1][i].recieveble_id+", "+obj[1][i].cancel+");'><i class='fa fa-refresh'></i> Re-open</button>";
+                        if (!isCancelled) {
+                            htm=htm+ "<button type='button' class='btn btn-table-action-edit' onclick='editReceiveble("+i+");'><i class='fa fa-pencil'></i> Edit</button>";
+                            htm=htm+ "<button type='button' class='btn btn-table-action-cancel cancel' style='margin-left:6px;' onclick='cancelFeeDetails("+obj[1][i].recieveble_id+", "+obj[1][i].cancel+");'><i class='fa fa-ban'></i> Cancel</button>";
                         }
                         else{
-                            htm=htm+ "<button type='button' class='btn btn-table-action-cancel cancel' style='margin-left:6px;' onclick='cancelFeeDetails("+obj[1][i].recieveble_id+", "+obj[1][i].cancel+");'><i class='fa fa-ban'></i> Cancel</button>";
+                            htm=htm+ "<button type='button' class='btn btn-table-action-cancel proceed' style='margin-left:6px;' onclick='cancelFeeDetails("+obj[1][i].recieveble_id+", "+obj[1][i].cancel+");'><i class='fa fa-refresh'></i> Re-open</button>";
                         }
                         
                         htm=htm+ "</td>";
@@ -646,8 +660,9 @@ $is_guest_desktop = ($member_type === 1);
 
     <script>
         function setFees(){
-            var balAmt=0;
-            var TotalAmount=parseFloat($('#txt_AmountPaid').val()) || 0;
+            var balAmt = 0;
+            var initialAmount = parseFloat($('#txt_AmountPaid').val()) || 0;
+            var TotalAmount = initialAmount;
             if (TotalAmount <= 0) {
                 if (typeof alertinfo === 'function') {
                     alertinfo("Please enter an amount before clicking Set Fees.");
@@ -663,23 +678,54 @@ $is_guest_desktop = ($member_type === 1);
             $('#tbl_receiveble tbody tr').each(function() {
                 var remaining_balance = parseFloat($(this).data('remaining-balance')) || 0;
                 $(this).find('td:nth-child(5)').text('₹ 0.00');
-                $(this).find('td:nth-child(6)').text('₹ ' + remaining_balance.toFixed(2));
+                if ($(this).hasClass('row-cancelled')) {
+                    $(this).find('td:nth-child(6)').html('<span style="color:var(--text-muted);">—</span>');
+                } else {
+                    $(this).find('td:nth-child(6)').text('₹ ' + remaining_balance.toFixed(2));
+                }
             });
 
+            var totalSettled = 0;
             $('#tbl_receiveble tbody tr').each(function() {
                 var remaining_balance = parseFloat($(this).data('remaining-balance')) || 0;
-                if(TotalAmount>=remaining_balance){
+                if (remaining_balance <= 0) return;
+
+                if (TotalAmount >= remaining_balance) {
                     $(this).find('td:nth-child(6)').text('₹ 0.00');
                     $(this).find('td:nth-child(5)').text('₹ ' + remaining_balance.toFixed(2));
-                    TotalAmount=TotalAmount-remaining_balance;
+                    TotalAmount = TotalAmount - remaining_balance;
+                    totalSettled += remaining_balance;
+                } else {
+                    balAmt = remaining_balance - TotalAmount;
+                    $(this).find('td:nth-child(6)').text('₹ ' + balAmt.toFixed(2));
+                    $(this).find('td:nth-child(5)').text('₹ ' + TotalAmount.toFixed(2));
+                    totalSettled += TotalAmount;
+                    TotalAmount = 0;
+                    return false;
                 }
-                else{
-                   balAmt= remaining_balance-TotalAmount;
-                   $(this).find('td:nth-child(6)').text('₹ ' + balAmt.toFixed(2));
-                   $(this).find('td:nth-child(5)').text('₹ ' + TotalAmount.toFixed(2));
-                   return false;
-                }
-             });
+            });
+
+            var excessAmount = TotalAmount;
+            window.desktopExcessAmount = excessAmount;
+            window.desktopTotalPaid = initialAmount;
+
+            if (excessAmount > 0) {
+                $('#desktop_excess_wallet_msg').html(
+                    '<div style="background:rgba(16,185,129,0.12); border:1.5px solid rgba(16,185,129,0.3); border-radius:14px; padding:12px 16px; color:#065f46; display:flex; align-items:center; justify-content:space-between; gap:12px; font-weight:600;">' +
+                        '<div style="display:flex; align-items:center; gap:10px;">' +
+                            '<span style="background:#10b981; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;"><i class="fa fa-google-wallet"></i></span>' +
+                            '<div>' +
+                                '<div style="font-weight:800; font-size:13px; color:#047857;">Excess Payment Detected</div>' +
+                                '<div style="font-size:12px; color:#0f5132; margin-top:2px;">Dues Settled: <strong>₹' + totalSettled.toFixed(2) + '</strong> &nbsp;|&nbsp; Remaining Balance to Wallet: <strong style="color:#059669; font-size:13px;">₹' + excessAmount.toFixed(2) + '</strong></div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<span class="badge" style="background:#10b981; color:#fff; font-size:11.5px; font-weight:800; padding:6px 12px; border-radius:20px;">+ ₹' + excessAmount.toFixed(2) + ' to Wallet</span>' +
+                    '</div>'
+                ).show();
+            } else {
+                $('#desktop_excess_wallet_msg').hide();
+            }
+
             $('#setoff_buttuon').show();
         }
 
@@ -701,11 +747,16 @@ $is_guest_desktop = ($member_type === 1);
             $('#tbl_receiveble tbody tr').each(function() {
                 var remaining_balance = parseFloat($(this).data('remaining-balance')) || 0;
                 $(this).find('td:nth-child(5)').text('₹ 0.00');
-                $(this).find('td:nth-child(6)').text('₹ ' + remaining_balance.toFixed(2));
+                if ($(this).hasClass('row-cancelled')) {
+                    $(this).find('td:nth-child(6)').html('<span style="color:var(--text-muted);">—</span>');
+                } else {
+                    $(this).find('td:nth-child(6)').text('₹ ' + remaining_balance.toFixed(2));
+                }
             });
 
             $('#tbl_receiveble tbody tr').each(function() {
                 var remaining_balance = parseFloat($(this).data('remaining-balance')) || 0;
+                if (remaining_balance <= 0) return;
                 if(TotalAmount>=remaining_balance){
                     $(this).find('td:nth-child(6)').text('₹ 0.00');
                     $(this).find('td:nth-child(5)').text('₹ ' + remaining_balance.toFixed(2));
@@ -722,6 +773,22 @@ $is_guest_desktop = ($member_type === 1);
         }
         
         function setOffform(){
+            var excessAmount = window.desktopExcessAmount || 0;
+            var initialPaid = window.desktopTotalPaid || 0;
+            if (excessAmount > 0) {
+                $('#desktop_modal_excess_info').html(
+                    '<div style="background:#ecfdf5; border:1.5px solid #a7f3d0; border-radius:12px; padding:10px 14px; color:#065f46;">' +
+                    '<div style="font-weight:800; font-size:12.5px;"><i class="fa fa-google-wallet"></i> Wallet Credit Summary</div>' +
+                    '<div style="font-size:12px; margin-top:3px;">' +
+                    '• Settling Dues: <strong>₹' + (initialPaid - excessAmount).toFixed(2) + '</strong><br>' +
+                    '• Crediting to Wallet: <strong style="color:#059669;">₹' + excessAmount.toFixed(2) + '</strong><br>' +
+                    '• Total Payment: <strong>₹' + initialPaid.toFixed(2) + '</strong>' +
+                    '</div>' +
+                    '</div>'
+                ).show();
+            } else {
+                $('#desktop_modal_excess_info').hide();
+            }
             $('#setOffModel').modal('show');
         }
         
@@ -736,6 +803,7 @@ $is_guest_desktop = ($member_type === 1);
         
         function closesetOffform(){
             $('#setoff_form')[0].reset();
+            $('#desktop_modal_excess_info').hide();
             $('#setOffModel').modal('hide');
         }
 
@@ -765,7 +833,10 @@ $is_guest_desktop = ($member_type === 1);
                 }
             });
 
-            if (receivedArray.length === 0) {
+            var excessAmount = window.desktopExcessAmount || 0;
+            var initialPaid = window.desktopTotalPaid || 0;
+
+            if (receivedArray.length === 0 && excessAmount <= 0) {
                 alertinfo("Please set fees before saving.");
                 return;
             }
@@ -776,9 +847,13 @@ $is_guest_desktop = ($member_type === 1);
                 return;
             }
 
+            var confirmText = excessAmount > 0
+                ? "Total Paid: ₹" + initialPaid.toFixed(2) + " (Due Settled: ₹" + (initialPaid - excessAmount).toFixed(2) + ", Credited to Wallet: ₹" + excessAmount.toFixed(2) + "). Do you want to save this data?"
+                : "Do you want to save this data!";
+
             swal({
                 title: "Are you sure?",
-                text: "Do you want to save this data!",
+                text: confirmText,
                 type: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#DD6B55",
@@ -792,6 +867,8 @@ $is_guest_desktop = ($member_type === 1);
                     var formData = new FormData();
                     formData.append('action', 'setoff_receiveble');
                     formData.append('received_array', JSON.stringify(receivedArray));
+                    formData.append('amount_to_wallet', excessAmount);
+                    formData.append('total_amount_paid', initialPaid);
                     formData.append('date', $('#setoff_date').val());
                     formData.append('transaction_type', $('#selected_transaction_type').val());
                     
@@ -810,8 +887,16 @@ $is_guest_desktop = ($member_type === 1);
                             closesetOffform();
                             $('#txt_AmountPaid').val('');
                             $('#setoff_buttuon').hide();
-                            alertsuccess('Payment processed successfully');
+                            $('#desktop_excess_wallet_msg').hide();
+                            window.desktopExcessAmount = 0;
+                            window.desktopTotalPaid = 0;
+                            var successMsg = excessAmount > 0 
+                                ? "Payment processed successfully! ₹" + excessAmount.toFixed(2) + " credited to member's wallet."
+                                : (response || "Payment processed successfully");
+                            alertsuccess(successMsg);
                             loadData($('#hdn_current_page').val());
+                            load_wallet_amount();
+                            load_pending_payment();
                         },
                         error: function (xhr, status){
                             var msg = xhr.responseText || 'Error processing payment';
@@ -1073,6 +1158,7 @@ $is_guest_desktop = ($member_type === 1);
                         success: function(response) {
                             alertwarning(response);
                             loadData($('#hdn_current_page').val());
+                            load_pending_payment();
                         },
                         error: function(xhr, status, error) {
                             console.log('AJAX error:', status, error);
@@ -1355,6 +1441,7 @@ $is_guest_desktop = ($member_type === 1);
                             <button type="button" id="setoff_buttuon" class="btn-setoff-custom" onclick="setOffform()">SetOff</button>
                         </div>
                     </div>
+                    <div id="desktop_excess_wallet_msg" style="display:none; margin-top:10px;"></div>
                 </div>
 
                 <!-- Wallet Setoff Panel -->
@@ -1415,6 +1502,7 @@ $is_guest_desktop = ($member_type === 1);
                     </div>
 
                     <div class="modal-body" style="padding: 30px; background: var(--card-bg, #ffffff);">
+                        <div id="desktop_modal_excess_info" style="display:none; margin-bottom:16px;"></div>
                         <div class="form-group">
                             <label>Payment Date</label>
                             <input type="date" id="setoff_date" name="setoff_date" class="form-control">
@@ -1589,18 +1677,33 @@ $is_guest_desktop = ($member_type === 1);
                 date: dt,
                 head: 12
             }, function(res) {
-                $('#addGuestFeeModalDesktop').modal('hide');
-                if (typeof alertsuccess === 'function') {
-                    alertsuccess('Guest fee receivable added successfully!');
+                let data = (typeof res === 'string') ? JSON.parse(res) : res;
+                if (data && (data.success || data.status === 'success')) {
+                    $('#addGuestFeeModalDesktop').modal('hide');
+                    if (typeof alertsuccess === 'function') {
+                        alertsuccess('Guest fee receivable added successfully!');
+                    } else {
+                        alert('Guest fee receivable added successfully!');
+                    }
+                    loadData($('#hdn_current_page').val());
                 } else {
-                    alert('Guest fee receivable added successfully!');
+                    let errMsg = (data && data.Message) ? data.Message : 'Error adding guest fee receivable.';
+                    if (typeof alerterror === 'function') {
+                        alerterror(errMsg);
+                    } else {
+                        alert(errMsg);
+                    }
                 }
-                loadData($('#hdn_current_page').val());
-            }).fail(function() {
+            }).fail(function(xhr) {
+                let msg = 'Error adding guest fee receivable.';
+                try {
+                    let errObj = JSON.parse(xhr.responseText);
+                    if (errObj && errObj.Message) msg = errObj.Message;
+                } catch(e) {}
                 if (typeof alerterror === 'function') {
-                    alerterror('Error adding guest fee receivable.');
+                    alerterror(msg);
                 } else {
-                    alert('Error adding guest fee receivable.');
+                    alert(msg);
                 }
             });
         }

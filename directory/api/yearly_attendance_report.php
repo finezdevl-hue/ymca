@@ -1,8 +1,6 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
+require_once __DIR__ . '/api_bootstrap.php';
+require_attendance_master();
 if (empty($_SESSION['login_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
@@ -113,8 +111,7 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
 
             include_once __DIR__ . '/../../app_common/auth_helper.php';
             $lid = (int)$_SESSION['login_id'];
-            // Super Admin, Group Admin, and Executive Member view all members' reports. Attendance Masters view only their own report.
-            $is_admin = isSuperAdmin($lid) || isGroupAdmin($lid) || isExecutiveMember($lid);
+            $is_admin = isSuperAdmin($lid) || isGroupAdmin($lid) || isAttendanceMaster($lid) || isExecutiveMember($lid);
             $allowed_groups = getUserAllowedGroupIds($lid);
 
             $target_member_id = 0;
@@ -196,7 +193,7 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
                 $types_data .= "sss";
             }
 
-            $data_sql .= " GROUP BY m.id HAVING total_days_present > 0 ORDER BY m.first_name, m.middle_name, m.last_name";
+            $data_sql .= " GROUP BY m.id HAVING total_days_present > 0 ORDER BY total_days_present DESC, m.first_name, m.middle_name, m.last_name";
             if ($target_member_id <= 0 && $page > 0 && $limit > 0) {
                 $offset = ($page - 1) * $limit;
                 $data_sql .= " LIMIT $offset, $limit";
@@ -245,10 +242,9 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
                     while ($row = $months_res->fetch_assoc()) {
                         $m_id = (int)$row['member_id'];
                         $month_num = (int)$row['month_num'];
-                        $fy_index = ($month_num >= 4) ? ($month_num - 3) : ($month_num + 9);
                         $days_count = (int)$row['days_count'];
                         if (isset($members[$m_id])) {
-                            $members[$m_id]['months'][$fy_index] = $days_count;
+                            $members[$m_id]['months'][$month_num] = $days_count;
                         }
                     }
                 }
@@ -289,6 +285,23 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
             ";
             $params_data = [$start_date, $end_date];
             $types_data  = "ss";
+
+            include_once __DIR__ . '/../../app_common/auth_helper.php';
+            $lid = (int)$_SESSION['login_id'];
+            $is_admin = isSuperAdmin($lid) || isGroupAdmin($lid) || isAttendanceMaster($lid) || isExecutiveMember($lid);
+            $allowed_groups = getUserAllowedGroupIds($lid);
+
+            if (!$is_admin) {
+                $target_member_id = getLoggedInMemberId();
+                if ($target_member_id > 0) {
+                    $data_sql .= " AND m.id = ?";
+                    $params_data[] = $target_member_id;
+                    $types_data .= "i";
+                }
+            } elseif (!in_array('ALL', $allowed_groups, true) && !empty($allowed_groups)) {
+                $in = implode(',', array_map('intval', $allowed_groups));
+                $data_sql .= " AND gmm.group_id IN ($in)";
+            }
 
             if ($search !== '') {
                 $data_sql .= " AND (m.first_name LIKE ? OR m.middle_name LIKE ? OR m.last_name LIKE ?)";
@@ -333,9 +346,8 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
                     while ($row = $months_res->fetch_assoc()) {
                         $m_id      = (int)$row['member_id'];
                         $month_num = (int)$row['month_num'];
-                        $fy_index  = ($month_num >= 4) ? ($month_num - 3) : ($month_num + 9);
                         if (isset($members[$m_id])) {
-                            $members[$m_id]['months'][$fy_index] = (int)$row['days_count'];
+                            $members[$m_id]['months'][$month_num] = (int)$row['days_count'];
                         }
                     }
                 }
@@ -403,6 +415,15 @@ if (isset($_POST['action']) && !empty($_POST['action'])) {
                     'absent_dates'  => [],
                     'days'          => array_fill(1, 31, '—') // default to dash
                 ];
+            }
+
+            if (empty($group_ids)) {
+                $res_g = app_exec_getresult("SELECT DISTINCT group_id FROM tbl_attendance WHERE member_id = ?", [$member_id], "i");
+                if ($res_g) {
+                    while ($rg = $res_g->fetch_assoc()) {
+                        if (!empty($rg['group_id'])) $group_ids[] = (int)$rg['group_id'];
+                    }
+                }
             }
 
             // If the member belongs to groups, calculate stats

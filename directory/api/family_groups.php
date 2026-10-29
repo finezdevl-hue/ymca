@@ -1,6 +1,5 @@
 <?php
-session_start();
-include '../../app_common/db_connect.php';
+require_once __DIR__ . '/api_bootstrap.php';
 include '../../app_pagination/pagination.php';
 
 
@@ -110,15 +109,18 @@ include '../../app_pagination/pagination.php';
                 $current_page = (int)$_POST['page']; //isset($_GET['page']) ? (int)$_GET['page'] : 1;
                 $group_status = (int)$_POST['group_status']; // isset($_GET['']) ? (int)$_GET['group_status'] : ;
 
+                $target_id = (int)($_SESSION['selected_family_id'] ?? 0);
+
                 if($group_status==0){
-                    $sql="SELECT COUNT(id) as total FROM tbl_family_groups WHERE id=" . $_SESSION['id'];
+                    $sql="SELECT COUNT(id) as total FROM tbl_family_groups WHERE id = ?";
+                    $totalRowsResult = app_exec_getresult($sql, [$target_id], "i");
                 }
                 else{
-                    $sql="SELECT COUNT(id) as total FROM tbl_family_groups WHERE id=" . $_SESSION['id']." AND status=".$group_status;
+                    $sql="SELECT COUNT(id) as total FROM tbl_family_groups WHERE id = ? AND status = ?";
+                    $totalRowsResult = app_exec_getresult($sql, [$target_id, $group_status], "ii");
                 }
 
-                $totalRowsResult = app_exec_query($sql);
-                $totalRows = $totalRowsResult->fetch_assoc()['total'];
+                $totalRows = ($totalRowsResult && $tr = $totalRowsResult->fetch_assoc()) ? $tr['total'] : 0;
 
                 $offset = ($current_page - 1) * $rowsPerPage;
 

@@ -1,10 +1,7 @@
 <?php
-
-    session_start();
-
-    include '../../app_common/db_connect.php';
-
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_attendance_master();
+include '../../app_pagination/pagination.php';
 
 
 

@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/api_bootstrap.php';
 require_once('../../invoice/tcpdf/tcpdf.php');
 include '../../app_common/db_connect.php';
 include '../../app_common/db_name.php';
@@ -44,21 +44,21 @@ include '../../app_pagination/pagination.php';
                     END), 0) FROM tbl_wallet WHERE client_id = m.id) AS wallet_amount,
 
                     -- Count incomplete
-                    COALESCE(SUM(CASE WHEN mr.iscomplete = 0 THEN 1 ELSE 0 END), 0) AS total_incomplete,
+                    COALESCE(SUM(CASE WHEN mr.iscomplete = 0 AND (mr.cancel = 0 OR mr.cancel IS NULL) THEN 1 ELSE 0 END), 0) AS total_incomplete,
 
                     -- Pending balance = total receivable - total received
                     (
                         COALESCE((SELECT SUM(fees) 
                                 FROM tbl_member_recievable r 
-                                WHERE r.member_id = m.id), 0)
+                                WHERE r.member_id = m.id AND (r.cancel = 0 OR r.cancel IS NULL)), 0)
                         -
                         COALESCE((SELECT SUM(fees) 
                                 FROM tbl_member_recieved rd 
-                                WHERE rd.member_id = m.id), 0)
+                                WHERE rd.member_id = m.id AND (rd.cancel = 0 OR rd.cancel IS NULL)), 0)
                     ) AS pending_balance
 
                 FROM tbl_members AS m
-                LEFT JOIN tbl_member_recievable AS mr ON m.id = mr.member_id
+                LEFT JOIN tbl_member_recievable AS mr ON m.id = mr.member_id AND (mr.cancel = 0 OR mr.cancel IS NULL)
                 GROUP BY 
                     m.id, m.first_name, m.middle_name, m.last_name, m.img, m.member_type
                 HAVING total_incomplete > 0
@@ -69,10 +69,10 @@ include '../../app_pagination/pagination.php';
                         SELECT 
                             m.id
                         FROM tbl_members AS m
-                        LEFT JOIN tbl_member_recievable AS mr ON m.id = mr.member_id
+                        LEFT JOIN tbl_member_recievable AS mr ON m.id = mr.member_id AND (mr.cancel = 0 OR mr.cancel IS NULL)
                         GROUP BY 
                             m.id, m.first_name, m.middle_name, m.last_name, m.img, m.member_type
-                        HAVING COALESCE(SUM(CASE WHEN mr.iscomplete = 0 THEN 1 ELSE 0 END), 0) > 0
+                        HAVING COALESCE(SUM(CASE WHEN mr.iscomplete = 0 AND (mr.cancel = 0 OR mr.cancel IS NULL) THEN 1 ELSE 0 END), 0) > 0
                     ) AS x
                     ";
                 }
@@ -93,11 +93,11 @@ include '../../app_pagination/pagination.php';
                          (
                         COALESCE((SELECT SUM(fees) 
                                 FROM tbl_member_recievable r 
-                                WHERE r.member_id = m.id), 0)
+                                WHERE r.member_id = m.id AND (r.cancel = 0 OR r.cancel IS NULL)), 0)
                         -
                         COALESCE((SELECT SUM(fees) 
                                 FROM tbl_member_recieved rd 
-                                WHERE rd.member_id = m.id), 0)
+                                WHERE rd.member_id = m.id AND (rd.cancel = 0 OR rd.cancel IS NULL)), 0)
                     ) AS pending_balance
 
                     FROM tbl_members AS m
@@ -235,12 +235,12 @@ include '../../app_pagination/pagination.php';
                     $amount_to_pay = $amount_to_receive;
                 }
                 
-                $isComplete = ($amount_received >= $amount_to_receive) ? 1 : 0;
+                $isComplete = ((int)round($amount_received * 100) >= (int)round($amount_to_receive * 100)) ? 1 : 0;
 
                 $sql = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete,flag) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 $parameters = [
                     $_POST['member_id'],
-                    $_POST['receiveble'],
+                    $amount_to_receive,
                     $_POST['receiveble_date'],
                     $_SESSION['login_id'],
                     $_POST['head'],
@@ -248,7 +248,7 @@ include '../../app_pagination/pagination.php';
                     $isComplete,
                     $_POST['flag'],
                 ];
-                $types="iisissii";
+                $types="idsissii";
                     
                 // Use custom insert function that returns insert ID
                 $recieveble_id = app_exec_getlast_id_roll_back($conn, $sql, $parameters, $types);
@@ -266,7 +266,7 @@ include '../../app_pagination/pagination.php';
                         $_POST['flag'],
                         $_POST['transaction_type'],
                     ];
-                    $types="iisissiii";
+                    $types="idsissiii";
 
                     if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
                         throw new Exception("Error in Updation");
@@ -295,7 +295,7 @@ include '../../app_pagination/pagination.php';
                             $recieveble_id,
                             MemberTransaction::member,
                         ];
-                        $types="sssiii";
+                        $types="ssdiii";
                         $payable_id = app_exec_getlast_id_roll_back($conn, $sql, $parameters, $types);
 
                         $sql = "INSERT INTO tbl_paid (date, head, particuler, amount, payable_id, flag,transaction_type, invoice_id, is_member_trans) VALUES (?, 2, ?, ?, ?, ?, ?, ?, ?)";
@@ -309,7 +309,7 @@ include '../../app_pagination/pagination.php';
                             $recieveble_id,
                             MemberTransaction::member,
                         ];
-                        $types="sssiiiii";
+                        $types="ssdiiiiii";
                         if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
                             throw new Exception("Error in Updation");
                         }

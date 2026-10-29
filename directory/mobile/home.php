@@ -15,7 +15,9 @@ $page_title  = 'Attendance';
 $active_tab  = 'home';
 
 $login_id = (int)$_SESSION['login_id'];
-$can_mark_all_att = isSuperAdmin($login_id) || isGroupAdmin($login_id) || isAttendanceMaster($login_id);
+$is_group_admin = isSuperAdmin($login_id) || isGroupAdmin($login_id);
+$is_only_attendance_master = !$is_group_admin && (isAttendanceMaster($login_id) || isExecutiveMember($login_id));
+$can_mark_all_att = $is_group_admin || isAttendanceMaster($login_id) || isExecutiveMember($login_id);
 
 // Resolve member_id — set at login via login_validation.php
 $member_id   = (int)($_SESSION['user_id'] ?? 0);
@@ -554,6 +556,15 @@ session_write_close();
             padding: 2px 8px;
             border-radius: 20px;
         }
+
+        @media (max-width: 360px) {
+            #home-shuttle-card {
+                padding: 10px 10px !important;
+            }
+            #home_shuttle_prev_note_section {
+                padding: 8px 10px !important;
+            }
+        }
     </style>
 </head>
 
@@ -709,30 +720,208 @@ session_write_close();
             <div id="mob-action-area" style="width:100%; margin-top:4px;">
                 <div style="height:90px;border-radius:16px;background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;"></div>
             </div>
+
+            <?php if ($can_mark_all_att) { ?>
+            <!-- Session Shuttles Used Card (Red Alert Theme) -->
+            <div id="home-shuttle-card" style="margin-top:14px; background: linear-gradient(135deg, #fef2f2 0%, #ffe4e6 100%); border: 1.5px solid #ef4444; border-radius: 18px; padding: 12px 14px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15); text-align: left;">
+                <div style="display:flex; flex-direction:column; gap:9px;">
+                    <div>
+                        <div style="font-size:11.5px; font-weight:800; color:#991b1b; text-transform:uppercase; letter-spacing:0.5px; font-family:'Inter',sans-serif; text-align:left;">🔴 Enter Shuttles Used Today <span id="home_stock_status_lbl" style="display:none;"></span></div>
+                        <div id="home_shuttle_creator_notice" style="display:none; font-size:11.5px; font-weight:700; color:#1d4ed8; margin-top:4px; background:rgba(37,99,235,0.08); padding:4px 8px; border-radius:6px; border:1px solid #bfdbfe; text-align:left;"></div>
+                    </div>
+                    <!-- Optional Short Note Field (Above the save & count row) -->
+                    <div style="position:relative; width:100%;">
+                        <i class="fa fa-pencil" style="position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:12px; color:#ef4444; pointer-events:none;"></i>
+                        <input type="text" id="home_shuttle_notes" maxlength="150" placeholder="Short note (optional, e.g. brand, broken, court)..." style="width:100%; height:34px; padding:6px 12px 6px 32px; border-radius:10px; border:1.5px solid #fca5a5; background:#ffffff; font-size:12px; font-weight:600; color:#7f1d1d; outline:none; box-sizing:border-box; box-shadow:inset 0 1px 2px rgba(0,0,0,0.03); font-family:'Inter',sans-serif;">
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">
+                        <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+                            <!-- Vertical Stock Box on the left side of [-] [ 0 ] [+] -->
+                            <div id="home_stock_box" style="height:36px; min-width:38px; padding:2px 6px; border-radius:9px; border:1.5px solid #059669; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; user-select:none; box-shadow:0 1px 3px rgba(0,0,0,0.06); cursor:default; flex-shrink:0; margin-right:4px;" title="Remaining stock of shuttles">
+                                <div id="home_stock_box_lbl" style="font-size:8px; font-weight:800; letter-spacing:0.5px; text-transform:uppercase; line-height:1; color:#059669;">STOCK</div>
+                                <div id="home_stock_box_val" style="font-size:14px; font-weight:900; line-height:1.1; color:#059669; margin-top:1px;">0</div>
+                            </div>
+                            <button type="button" onclick="adjustShuttleCount('home_shuttles_used', -1)" style="width:34px; height:36px; border-radius:9px; border:1.5px solid #fca5a5; background:#fff; color:#991b1b; font-weight:900; font-size:19px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; user-select:none; flex-shrink:0;">-</button>
+                            <input type="number" id="home_shuttles_used" min="0" max="6" placeholder="0" readonly style="width:42px; height:36px; padding:2px; border-radius:9px; border:1.5px solid #fca5a5; background:#fff; font-weight:900; font-size:17px; color:#991b1b; text-align:center; outline:none; cursor:default; flex-shrink:0;">
+                            <button type="button" onclick="adjustShuttleCount('home_shuttles_used', 1)" style="width:34px; height:36px; border-radius:9px; border:1.5px solid #fca5a5; background:#fff; color:#991b1b; font-weight:900; font-size:19px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; user-select:none; flex-shrink:0;">+</button>
+                        </div>
+                        <button type="button" onclick="saveHomeShuttleReading()" style="height:36px; background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff; border:none; border-radius:9px; padding:0 14px; font-size:13px; font-weight:800; cursor:pointer; box-shadow:0 3px 10px rgba(220,38,38,0.3); display:inline-flex; align-items:center; justify-content:center; gap:5px; flex-shrink:0;" title="Save Shuttles Used">
+                            <i class="fa fa-save"></i> Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previous Added Note Section (Displayed after shuttle section) -->
+            <div id="home_shuttle_prev_note_section" style="display:none; margin-top:10px; background:#fffdf7; border:1.5px solid #fed7aa; border-left:4px solid #f97316; border-radius:14px; padding:10px 12px; box-shadow:0 2px 8px rgba(249,115,22,0.08); font-family:'Inter',sans-serif; text-align:left;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:4px;">
+                    <div style="font-size:11px; font-weight:800; color:#c2410c; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; flex-shrink:0;">
+                        <i class="fa fa-sticky-note" style="font-size:12px; color:#ea580c;"></i> <span id="home_shuttle_prev_note_label" style="white-space:nowrap;">Previous Added Note</span>
+                    </div>
+                    <button type="button" id="home_btn_use_note" onclick="copyShuttleNoteToInput()" style="display:none; background:#ffedd5; border:1px solid #fed7aa; color:#9a3412; border-radius:6px; padding:2px 8px; font-size:10.5px; font-weight:700; cursor:pointer; align-items:center; gap:3px; white-space:nowrap; flex-shrink:0;" title="Copy note into input field">
+                        <i class="fa fa-copy"></i> Use
+                    </button>
+                </div>
+                <div style="margin-bottom:6px; text-align:left;">
+                    <span id="home_shuttle_prev_note_badge" style="font-size:10px; font-weight:700; color:#9a3412; background:#ffedd5; padding:2px 8px; border-radius:8px; display:inline-block; max-width:100%; word-break:break-word; text-align:left;"></span>
+                </div>
+                <div id="home_shuttle_prev_note_text" style="font-size:12.5px; font-weight:600; color:#431407; line-height:1.45; word-break:break-word; text-align:left; background:rgba(254,215,170,0.18); padding:7px 10px; border-radius:8px; border:1px solid rgba(254,215,170,0.45);"></div>
+                
+                <!-- Prior Session Note (Shown if today ALSO has a note) -->
+                <div id="home_shuttle_older_note_wrap" style="display:none; margin-top:8px; padding-top:7px; border-top:1px dashed #fed7aa; font-size:11px; color:#7c2d12; text-align:left;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; margin-bottom:3px;">
+                        <div style="font-weight:700; font-size:10.5px; color:#9a3412; white-space:nowrap;">
+                            <i class="fa fa-history" style="color:#ea580c; margin-right:3px;"></i> Prior Session Note
+                        </div>
+                        <span id="home_shuttle_older_note_badge" style="font-size:9.5px; font-weight:700; color:#9a3412; opacity:0.85; white-space:nowrap;"></span>
+                    </div>
+                    <div id="home_shuttle_older_note_text" style="font-weight:600; font-size:12px; color:#431407; word-break:break-word; text-align:left; background:rgba(254,215,170,0.12); padding:5px 8px; border-radius:6px;"></div>
+                </div>
+            </div>
+            <?php } ?>
         </div>
     </div>
 
     <!-- Today's Member Status List Card -->
     <div class="mob-card" id="mob-present-card" style="display:none;">
-        <div class="mob-card-header">
+        <div class="mob-card-header" style="display:flex; align-items:center; gap:8px;">
             <div class="mob-card-icon" style="background: linear-gradient(135deg,#3b82f6,#2563eb);"><i class="fa fa-users"></i></div>
             <div class="mob-card-title">Today's Member Status</div>
             <span class="mob-chip mob-chip-green" id="mob-present-count" style="margin-left:auto;">0</span>
+            <button type="button" id="btn-share-match" onclick="shareTodayMatchImage()" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; border-radius:10px; padding:6px 12px; font-size:12px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(16,185,129,0.3); font-family:'Inter',sans-serif;" title="Share Match & Attendance Summary as Image">
+                <i class="fa fa-share-alt"></i> Share
+            </button>
         </div>
-        <div class="mob-card-body" style="padding-top:12px;" id="mob-present-list">
-            <div style="color:#94a3b8; font-size:13px; text-align:center; padding:10px 0;">Loading…</div>
+        <div class="mob-card-body" style="padding-top:12px;">
+            <div id="mob-present-list">
+                <div style="color:#94a3b8; font-size:13px; text-align:center; padding:10px 0;">Loading…</div>
+            </div>
+            <button type="button" onclick="shareTodayMatchImage()" style="width:100%; margin-top:14px; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border:none; border-radius:12px; padding:12px 16px; font-size:13px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 10px rgba(37,99,235,0.25); font-family:'Inter',sans-serif;">
+                <i class="fa fa-share-alt"></i> Share Match Report as Image
+            </button>
         </div>
     </div>
 
 </div><!-- /.mob-page -->
 
+<!-- Match Summary Share Preview Modal -->
+<div id="mob-share-preview-modal" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100%; height:100%; background:rgba(15,23,42,0.8); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
+    <div style="background:#fff; border-radius:20px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto; padding:20px; box-sizing:border-box; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="font-size:15px; font-weight:900; color:#1e293b;"><i class="fa fa-image" style="color:#2563eb;"></i> Match Report Preview</div>
+            <button type="button" onclick="$('#mob-share-preview-modal').css('display','none')" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; font-size:14px; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+        </div>
+        <div style="border:1.5px solid #e2e8f0; border-radius:14px; overflow:hidden; margin-bottom:14px; background:#f8fafc;">
+            <img id="mob-share-preview-img" src="" alt="Match Report Preview" style="width:100%; height:auto; display:block;">
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            <a id="mob-share-download-btn" href="#" download="YMCA_Match_Report.png" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; text-decoration:none; padding:12px; border-radius:12px; font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 10px rgba(16,185,129,0.3);">
+                <i class="fa fa-download"></i> Download Report Image
+            </a>
+            <button type="button" onclick="shareImageViaNativeOrWhatsApp()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border:none; padding:12px; border-radius:12px; font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; box-shadow:0 3px 10px rgba(37,99,235,0.3);">
+                <i class="fa fa-share-alt"></i> Share to WhatsApp / Apps
+            </button>
+            <button type="button" onclick="$('#mob-share-preview-modal').css('display','none')" style="background:#f1f5f9; color:#64748b; border:none; padding:10px; border-radius:12px; font-weight:700; font-size:13px; cursor:pointer; margin-top:2px;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Off-screen Match Report Template (Rendered as Image) -->
+<div id="match-share-template" style="position:fixed; left:-9999px; top:0; width:440px; background:#ffffff; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; color:#0f172a; padding:16px; box-sizing:border-box;">
+    <div style="background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%); border:1.5px solid #cbd5e1; border-radius:18px; padding:18px; box-sizing:border-box;">
+        <!-- Header -->
+        <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1.5px solid #e2e8f0; padding-bottom:12px; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#2563eb,#4f46e5); color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:900;">
+                    🏸
+                </div>
+                <div>
+                    <div style="font-size:15px; font-weight:900; color:#1e293b; letter-spacing:-0.2px;">YMCA BADMINTON CLUB</div>
+                    <div style="font-size:11px; font-weight:700; color:#64748b;" id="share-card-session-date">Date</div>
+                </div>
+            </div>
+            <div style="background:#eff6ff; color:#2563eb; font-size:11px; font-weight:800; padding:4px 10px; border-radius:16px; border:1px solid #bfdbfe; text-transform:uppercase;" id="share-card-group-name">
+                Session
+            </div>
+        </div>
+
+        <!-- 3 Highlights Cards (Present, Shuttles Used, Stock) -->
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:14px;">
+            <div style="background:#ecfdf5; border:1.5px solid #a7f3d0; border-radius:12px; padding:10px 6px; text-align:center;">
+                <div style="font-size:9.5px; font-weight:800; color:#047857; text-transform:uppercase;">PLAYERS</div>
+                <div style="font-size:20px; font-weight:900; color:#065f46; margin-top:2px;" id="share-card-present-count">0</div>
+                <div style="font-size:9.5px; font-weight:700; color:#059669;">Present</div>
+            </div>
+            <div style="background:#fef2f2; border:1.5px solid #fca5a5; border-radius:12px; padding:10px 6px; text-align:center;">
+                <div style="font-size:9.5px; font-weight:800; color:#991b1b; text-transform:uppercase;">SHUTTLES USED</div>
+                <div style="font-size:20px; font-weight:900; color:#dc2626; margin-top:2px;" id="share-card-shuttles-used">0</div>
+                <div style="font-size:9.5px; font-weight:700; color:#b91c1c;">Today</div>
+            </div>
+            <div id="share-card-stock-box" style="background:#ffffff; border:1.5px solid #059669; border-radius:12px; padding:10px 6px; text-align:center;">
+                <div style="font-size:9.5px; font-weight:800; color:#059669; text-transform:uppercase;" id="share-card-stock-lbl">STOCK LEFT</div>
+                <div style="font-size:20px; font-weight:900; color:#059669; margin-top:2px;" id="share-card-stock-val">0</div>
+                <div style="font-size:9.5px; font-weight:700; color:#059669;" id="share-card-stock-sub">Inventory</div>
+            </div>
+        </div>
+
+        <!-- Start Time Bar -->
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <span style="font-size:11px; font-weight:700; color:#64748b;"><i class="fa fa-clock-o" style="color:#3b82f6;"></i> Expected Start Time</span>
+            <span style="font-size:12px; font-weight:900; color:#1e293b;" id="share-card-start-time">--:--</span>
+        </div>
+
+        <!-- Added Match Note -->
+        <div id="share-card-notes-wrap" style="display:none; background:#fffdf7; border:1.5px solid #fed7aa; border-left:4px solid #f97316; border-radius:12px; padding:10px 12px; margin-bottom:14px; font-family:'Inter',sans-serif; text-align:left;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                <span style="font-size:10px; font-weight:800; color:#c2410c; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:5px;">
+                    <i class="fa fa-sticky-note" style="color:#ea580c; font-size:11px;"></i> <span id="share-card-notes-title">Match Note</span>
+                </span>
+                <span id="share-card-notes-badge" style="font-size:9.5px; font-weight:700; color:#9a3412; background:#ffedd5; padding:2px 7px; border-radius:8px; display:none;"></span>
+            </div>
+            <div id="share-card-notes-val" style="font-size:11.5px; font-weight:600; color:#431407; line-height:1.45; word-break:break-word;"></div>
+        </div>
+
+        <!-- Attendance Members List -->
+        <div style="margin-bottom:10px;">
+            <div style="font-size:11.5px; font-weight:800; color:#334155; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">
+                <i class="fa fa-check-circle" style="color:#10b981;"></i> Present Players (<span id="share-card-list-count">0</span>)
+            </div>
+            <div id="share-card-members-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px;">
+                <!-- dynamic member chips -->
+            </div>
+        </div>
+
+        <!-- Absent Members List (if any) -->
+        <div id="share-card-absent-wrap" style="display:none; margin-top:10px; border-top:1px dashed #cbd5e1; padding-top:8px;">
+            <div style="font-size:11px; font-weight:800; color:#ef4444; text-transform:uppercase; margin-bottom:6px;">
+                <i class="fa fa-times-circle"></i> Absent Players (<span id="share-card-absent-count">0</span>)
+            </div>
+            <div id="share-card-absent-list" style="display:flex; flex-wrap:wrap; gap:5px;">
+                <!-- dynamic absent chips -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top:14px; padding-top:10px; border-top:1.5px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; font-size:9.5px; color:#94a3b8; font-weight:600;">
+            <span>YMCA Badminton Match Summary</span>
+            <span id="share-card-timestamp">Report</span>
+        </div>
+    </div>
+</div>
+
 <?php include 'mobile_bottom_nav.php'; ?>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="../../js/plugins/sweetalert/sweetalert.min.js"></script>
 <script src="../../app_js/sweetalert-finez.js"></script>
 
 <script>
+const IS_ONLY_ATTENDANCE_MASTER = <?php echo $is_only_attendance_master ? 'true' : 'false'; ?>;
+const TODAY_DATE_STR = '<?php echo date('Y-m-d'); ?>';
+
 function load_overlay() {
     if ($('#mob-global-loader').length === 0) {
         $('body').append(`
@@ -790,7 +979,7 @@ function loadGroups(){
             $('#mob-session-pills').html(pillsHtml);
             $('#selected_group').html(selectHtml);
             if (groups.length > 0) $('#selected_group').val(groups[0].id);
-            if (groups.length <= 1) $('#mob-session-selector-container').hide();
+            if (groups.length === 0) $('#mob-session-selector-container').hide();
             else                     $('#mob-session-selector-container').show();
             if (groups.length > 0) updateMobTomorrowDateToggle();
             else fetchStatus();
@@ -843,6 +1032,165 @@ function formatTime12h(time24) {
     return h + ':' + m + ' ' + ampm;
 }
 
+var mob_stock_base = 0;
+var mob_stock_remaining = 0;
+
+function updateHomeStockLabel(currentVal) {
+    var val = parseInt(currentVal) || 0;
+    var netRemaining = Math.max(0, mob_stock_base - val);
+    var isLow = (mob_stock_base <= 0 || netRemaining < 3);
+    var color = isLow ? '#dc2626' : '#059669';
+    var bg = (isLow && netRemaining <= 0) ? '#fef2f2' : '#ffffff';
+
+    $('#home_stock_box').css({
+        'border-color': color,
+        'background-color': bg,
+        'box-shadow': isLow ? '0 1px 3px rgba(220,38,38,0.2)' : '0 1px 3px rgba(5,150,105,0.2)'
+    });
+    $('#home_stock_box_lbl').css('color', color);
+    $('#home_stock_box_val').css('color', color).text(netRemaining);
+
+    if (mob_stock_base <= 0 || netRemaining <= 0) {
+        $('#home_stock_box').attr('title', 'OUT OF STOCK (0 shuttles remaining)');
+    } else {
+        $('#home_stock_box').attr('title', 'Remaining Stock: ' + netRemaining + ' shuttles');
+    }
+}
+
+function fetchHomeShuttleReading() {
+    var date = $('#date_search').val();
+    var group = $('#selected_group').val();
+    if (!date || !group) return;
+    $.post('../api/attendance.php', { action: 'get_shuttle_reading', group_id: group, date: date }, function(res) {
+        try {
+            var r = typeof res === 'string' ? JSON.parse(res) : res;
+            if (r.status === 'success') {
+                window.currentShuttleReadingData = r;
+                window._currentShuttleReadingNotes = (r.notes || '').trim();
+                window._prevShuttleReadingNotes = (r.prev_notes || '').trim();
+
+                mob_stock_base = parseInt(r.stock_remaining || 0);
+                mob_stock_remaining = mob_stock_base;
+                var currentUsed = r.shuttles_used > 0 ? r.shuttles_used : '';
+                $('#home_shuttles_used').val(currentUsed);
+                updateHomeStockLabel(currentUsed);
+                $('#home_shuttle_notes').val(r.notes || '');
+
+                if (r.has_record && (r.last_user_name || r.created_by_name)) {
+                    var lastUser = r.last_user_name || r.created_by_name;
+                    var creatorLabel = r.is_created_by_me ? 'You' : lastUser;
+                    var actWord = r.action_word || (r.is_edited ? 'updated' : 'added');
+                    var noticeHtml = '<i class="fa fa-info-circle" style="color:#2563eb; margin-right:4px;"></i> <strong>' + creatorLabel + '</strong> ' + actWord + ' count (' + r.shuttles_used + ' shuttles). Do you want to edit?';
+                    $('#home_shuttle_creator_notice').html(noticeHtml).show();
+                } else {
+                    $('#home_shuttle_creator_notice').hide().html('');
+                }
+
+                // Render Previous Added Note Section
+                var currentNote = (r.notes || '').trim();
+                var prevNote    = (r.prev_notes || '').trim();
+                var $noteCard   = $('#home_shuttle_prev_note_section');
+                window._lastAvailableShuttleNote = '';
+
+                if (currentNote !== '') {
+                    window._lastAvailableShuttleNote = currentNote;
+                    var noteAuthor = r.is_created_by_me ? 'You' : (r.last_user_name || r.created_by_name || 'Admin');
+                    var noteStatus = r.is_edited ? 'Updated' : 'Added';
+
+                    $('#home_shuttle_prev_note_label').text('Previously Added Note');
+                    $('#home_shuttle_prev_note_badge').text(noteAuthor + ' • ' + noteStatus).show();
+                    $('#home_shuttle_prev_note_text').text(currentNote);
+
+                    if (prevNote !== '') {
+                        var olderMeta = (r.prev_formatted_date || r.prev_reading_date || '');
+                        if (r.prev_user_name) olderMeta += ' • ' + r.prev_user_name;
+                        $('#home_shuttle_older_note_text').text(prevNote);
+                        $('#home_shuttle_older_note_badge').text(olderMeta);
+                        $('#home_shuttle_older_note_wrap').show();
+                    } else {
+                        $('#home_shuttle_older_note_wrap').hide();
+                    }
+
+                    if (!$('#home_shuttle_notes').val()) {
+                        $('#home_btn_use_note').css('display', 'inline-flex');
+                    } else {
+                        $('#home_btn_use_note').hide();
+                    }
+
+                    $noteCard.fadeIn(150);
+                } else if (prevNote !== '') {
+                    window._lastAvailableShuttleNote = prevNote;
+                    var prevMeta = (r.prev_formatted_date || r.prev_reading_date || '');
+                    if (r.prev_user_name) prevMeta += ' • ' + r.prev_user_name;
+
+                    $('#home_shuttle_prev_note_label').text('Previous Added Note');
+                    $('#home_shuttle_prev_note_badge').text(prevMeta).show();
+                    $('#home_shuttle_prev_note_text').text(prevNote);
+                    $('#home_shuttle_older_note_wrap').hide();
+
+                    if (!$('#home_shuttle_notes').val()) {
+                        $('#home_btn_use_note').css('display', 'inline-flex');
+                    } else {
+                        $('#home_btn_use_note').hide();
+                    }
+
+                    $noteCard.fadeIn(150);
+                } else {
+                    $noteCard.hide();
+                    $('#home_btn_use_note').hide();
+                }
+            }
+        } catch(e){}
+    });
+}
+
+function copyShuttleNoteToInput() {
+    if (window._lastAvailableShuttleNote) {
+        $('#home_shuttle_notes').val(window._lastAvailableShuttleNote).focus();
+        $('#home_btn_use_note').hide();
+    }
+}
+
+function saveHomeShuttleReading() {
+    var date = $('#date_search').val();
+    var group = $('#selected_group').val();
+    var shuttlesUsed = $('#home_shuttles_used').val();
+    var shuttleNotes = $('#home_shuttle_notes').val() ? $('#home_shuttle_notes').val().trim() : '';
+    if (!date || !group) return;
+
+    if (IS_ONLY_ATTENDANCE_MASTER && date < TODAY_DATE_STR) {
+        swal('Restricted', 'Attendance Masters can only record for today.', 'warning');
+        return;
+    }
+
+    var countVal = parseInt(shuttlesUsed) || 0;
+    if (countVal > 0 && mob_stock_remaining <= 0) {
+        swal('Out of Stock!', 'Available shuttle cock inventory is 0. Please add inward stock first before recording shuttle count.', 'error');
+        return;
+    }
+    if (countVal > mob_stock_remaining && mob_stock_remaining > 0) {
+        swal('Insufficient Stock!', 'Only ' + mob_stock_remaining + ' shuttles remaining in inventory.', 'error');
+        return;
+    }
+
+    if (typeof load_overlay === 'function') load_overlay();
+    $.post('../api/attendance.php', {
+        action: 'save_shuttle_reading',
+        group_id: group,
+        date: date,
+        shuttles_used: shuttlesUsed,
+        notes: shuttleNotes
+    }, function(res) {
+        if (typeof close_overlay === 'function') close_overlay();
+        swal('Saved!', 'Session shuttle count saved successfully.', 'success');
+        fetchHomeShuttleReading();
+    }).fail(function(xhr) {
+        if (typeof close_overlay === 'function') close_overlay();
+        var msg = xhr.responseText || 'Could not save shuttle count.';
+        swal('Error', msg, 'error');
+    });
+}
+
 function fetchStatus(){
     const date  = $('#date_search').val();
     const group = $('#selected_group').val();
@@ -851,6 +1199,7 @@ function fetchStatus(){
 
     // Always load game status alongside
     loadGameStatus(date, group);
+    fetchHomeShuttleReading();
 
     $.post('../api/attendance.php', { action:'check_holiday', date:date, group:group }, function(res){
         const r = JSON.parse(res);
@@ -922,9 +1271,15 @@ function mobMarkAttendance(expectedTime){
         swal('Notice', 'Your user account is not linked to a member profile.', 'info');
         return;
     }
-    if(typeof load_overlay === 'function') load_overlay();
     var groupId    = $('#selected_group').val();
     var dateVal    = $('#date_search').val();
+
+    if (IS_ONLY_ATTENDANCE_MASTER && dateVal < TODAY_DATE_STR) {
+        swal('Restricted', 'Attendance Masters can only mark attendance for today.', 'warning');
+        return;
+    }
+
+    if(typeof load_overlay === 'function') load_overlay();
 
     var postData = {
         action        : 'add_attendance',
@@ -938,6 +1293,13 @@ function mobMarkAttendance(expectedTime){
     $.post('../api/attendance.php', postData, function(res){
         if(typeof close_overlay === 'function') close_overlay();
         fetchStatus();
+        swal({
+            title: "Checked In!",
+            text: "Attendance marked present.\n\n🔴 REMINDER: Don't forget to enter the count of shuttles used after today's game!",
+            type: "warning",
+            confirmButtonColor: "#dc2626",
+            confirmButtonText: "OK, Got It!"
+        });
     }).fail(function(xhr){
         if(typeof close_overlay === 'function') close_overlay();
         var msg = xhr.responseText || 'Could not mark attendance. Please try again.';
@@ -1075,6 +1437,7 @@ function mobUnmarkAttendance(){
 function loadPresentMembers(date, group, count){
     $.post('../api/attendance.php', { action:'load_today_attendance_summary', date:date, group:group }, function(data){
         const list = (typeof data === 'string') ? JSON.parse(data) : data;
+        window.currentMemberList = list || [];
         if(!list || list.length === 0){
             $('#mob-present-list').html('<div style="color:#94a3b8;font-size:13px;text-align:center;padding:10px 0;">No member status recorded today.</div>');
             $('#mob-present-count').text(0);
@@ -1102,6 +1465,291 @@ function loadPresentMembers(date, group, count){
         $('#mob-present-list').html(html);
         $('#mob-present-count').text(list.length);
     });
+}
+
+/* ── Match Summary Image Sharing ──────────────────────────── */
+var lastGeneratedShareFile = null;
+var lastGeneratedDataUrl = null;
+
+function generateMatchSummaryShareText() {
+    var dateStr = $('#mob-today-date').text() || TODAY_DATE_STR;
+    var sessionName = $('#mob-session-pills .session-pill.active').text().trim() || $('#selected_group option:selected').text() || 'Session';
+    var readingData = window.currentShuttleReadingData || {};
+    var shuttlesUsed = ($('#home_shuttles_used').length && $('#home_shuttles_used').val())
+        ? $('#home_shuttles_used').val()
+        : (readingData.shuttles_used || '0');
+    var stock = ($('#home_stock_box_val').length && $('#home_stock_box_val').text())
+        ? $('#home_stock_box_val').text()
+        : (readingData.stock_remaining !== undefined ? String(readingData.stock_remaining) : '0');
+
+    var note = '';
+    if ($('#home_shuttle_notes').length && $('#home_shuttle_notes').val() && $('#home_shuttle_notes').val().trim()) {
+        note = $('#home_shuttle_notes').val().trim();
+    } else if (window._currentShuttleReadingNotes && window._currentShuttleReadingNotes.trim()) {
+        note = window._currentShuttleReadingNotes.trim();
+    } else if (readingData.notes && String(readingData.notes).trim()) {
+        note = String(readingData.notes).trim();
+    } else if (window._lastAvailableShuttleNote && window._lastAvailableShuttleNote.trim()) {
+        note = window._lastAvailableShuttleNote.trim();
+    } else if (readingData.prev_notes && String(readingData.prev_notes).trim()) {
+        note = String(readingData.prev_notes).trim();
+    }
+
+    var members = window.currentMemberList || [];
+    var presentList = members.filter(function(m){ return m.status === 'present'; });
+    var absentList = members.filter(function(m){ return m.status === 'absent'; });
+
+    var text = "🏸 *YMCA BADMINTON MATCH REPORT*\n";
+    text += "📅 *Date:* " + dateStr + "\n";
+    text += "⏰ *Session:* " + sessionName + "\n";
+    text += "👥 *Players Present:* " + presentList.length + "\n";
+    text += "🏸 *Shuttles Used:* " + shuttlesUsed + "\n";
+    text += "📦 *Remaining Stock:* " + stock + "\n";
+    if (note) {
+        text += "📝 *Note:* " + note + "\n";
+    }
+    text += "\n";
+
+    if (presentList.length > 0) {
+        text += "*Present Players:*\n";
+        presentList.forEach(function(m, idx){
+            var name = [m.first_name, m.middle_name, m.last_name].filter(Boolean).join(' ');
+            var timeStr = m.expected_time ? (" (" + formatTime12h(m.expected_time)) + ")" : "";
+            text += (idx + 1) + ". " + name + timeStr + "\n";
+        });
+    }
+
+    if (absentList.length > 0) {
+        text += "\n*Absent Players:*\n";
+        absentList.forEach(function(m, idx){
+            var name = [m.first_name, m.middle_name, m.last_name].filter(Boolean).join(' ');
+            text += "• " + name + "\n";
+        });
+    }
+
+    return text;
+}
+
+function openImageFallbackModal(dataUrl, fileName) {
+    lastGeneratedDataUrl = dataUrl;
+    $('#mob-share-preview-img').attr('src', dataUrl);
+    $('#mob-share-download-btn').attr('href', dataUrl).attr('download', fileName);
+    $('#mob-share-preview-modal').css('display', 'flex');
+}
+
+function shareImageViaNativeOrWhatsApp() {
+    if (lastGeneratedShareFile && navigator.canShare && navigator.canShare({ files: [lastGeneratedShareFile] })) {
+        navigator.share({
+            title: 'YMCA Badminton Match Report',
+            text: generateMatchSummaryShareText(),
+            files: [lastGeneratedShareFile]
+        }).catch(function(e){ console.log(e); });
+    } else {
+        var text = generateMatchSummaryShareText();
+        var waUrl = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
+        window.open(waUrl, '_blank');
+    }
+}
+
+function shareTodayMatchImage() {
+    var dateVal = $('#date_search').val() || TODAY_DATE_STR;
+    var groupVal = $('#selected_group').val();
+    if (!groupVal) {
+        swal('Notice', 'Please select a session group first.', 'info');
+        return;
+    }
+
+    if (typeof load_overlay === 'function') load_overlay();
+
+    // Fetch fresh shuttle reading & notes for this group and date to guarantee the latest added note is included
+    $.post('../api/attendance.php', { action: 'get_shuttle_reading', group_id: groupVal, date: dateVal }, function(res) {
+        try {
+            var r = typeof res === 'string' ? JSON.parse(res) : res;
+            if (r.status === 'success') {
+                window.currentShuttleReadingData = r;
+                window._currentShuttleReadingNotes = (r.notes || '').trim();
+                window._prevShuttleReadingNotes = (r.prev_notes || '').trim();
+            }
+        } catch(e) {}
+        proceedToGenerateShareImage(dateVal, groupVal);
+    }).fail(function() {
+        proceedToGenerateShareImage(dateVal, groupVal);
+    });
+}
+
+function proceedToGenerateShareImage(dateVal, groupVal) {
+    var members = window.currentMemberList || [];
+    var presentList = members.filter(function(m){ return m.status === 'present'; });
+    var absentList = members.filter(function(m){ return m.status === 'absent'; });
+
+    var dateStr = $('#mob-today-date').text() || dateVal;
+    var sessionName = $('#mob-session-pills .session-pill.active').text().trim() || $('#selected_group option:selected').text() || 'Session';
+    var readingData = window.currentShuttleReadingData || {};
+
+    var shuttlesUsed = ($('#home_shuttles_used').length && $('#home_shuttles_used').val())
+        ? $('#home_shuttles_used').val()
+        : (readingData.shuttles_used || '0');
+    var stock = ($('#home_stock_box_val').length && $('#home_stock_box_val').text())
+        ? $('#home_stock_box_val').text()
+        : (readingData.stock_remaining !== undefined ? String(readingData.stock_remaining) : '0');
+    var startTime = $('#gs-start-time').text() || '--:--';
+    var isLow = parseInt(stock) < 3;
+
+    // Resolve added note:
+    // 1. Current value typed into the input field
+    // 2. Saved note from readingData (r.notes from tbl_shuttle_cock_readings)
+    // 3. Or last available note / previous session note (r.prev_notes)
+    var note = '';
+    var noteBadge = '';
+    var noteTitle = 'Match Note';
+
+    if ($('#home_shuttle_notes').length && $('#home_shuttle_notes').val() && $('#home_shuttle_notes').val().trim()) {
+        note = $('#home_shuttle_notes').val().trim();
+        var author = readingData.is_created_by_me ? 'You' : (readingData.last_user_name || readingData.created_by_name || '');
+        if (author) {
+            noteBadge = author + (readingData.is_edited ? ' • Updated' : ' • Added');
+        }
+    } else if (window._currentShuttleReadingNotes && window._currentShuttleReadingNotes.trim()) {
+        note = window._currentShuttleReadingNotes.trim();
+        var author = readingData.is_created_by_me ? 'You' : (readingData.last_user_name || readingData.created_by_name || '');
+        if (author) {
+            noteBadge = author + (readingData.is_edited ? ' • Updated' : ' • Added');
+        }
+    } else if (readingData.notes && String(readingData.notes).trim()) {
+        note = String(readingData.notes).trim();
+        var author = readingData.is_created_by_me ? 'You' : (readingData.last_user_name || readingData.created_by_name || '');
+        if (author) {
+            noteBadge = author + (readingData.is_edited ? ' • Updated' : ' • Added');
+        }
+    } else if (window._lastAvailableShuttleNote && window._lastAvailableShuttleNote.trim()) {
+        note = window._lastAvailableShuttleNote.trim();
+        noteTitle = 'Previous Session Note';
+        var prevMeta = (readingData.prev_formatted_date || readingData.prev_reading_date || '');
+        if (readingData.prev_user_name) prevMeta += ' • ' + readingData.prev_user_name;
+        noteBadge = prevMeta;
+    } else if (readingData.prev_notes && String(readingData.prev_notes).trim()) {
+        note = String(readingData.prev_notes).trim();
+        noteTitle = 'Previous Session Note';
+        var prevMeta = (readingData.prev_formatted_date || readingData.prev_reading_date || '');
+        if (readingData.prev_user_name) prevMeta += ' • ' + readingData.prev_user_name;
+        noteBadge = prevMeta;
+    }
+
+    // Populate Template
+    $('#share-card-session-date').text(dateStr);
+    $('#share-card-group-name').text(sessionName);
+    $('#share-card-present-count').text(presentList.length);
+    $('#share-card-shuttles-used').text(shuttlesUsed);
+    $('#share-card-stock-val').text(stock);
+    $('#share-card-start-time').text(startTime);
+
+    if (note) {
+        $('#share-card-notes-title').text(noteTitle);
+        $('#share-card-notes-val').text(note);
+        if (noteBadge) {
+            $('#share-card-notes-badge').text(noteBadge).show();
+        } else {
+            $('#share-card-notes-badge').hide().text('');
+        }
+        $('#share-card-notes-wrap').show();
+    } else {
+        $('#share-card-notes-wrap').hide();
+    }
+
+    var stockColor = isLow ? '#dc2626' : '#059669';
+    var stockBg = (isLow && parseInt(stock) <= 0) ? '#fef2f2' : '#ffffff';
+    $('#share-card-stock-box').css({
+        'border-color': stockColor,
+        'background': stockBg
+    });
+    $('#share-card-stock-lbl, #share-card-stock-val, #share-card-stock-sub').css('color', stockColor);
+
+    // Populate Present Players
+    $('#share-card-list-count').text(presentList.length);
+    var pListHtm = '';
+    if (presentList.length === 0) {
+        pListHtm = '<div style="grid-column:span 2; color:#94a3b8; font-size:11px; text-align:center; padding:10px 0;">No players marked present yet</div>';
+    } else {
+        presentList.forEach(function(m, idx){
+            var name = [m.first_name, m.middle_name, m.last_name].filter(Boolean).join(' ');
+            var timeStr = m.expected_time ? (' ' + formatTime12h(m.expected_time)) : '';
+            pListHtm += '<div style="display:flex; align-items:center; gap:5px; background:#f1f5f9; padding:5px 8px; border-radius:8px; border:1px solid #e2e8f0; font-size:10.5px; font-weight:700; color:#1e293b; overflow:hidden;">' +
+                        '<i class="fa fa-check-circle" style="color:#10b981; font-size:11px; flex-shrink:0;"></i>' +
+                        '<span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">' + (idx + 1) + '. ' + name + '</span>' +
+                        (timeStr ? '<span style="font-size:9px; color:#64748b; font-weight:600; flex-shrink:0;">' + timeStr + '</span>' : '') +
+                        '</div>';
+        });
+    }
+    $('#share-card-members-list').html(pListHtm);
+
+    // Populate Absent Players
+    if (absentList.length > 0) {
+        $('#share-card-absent-count').text(absentList.length);
+        var aListHtm = '';
+        absentList.forEach(function(m){
+            var name = [m.first_name, m.middle_name, m.last_name].filter(Boolean).join(' ');
+            aListHtm += '<span style="background:#fef2f2; border:1px solid #fecaca; color:#dc2626; padding:3px 7px; border-radius:6px; font-size:10px; font-weight:700;">' + name + '</span>';
+        });
+        $('#share-card-absent-list').html(aListHtm);
+        $('#share-card-absent-wrap').show();
+    } else {
+        $('#share-card-absent-wrap').hide();
+    }
+
+    var now = new Date();
+    $('#share-card-timestamp').text('Generated ' + now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }));
+
+    if (typeof html2canvas === 'undefined') {
+        if (typeof close_overlay === 'function') close_overlay();
+        swal('Loading...', 'Rendering library is loading. Please try again in a moment.', 'info');
+        return;
+    }
+
+    var targetEl = document.getElementById('match-share-template');
+
+    setTimeout(function(){
+        html2canvas(targetEl, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff'
+        }).then(function(canvas){
+            if (typeof close_overlay === 'function') close_overlay();
+
+            canvas.toBlob(function(blob){
+                if (!blob) {
+                    swal('Error', 'Could not create image blob.', 'error');
+                    return;
+                }
+                var fileName = 'YMCA_Match_Report_' + dateVal + '.png';
+                var file = new File([blob], fileName, { type: 'image/png' });
+                lastGeneratedShareFile = file;
+
+                var dataUrl = canvas.toDataURL('image/png');
+                lastGeneratedDataUrl = dataUrl;
+
+                // Try Web Share API with file support first
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({
+                        files: [file],
+                        title: 'YMCA Badminton Match Report',
+                        text: '🏸 Match Report for ' + dateStr + ' (' + sessionName + ')'
+                    }).catch(function(err){
+                        if (err.name !== 'AbortError') {
+                            openImageFallbackModal(dataUrl, fileName);
+                        }
+                    });
+                } else {
+                    // Fallback modal for desktop or devices without navigator.share files
+                    openImageFallbackModal(dataUrl, fileName);
+                }
+            }, 'image/png');
+        }).catch(function(err){
+            if (typeof close_overlay === 'function') close_overlay();
+            console.error(err);
+            swal('Error', 'Failed to generate report image: ' + (err.message || ''), 'error');
+        });
+    }, 120);
 }
 
 /* ── Expected Time & Present Modal ──────────────────────────── */
@@ -1289,6 +1937,16 @@ function submitHalfChance() {
 </div>
 
 <script>
+function adjustShuttleCount(inputId, delta) {
+    var $el = $('#' + inputId);
+    var val = parseInt($el.val()) || 0;
+    val = Math.min(6, Math.max(0, val + delta));
+    $el.val(val).trigger('change').trigger('input');
+    if (inputId === 'home_shuttles_used') {
+        updateHomeStockLabel(val);
+    }
+}
+
 // Balance & UPI settings are calculated server-side in PHP - no AJAX needed
 var homePendingBalance = <?php echo json_encode($php_pending_balance); ?>;
 var activeHomeUpiAmount = 0;

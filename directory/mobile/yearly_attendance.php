@@ -139,17 +139,19 @@ $active_tab = 'reports';
                 }
 
                 let monthNames = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+                let monthsOrder = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
 
                 members.forEach(function(m) {
                     let totalDays = parseInt(m.total_days_present || 0, 10);
                     if (totalDays <= 0) return;
                     let mHtm = '';
                     
-                    for (let i = 1; i <= 12; i++) {
-                        let cnt = m.months && m.months[i] ? m.months[i] : 0;
+                    for (let i = 0; i < 12; i++) {
+                        let mNum = monthsOrder[i];
+                        let cnt = (m.months && m.months[mNum]) ? m.months[mNum] : 0;
                         mHtm += `
                             <div class="month-box">
-                                <div class="month-lbl">${monthNames[i-1]}</div>
+                                <div class="month-lbl">${monthNames[i]}</div>
                                 <div class="month-val">${cnt}</div>
                             </div>
                         `;

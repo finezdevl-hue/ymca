@@ -2,7 +2,7 @@
 
 session_start();
 if(isset($_POST['id'])){
-    $_SESSION['id']=$_POST['id'];
+    $_SESSION['selected_family_id']=(int)$_POST['id'];
 }
 
 ?>

@@ -9,6 +9,31 @@ if (empty($_SESSION['login_id'])) {
 }
 
 $is_admin = ($_SESSION['login_id'] == 1);
+
+// Resolve member_id — set at login via login_validation.php, with fallback lookup
+$member_id = (int)($_SESSION['user_id'] ?? 0);
+if ($member_id <= 0 && !empty($_SESSION['email'])) {
+    $m_res = app_exec_getresult("SELECT id FROM tbl_members WHERE LTRIM(RTRIM(LOWER(email))) = LTRIM(RTRIM(LOWER(?))) AND inactive = 0 LIMIT 1", [$_SESSION['email']], "s");
+    if ($m_res && $row = $m_res->fetch_assoc()) {
+        $member_id = (int)$row['id'];
+        $_SESSION['user_id'] = $member_id;
+    }
+}
+if ($member_id <= 0 && !empty($_SESSION['name'])) {
+    $m_res = app_exec_getresult("SELECT id FROM tbl_members WHERE LTRIM(RTRIM(LOWER(CONCAT(first_name, ' ', last_name)))) = LTRIM(RTRIM(LOWER(?))) AND inactive = 0 LIMIT 1", [$_SESSION['name']], "s");
+    if ($m_res && $row = $m_res->fetch_assoc()) {
+        $member_id = (int)$row['id'];
+        $_SESSION['user_id'] = $member_id;
+    }
+}
+if ($member_id <= 0) {
+    $m_first = app_exec_getresult("SELECT id FROM tbl_members WHERE inactive = 0 ORDER BY id ASC LIMIT 1");
+    if ($m_first && $rf = $m_first->fetch_assoc()) {
+        $member_id = (int)$rf['id'];
+        $_SESSION['user_id'] = $member_id;
+    }
+}
+
 // Release session lock so AJAX API calls can start their own sessions without blocking
 session_write_close();
 ?>
@@ -205,6 +230,7 @@ session_write_close();
         });
 
         var user_groups_map = {};
+        var current_member_id = <?php echo (int)$member_id; ?>;
 
         function load_groups(){
             $.ajax({
@@ -230,7 +256,7 @@ session_write_close();
                     $('#groups_container').html(htm);
                     $('#session-btn-container').html(pillHtm);
 
-                    if (obj[0].length <= 1) {
+                    if (obj[0].length === 0) {
                         $('#member-session-selector').hide();
                     } else {
                         $('#member-session-selector').show();
@@ -325,9 +351,8 @@ session_write_close();
                             success: function(data) {  
                                 var obj = jQuery.parseJSON(data);
                                 var isPresent = false;
-                                var memId = <?php echo !empty($_SESSION['user_id']) ? $_SESSION['user_id'] : (!empty($_SESSION['login_id']) ? $_SESSION['login_id'] : 0); ?>;
                                 for (var i = 0; i < obj.length; i++) {
-                                    if (obj[i].member_id == memId || obj[i].member_id == <?php echo !empty($_SESSION['login_id']) ? $_SESSION['login_id'] : 0; ?>) {
+                                    if (parseInt(obj[i].member_id) === current_member_id) {
                                         isPresent = true;
                                         break;
                                     }
@@ -346,6 +371,17 @@ session_write_close();
                                         var tempStatus = tempRes ? tempRes.temp_status : null;
                                         var expTime = tempRes ? tempRes.expected_time : null;
                                         var timeLabel = expTime ? (' (ETA: ' + formatTime12h(expTime) + ')') : '';
+
+                                        if (tempRes && tempRes.member_id && parseInt(tempRes.member_id) > 0) {
+                                            current_member_id = parseInt(tempRes.member_id);
+                                            isPresent = false;
+                                            for (var j = 0; j < obj.length; j++) {
+                                                if (parseInt(obj[j].member_id) === current_member_id) {
+                                                    isPresent = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
 
                                         if (isPresent) {
                                             var checkInHtml = '<div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">';
@@ -452,8 +488,9 @@ session_write_close();
                     action: 'add_attendance',
                     val: $('#selected_group').val(),
                     date: $('#date_search').val(),
+                    single_member: '1',
                     expected_time: timeVal,
-                    member_ids: [<?php echo !empty($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0; ?>]
+                    member_ids: [current_member_id]
                 },
                 success: function(data) {  
                     close_overlay();
@@ -487,6 +524,7 @@ session_write_close();
                             action: 'add_attendance',
                             val: $('#selected_group').val(),
                             date: $('#date_search').val(),
+                            single_member: '1',
                             member_ids: [] // Empty list to unmark
                         },
                         success: function(data) {  

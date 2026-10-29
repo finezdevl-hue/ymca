@@ -1,7 +1,7 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_admin();
+include '../../app_pagination/pagination.php';
     include '../../app_common/db_name.php';
     include '../../app_common/enums.php';
 

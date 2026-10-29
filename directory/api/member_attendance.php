@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/api_bootstrap.php';
 require_once('../../invoice/tcpdf/tcpdf.php');
 include '../../app_common/db_connect.php';
 
@@ -165,47 +165,40 @@ include '../../app_pagination/pagination.php';
         // action to save recieveble fee of a member start
         if($action=="save_recieveble"){ 
             try{
+                $rec_amt = (float)$_POST['receiveble'];
+                $paid_amt = (float)$_POST['received'];
+                $is_complete = ((int)round($paid_amt * 100) >= (int)round($rec_amt * 100)) ? 1 : 0;
 
+                $sql = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $parameters = [
+                    $_POST['member_id'],
+                    $rec_amt,
+                    $_POST['receiveble_date'],
+                    $_SESSION['login_id'],
+                    $_POST['head'],
+                    $_POST['discription'],
+                    $is_complete
+                ];
+                $types = "idsissi";
                 
-                if($_POST['receiveble']==$_POST['received']){
-                    $sql = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete) VALUES (?, ?, ?, ?, ?, ?, 1)";
-                }
-                else{
-                    $sql = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete) VALUES (?, ?, ?, ?, ?, ?, 0)";
-                }
+                // Use custom insert function that returns insert ID
+                $recieveble_id = app_exec_getlast_id($sql, $parameters, $types);
+
+                if ($recieveble_id !== null) {
+                    $sql = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet) VALUES (?, ?, ?, ?, ?, ?, ?, 0)";
                     $parameters = [
                         $_POST['member_id'],
-                        $_POST['receiveble'],
-                        $_POST['receiveble_date'],
+                        $paid_amt,
+                        $_POST['received_date'],
                         $_SESSION['login_id'],
                         $_POST['head'],
                         $_POST['discription'],
+                        $recieveble_id,
                     ];
-                    $types="iisiss";
-                    
-                    // Use custom insert function that returns insert ID
-                    $recieveble_id = app_exec_getlast_id($sql, $parameters, $types);
-                    
+                    $types = "idsissi";
 
-                    if ($recieveble_id !== null) {
-                        $sql = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet) VALUES (?, ?, ?, ?, ?, ?, ?,0)";
-                        $parameters = [
-                            $_POST['member_id'],
-                            $_POST['received'],
-                            $_POST['received_date'],
-                            $_SESSION['login_id'],
-                            $_POST['head'],
-                            $_POST['discription'],
-                            $recieveble_id,
-                        ];
-                        $types="iisissi";
-
-                        // Saving Query as  text file end
-
-                       
-                        app_exec_nonquery($sql, $parameters, $types);
-                    }
-                
+                    app_exec_nonquery($sql, $parameters, $types);
+                }
             }
              catch (Exception $e) {
                 http_response_code(500);   

@@ -1,4 +1,8 @@
 <?php
+require_once __DIR__ . '/../../includes/api_auth.php';
+start_secure_session();
+require_login();
+
 header('Content-Type: application/json');
 error_reporting(0);
 ini_set('display_errors', 0);
@@ -10,43 +14,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $uploadDir = 'uploads/';
             $thumbnailDir = 'thumbnails/';
 
-            // Set the correct time zone
             date_default_timezone_set('Asia/Kolkata');
 
-            // Validate uploaded file type
             $fileInfo = getimagesize($file['tmp_name']);
             if ($fileInfo === false) {
                 echo json_encode(['status' => 'error', 'message' => 'Invalid file type.']);
                 exit;
             }
 
-            $allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!in_array(strtolower($fileInfo['mime']), $allowedMimeTypes)) {
+            $mimeMap = [
+                'image/jpeg'  => 'jpg',
+                'image/jpg'   => 'jpg',
+                'image/pjpeg' => 'jpg',
+                'image/png'   => 'png',
+                'image/gif'   => 'gif',
+                'image/webp'  => 'webp'
+            ];
+            $detectedMime = strtolower($fileInfo['mime']);
+            if (!isset($mimeMap[$detectedMime])) {
                 echo json_encode(['status' => 'error', 'message' => 'Unsupported file format. Only JPEG, PNG, GIF, and WEBP are supported.']);
                 exit;
             }
 
-            // Create directories if they don't exist
-            if (!is_dir($uploadDir) && !mkdir($uploadDir, 0777, true)) {
+            if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
                 echo json_encode(['status' => 'error', 'message' => 'Failed to create upload directory.']);
                 exit;
             }
-            if (!is_dir($thumbnailDir) && !mkdir($thumbnailDir, 0777, true)) {
+            if (!is_dir($thumbnailDir) && !mkdir($thumbnailDir, 0755, true)) {
                 echo json_encode(['status' => 'error', 'message' => 'Failed to create thumbnail directory.']);
                 exit;
             }
 
-            // Generate unique file name
             $currentDateTime = date('Y-m-d_H-i-s');
-            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-            if (empty($extension)) {
-                $extension = 'jpg';
-            }
-            $fileName = $currentDateTime . '.' . $extension;
+            $extension = $mimeMap[$detectedMime];
+            $fileName = $currentDateTime . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
             $filePath = $uploadDir . $fileName;
             $thumbnailPath = $thumbnailDir . $fileName;
 
-            // Move uploaded file and create thumbnail
             if (move_uploaded_file($file['tmp_name'], $filePath)) {
                 if (createThumbnail($filePath, $thumbnailPath, $fileInfo['mime'], 128, 128)) {
                     echo json_encode(['status' => 'success','filename' => $fileName, 'message' => 'Image uploaded successfully!', 'path' => $filePath, 'thumbnail' => $thumbnailPath]);
@@ -100,7 +104,6 @@ function createThumbnail($sourcePath, $destPath, $mimeType, $width, $height) {
 
         $thumbnail = imagecreatetruecolor($width, $height);
 
-        // Preserve transparency for PNG, GIF, and WEBP
         if ($mimeType === 'image/png' || $mimeType === 'image/gif' || $mimeType === 'image/webp') {
             imagecolortransparent($thumbnail, imagecolorallocatealpha($thumbnail, 0, 0, 0, 127));
             imagealphablending($thumbnail, false);
@@ -113,7 +116,6 @@ function createThumbnail($sourcePath, $destPath, $mimeType, $width, $height) {
             return @copy($sourcePath, $destPath);
         }
 
-        // Save the thumbnail based on MIME type
         $success = false;
         switch ($mimeType) {
             case 'image/jpeg':
@@ -141,5 +143,4 @@ function createThumbnail($sourcePath, $destPath, $mimeType, $width, $height) {
         return @copy($sourcePath, $destPath);
     }
 }
-
 ?>

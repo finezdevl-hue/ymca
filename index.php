@@ -1,42 +1,53 @@
 <?php
-session_start();
-if (!empty($_SESSION['login_id'])) {
-    if ($_SESSION['login_id'] == 1) {
-        header("Location: ./directory/dashboard.php");
-    } else {
-        header("Location: ./directory/attendance.php");
+require_once __DIR__ . '/includes/api_auth.php';
+require_once __DIR__ . '/includes/auth_security.php';
+require_once __DIR__ . '/includes/auth.php';
+
+start_secure_session();
+
+function getRedirectUrlForLogin($login_id, $base_path = './directory/') {
+    if (isMobileClient()) {
+        return $base_path . 'mobile/home.php';
     }
+    if (isSuperAdmin($login_id)) {
+        return $base_path . 'dashboard.php';
+    }
+    if (isGroupAdmin($login_id)) {
+        return $base_path . 'group_dashboard.php';
+    }
+    if (isAttendanceMaster($login_id)) {
+        return $base_path . 'attendance.php';
+    }
+    return $base_path . 'user_attendance.php';
+}
+
+if (!empty($_SESSION['login_id'])) {
+    header("Location: " . getRedirectUrlForLogin((int)$_SESSION['login_id']));
     exit();
 }
-// Try autologin via cookie
+
+// Try secure autologin via cookie (selector/validator)
 if (!empty($_COOKIE['remember_user'])) {
-    $parts = explode(':', $_COOKIE['remember_user']);
-    if (count($parts) === 2) {
-        $login_id = $parts[0];
-        $signature = $parts[1];
-        $expected_sig = hash_hmac('sha256', $login_id, 'ymca-secure-secret-key-9988');
-        if (hash_equals($expected_sig, $signature)) {
-            include_once './app_common/database_class.php';
-            $db = new Database();
-            $conn = $db->getConnection();
-            $stmt = $conn->prepare("SELECT l.login_id, l.name, m.id AS user_id, l.email FROM tbl_login as l LEFT JOIN tbl_members AS m ON l.email=m.email WHERE l.login_id = ?");
-            $stmt->bind_param("i", $login_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            if ($result && $row = $result->fetch_assoc()) {
-                $_SESSION['name'] = $row['name'];
-                $_SESSION['email'] = $row['email'];
-                $_SESSION['id'] = $row["login_id"];
-                $_SESSION['login_id'] = $row["login_id"];
-                $_SESSION['user_id'] = $row["user_id"];
-                
-                if ($_SESSION['login_id'] == 1) {
-                    header("Location: ./directory/dashboard.php");
-                } else {
-                    header("Location: ./directory/attendance.php");
-                }
-                exit();
-            }
+    $login_id = verify_and_rotate_remember_cookie();
+    if ($login_id) {
+        $db = new Database();
+        $conn = $db->getConnection();
+        $stmt = $conn->prepare("SELECT l.login_id, l.name, m.id AS user_id, l.email FROM tbl_login as l LEFT JOIN tbl_members AS m ON l.email=m.email WHERE l.login_id = ?");
+        $stmt->bind_param("i", $login_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result && $row = $result->fetch_assoc()) {
+            session_regenerate_id(true);
+            $_SESSION['name']          = $row['name'];
+            $_SESSION['email']         = $row['email'];
+            $_SESSION['id']            = (int)$row["login_id"];
+            $_SESSION['login_id']      = (int)$row["login_id"];
+            $_SESSION['user_id']       = !empty($row["user_id"]) ? (int)$row["user_id"] : 0;
+            $_SESSION['primary_role']  = getUserPrimaryRoleName($login_id);
+            $_SESSION['allowed_groups'] = getUserAllowedGroupIds($login_id);
+            
+            header("Location: " . getRedirectUrlForLogin((int)$_SESSION['login_id']));
+            exit();
         }
     }
 }
@@ -45,9 +56,16 @@ $login_error = '';
 if (isset($_GET['error'])) {
     if ($_GET['error'] === 'invalid') {
         $login_error = 'Invalid email or password. Please try again.';
+    } elseif ($_GET['error'] === 'locked') {
+        $login_error = 'Too many failed login attempts. Please wait 15 minutes before trying again.';
     } elseif ($_GET['error'] === 'server') {
         $login_error = 'Something went wrong on our end. Please try again.';
     }
+}
+
+$login_success = '';
+if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
+    $login_success = 'Your password has been reset successfully. Please sign in with your new credentials.';
 }
 ?>
 
@@ -453,6 +471,15 @@ if (isset($_GET['error'])) {
             }
             .login-card { padding: 36px 28px; }
         }
+
+        .view-pane {
+            animation: fadeInView 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes fadeInView {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 
@@ -505,11 +532,28 @@ if (isset($_GET['error'])) {
         <div class="right-panel">
             <div class="login-card">
 
-                <div class="card-eyebrow">YMCA BCP Portal</div>
-                <div class="card-title">Sign In</div>
-                <div class="card-subtitle">Enter your credentials to continue</div>
+                <!-- ── Sign In View ── -->
+                <div id="signin-view" class="view-pane">
+                    <div class="card-eyebrow">YMCA BCP Portal</div>
+                    <div class="card-title">Sign In</div>
+                    <div class="card-subtitle">Enter your credentials to continue</div>
 
-                <form role="form" action="./app_login_manager/login_validation.php" method="POST" autocomplete="off">
+                    <?php if (!empty($login_success)) { ?>
+                    <div id="login-success-alert" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        background: rgba(16, 185, 129, 0.12);
+                        border: 1px solid rgba(16, 185, 129, 0.3);
+                        border-radius: 10px;
+                        padding: 12px 14px;
+                        margin-bottom: 20px;
+                        animation: slideUp 0.4s ease both;
+                    ">
+                        <i class="fa fa-check-circle" style="color: #34d399; font-size: 1rem; flex-shrink: 0;"></i>
+                        <span style="color: #a7f3d0; font-size: 0.85rem; font-weight: 500;"><?php echo htmlspecialchars($login_success); ?></span>
+                    </div>
+                    <?php } ?>
 
                     <?php if (!empty($login_error)) { ?>
                     <div id="login-error-alert" style="
@@ -528,32 +572,64 @@ if (isset($_GET['error'])) {
                     </div>
                     <?php } ?>
 
-                    <div class="field-wrap">
-                        <label class="field-label" for="email">Email Address</label>
-                        <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="username">
-                        <i class="fa fa-envelope field-icon"></i>
-                    </div>
+                    <form role="form" action="./app_login_manager/login_validation.php" method="POST" autocomplete="off">
 
-                    <div class="field-wrap">
-                        <label class="field-label" for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
-                        <i class="fa fa-lock field-icon"></i>
-                        <i class="fa fa-eye-slash toggle-pw" id="togglePw" title="Show/Hide password"></i>
-                    </div>
-
-                    <div class="remember-row">
-                        <div class="remember-check">
-                            <input type="checkbox" id="remember_me" name="remember_me">
-                            <label for="remember_me">Remember me</label>
+                        <div class="field-wrap">
+                            <label class="field-label" for="email">Email Address</label>
+                            <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="username">
+                            <i class="fa fa-envelope field-icon"></i>
                         </div>
-                        <a class="forgot-link" href="./app_login_manager/forgot_password.php">Forgot password?</a>
-                    </div>
 
-                    <button type="submit" class="btn-signin">
-                        <i class="fa fa-sign-in" style="margin-right: 8px;"></i> Sign In
-                    </button>
+                        <div class="field-wrap">
+                            <label class="field-label" for="password">Password</label>
+                            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                            <i class="fa fa-lock field-icon"></i>
+                            <i class="fa fa-eye-slash toggle-pw" id="togglePw" title="Show/Hide password"></i>
+                        </div>
 
-                </form>
+                        <div class="remember-row">
+                            <div class="remember-check">
+                                <input type="checkbox" id="remember_me" name="remember_me">
+                                <label for="remember_me">Remember me</label>
+                            </div>
+                            <a class="forgot-link" href="./app_login_manager/forgot_password.php" id="btnForgotView">Forgot password?</a>
+                        </div>
+
+                        <button type="submit" class="btn-signin">
+                            <i class="fa fa-sign-in" style="margin-right: 8px;"></i> Sign In
+                        </button>
+
+                    </form>
+                </div>
+
+                <!-- ── In-Page Forgot Password View ── -->
+                <div id="forgot-view" class="view-pane" style="display: none;">
+                    <div class="card-eyebrow">Account Recovery</div>
+                    <div class="card-title">Forgot Password</div>
+                    <div class="card-subtitle">Enter your registered email and we'll send a reset link</div>
+
+                    <div id="forgot-alert" style="display: none; margin-bottom: 20px;"></div>
+
+                    <form id="forgotForm" autocomplete="off">
+                        <div class="field-wrap">
+                            <label class="field-label" for="forgot_email">Email Address</label>
+                            <input type="email" id="forgot_email" name="email" placeholder="you@example.com" required autocomplete="email">
+                            <i class="fa fa-envelope field-icon"></i>
+                        </div>
+
+                        <button type="submit" class="btn-signin" id="btnSubmitForgot">
+                            <span id="btnForgotText">
+                                <i class="fa fa-paper-plane" style="margin-right: 8px;"></i> Send Reset Link
+                            </span>
+                        </button>
+
+                        <div style="text-align: center; margin-top: 24px;">
+                            <a href="#" id="btnBackToLogin" class="forgot-link" style="display: inline-flex; align-items: center; gap: 8px;">
+                                <i class="fa fa-arrow-left"></i> Back to Sign In
+                            </a>
+                        </div>
+                    </form>
+                </div>
 
                 <div class="card-footer-text">
                     <span><i class="fa fa-shield"></i> Secured with encrypted authentication</span>
@@ -569,20 +645,198 @@ if (isset($_GET['error'])) {
 
     <script>
         // Toggle password visibility
-        document.getElementById('togglePw').addEventListener('click', function () {
-            const pw = document.getElementById('password');
-            const isHidden = pw.type === 'password';
-            pw.type = isHidden ? 'text' : 'password';
-            this.className = isHidden ? 'fa fa-eye toggle-pw' : 'fa fa-eye-slash toggle-pw';
-        });
+        const togglePw = document.getElementById('togglePw');
+        if (togglePw) {
+            togglePw.addEventListener('click', function () {
+                const pw = document.getElementById('password');
+                const isHidden = pw.type === 'password';
+                pw.type = isHidden ? 'text' : 'password';
+                this.className = isHidden ? 'fa fa-eye toggle-pw' : 'fa fa-eye-slash toggle-pw';
+            });
+        }
 
         // Validate password characters
-        document.getElementById('password').addEventListener('keyup', function () {
-            const pattern = /^[a-zA-Z0-9#@\$]*$/;
-            if (!pattern.test(this.value)) {
-                this.value = this.value.replace(/[^a-zA-Z0-9#@\$]/g, '');
+        const pwInput = document.getElementById('password');
+        if (pwInput) {
+            pwInput.addEventListener('keyup', function () {
+                const pattern = /^[a-zA-Z0-9#@\$]*$/;
+                if (!pattern.test(this.value)) {
+                    this.value = this.value.replace(/[^a-zA-Z0-9#@\$]/g, '');
+                }
+            });
+        }
+
+        // In-page Forgot Password view toggle
+        const signinView = document.getElementById('signin-view');
+        const forgotView = document.getElementById('forgot-view');
+        const emailInput = document.getElementById('email');
+        const forgotEmailInput = document.getElementById('forgot_email');
+        const forgotAlert = document.getElementById('forgot-alert');
+        const btnForgotView = document.getElementById('btnForgotView');
+        const btnBackToLogin = document.getElementById('btnBackToLogin');
+        const forgotForm = document.getElementById('forgotForm');
+
+        function showForgotView() {
+            if (signinView && forgotView) {
+                if (emailInput && emailInput.value.trim() && forgotEmailInput && !forgotEmailInput.value.trim()) {
+                    forgotEmailInput.value = emailInput.value.trim();
+                }
+                signinView.style.display = 'none';
+                forgotView.style.display = 'block';
+                if (forgotAlert) forgotAlert.style.display = 'none';
+                if (forgotEmailInput) forgotEmailInput.focus();
+                if (window.location.hash !== '#forgot') {
+                    history.pushState(null, null, '#forgot');
+                }
+            }
+        }
+
+        function showSigninView() {
+            if (signinView && forgotView) {
+                forgotView.style.display = 'none';
+                signinView.style.display = 'block';
+                if (window.location.hash === '#forgot') {
+                    history.pushState(null, null, window.location.pathname + window.location.search);
+                }
+            }
+        }
+
+        if (btnForgotView) {
+            btnForgotView.addEventListener('click', function (e) {
+                e.preventDefault();
+                showForgotView();
+            });
+        }
+
+        if (btnBackToLogin) {
+            btnBackToLogin.addEventListener('click', function (e) {
+                e.preventDefault();
+                showSigninView();
+            });
+        }
+
+        window.addEventListener('popstate', function () {
+            if (window.location.hash === '#forgot') {
+                showForgotView();
+            } else {
+                showSigninView();
             }
         });
+
+        // Open forgot view directly if requested via URL hash or param
+        if (window.location.hash === '#forgot' || new URLSearchParams(window.location.search).get('view') === 'forgot') {
+            showForgotView();
+        }
+
+        // AJAX submit for Forgot Password
+        if (forgotForm) {
+            forgotForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const emailVal = forgotEmailInput ? forgotEmailInput.value.trim() : '';
+                if (!emailVal) return;
+
+                const btnSubmit = document.getElementById('btnSubmitForgot');
+                const btnText = document.getElementById('btnForgotText');
+                const originalHtml = btnText ? btnText.innerHTML : 'Send Reset Link';
+
+                if (btnSubmit) btnSubmit.disabled = true;
+                if (btnText) btnText.innerHTML = '<i class="fa fa-spinner fa-spin" style="margin-right: 8px;"></i> Sending...';
+                if (forgotAlert) forgotAlert.style.display = 'none';
+
+                $.ajax({
+                    url: './app_login_manager/forgot_password.php',
+                    type: 'POST',
+                    data: { email: emailVal, ajax: 1 },
+                    dataType: 'json'
+                }).done(function (res) {
+                    if (btnSubmit) btnSubmit.disabled = false;
+                    if (btnText) btnText.innerHTML = originalHtml;
+
+                    if (res && res.status === 'success') {
+                        let devHelper = '';
+                        if (res.dev_reset_link) {
+                            devHelper = `
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(16, 185, 129, 0.25); font-size: 0.8rem;">
+                                    <span style="opacity: 0.85; color: #6ee7b7;">Development Helper:</span><br>
+                                    <a href="${res.dev_reset_link}" style="color: #93c5fd; text-decoration: underline; word-break: break-all;">Click here to reset password directly</a>
+                                </div>
+                            `;
+                        }
+                        forgotAlert.innerHTML = `
+                            <div style="
+                                display: flex;
+                                align-items: flex-start;
+                                gap: 12px;
+                                background: rgba(16, 185, 129, 0.12);
+                                border: 1px solid rgba(16, 185, 129, 0.28);
+                                border-radius: 12px;
+                                padding: 14px 16px;
+                                color: #a7f3d0;
+                                font-size: 0.86rem;
+                                line-height: 1.5;
+                                animation: fadeInView 0.3s ease both;
+                            ">
+                                <i class="fa fa-check-circle" style="color: #34d399; font-size: 1.15rem; margin-top: 2px; flex-shrink: 0;"></i>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: #ecfdf5; margin-bottom: 2px;">Instructions Sent</div>
+                                    <div>${res.message || 'Password reset instructions have been sent to your email address.'}</div>
+                                    ${devHelper}
+                                </div>
+                            </div>
+                        `;
+                        forgotAlert.style.display = 'block';
+                    } else {
+                        forgotAlert.innerHTML = `
+                            <div style="
+                                display: flex;
+                                align-items: flex-start;
+                                gap: 12px;
+                                background: rgba(239, 68, 68, 0.12);
+                                border: 1px solid rgba(239, 68, 68, 0.28);
+                                border-radius: 12px;
+                                padding: 14px 16px;
+                                color: #fca5a5;
+                                font-size: 0.86rem;
+                                line-height: 1.5;
+                                animation: fadeInView 0.3s ease both;
+                            ">
+                                <i class="fa fa-exclamation-circle" style="color: #f87171; font-size: 1.15rem; margin-top: 2px; flex-shrink: 0;"></i>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: #fee2e2; margin-bottom: 2px;">Notice</div>
+                                    <div>${(res && res.message) ? res.message : 'An error occurred. Please try again.'}</div>
+                                </div>
+                            </div>
+                        `;
+                        forgotAlert.style.display = 'block';
+                    }
+                }).fail(function () {
+                    if (btnSubmit) btnSubmit.disabled = false;
+                    if (btnText) btnText.innerHTML = originalHtml;
+                    forgotAlert.innerHTML = `
+                        <div style="
+                            display: flex;
+                            align-items: flex-start;
+                            gap: 12px;
+                            background: rgba(239, 68, 68, 0.12);
+                            border: 1px solid rgba(239, 68, 68, 0.28);
+                            border-radius: 12px;
+                            padding: 14px 16px;
+                            color: #fca5a5;
+                            font-size: 0.86rem;
+                            line-height: 1.5;
+                            animation: fadeInView 0.3s ease both;
+                        ">
+                            <i class="fa fa-exclamation-circle" style="color: #f87171; font-size: 1.15rem; margin-top: 2px; flex-shrink: 0;"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #fee2e2; margin-bottom: 2px;">Error</div>
+                                <div>Unable to process request. Please check your network and try again.</div>
+                            </div>
+                        </div>
+                    `;
+                    forgotAlert.style.display = 'block';
+                });
+            });
+        }
 
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {

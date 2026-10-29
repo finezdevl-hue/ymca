@@ -1,8 +1,8 @@
 {
-  "name": "YMCA Management Portal",
-  "short_name": "YMCA Portal",
-  "description": "YMCA Member Management, Attendance & Financial Tracking Portal",
-  "start_url": "./index.php",
+  "name": "ClubPulse Portal",
+  "short_name": "ClubPulse",
+  "description": "Club Member Management, Attendance & Financial Tracking Portal",
+  "start_url": "./index.php?pwa=1",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#4f46e5",

@@ -1,7 +1,6 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+include '../../app_pagination/pagination.php';
 
     // actions start
     if(isset($_POST['action']) && !empty($_POST['action'])) {
@@ -57,50 +56,41 @@
         // action to delete fee details ends
          // action to delete recieved amount start
         if($action=="delete_fee_details"){
-            $amount=$_POST['amount'];
             try{
                 $tm->begin();
 
+                $del_id = (int)$_POST['id'];
+                $rec_chk = app_exec_getresult("SELECT receiveble_id FROM tbl_member_recieved WHERE id = ?", [$del_id], "i");
+                $receiveble_id = ($rec_chk && $rrow = $rec_chk->fetch_assoc()) ? (int)$rrow['receiveble_id'] : (int)($_POST['receiveble_id'] ?? 0);
+
                 $sql = "DELETE FROM tbl_member_recieved WHERE id = ?";
-                $types="i";
-                $parameters = [
-                $_POST['id'],
-                ];
-                
-                app_exec_roll_back_nonquery($conn,$sql, $parameters, $types);
-
-                $sql = "SELECT p.fees as total_recieveble_Amount,SUM(pd.fees) AS total_recieved_amount
-                FROM tbl_member_recievable AS p
-                LEFT JOIN tbl_payment_head_master AS g ON p.head = g.id
-                LEFT JOIN tbl_member_recieved AS pd ON p.id = pd.receiveble_id where pd.receiveble_id = ?
-                GROUP BY p.id, p.date, p.discription, p.fees, p.head, g.type, g.name";
-                $parameters = [
-                    $_POST['receiveble_id'],
-                ];
                 $types = "i";
+                $parameters = [$del_id];
                 
-                $result = app_exec_getresult($sql, $parameters, $types);
+                if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                    throw new Exception("Error deleting payment record");
+                }
 
-                if (mysqli_num_rows($result) > 0) {
-                    // output data of each row
-                    while($row = mysqli_fetch_assoc($result)) {
-                        $total_recieveble_Amount = (int)$row["total_recieveble_Amount"];
-                        $total_recieved_amount = $row["total_recieved_amount"] !== null ? (int)$row["total_recieved_amount"] : 0;
-                        $isComplete = ($total_recieveble_Amount - $total_recieved_amount == 0) ? 1 : 0;
+                if ($receiveble_id > 0) {
+                    $sql = "SELECT p.id, p.fees AS total_recieveble_Amount, COALESCE(SUM(pd.fees), 0.00) AS total_recieved_amount
+                            FROM tbl_member_recievable AS p
+                            LEFT JOIN tbl_member_recieved AS pd ON p.id = pd.receiveble_id AND (pd.cancel = 0 OR pd.cancel IS NULL)
+                            WHERE p.id = ?
+                            GROUP BY p.id";
+                    $result = app_exec_getresult($sql, [$receiveble_id], "i");
+
+                    if ($result && $row = $result->fetch_assoc()) {
+                        $total_recieveble_Amount = (float)$row["total_recieveble_Amount"];
+                        $total_recieved_amount = (float)$row["total_recieved_amount"];
+                        $isComplete = ((int)round($total_recieved_amount * 100) >= (int)round($total_recieveble_Amount * 100)) ? 1 : 0;
                         
-                        $sql = "UPDATE tbl_member_recievable SET iscomplete = ?  WHERE id = ?";
-                       
-                        $parameters = [
-                            $isComplete,
-                            $_POST['receiveble_id'],
-                        ];
-                        $types="ii";
-                        
-                        if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                        $sql_up = "UPDATE tbl_member_recievable SET iscomplete = ? WHERE id = ?";
+                        if (!app_exec_roll_back_nonquery($conn, $sql_up, [$isComplete, $receiveble_id], "ii")) {
                             throw new Exception("Error in Updation");
                         }
                     }
                 }
+
                 $tm->commit();
                 echo 'Deleted Sucessfully';
             }
@@ -136,23 +126,25 @@
                     g.name AS head,
                     mr.discription,
                     mr.iscomplete,
+                    mr.cancel,
                     mr.id AS receivable_id
                 FROM tbl_member_recievable AS mr
                 LEFT JOIN tbl_payment_head_master AS g ON mr.head = g.id
-                LEFT JOIN tbl_member_recieved AS f ON mr.id = f.receiveble_id AND f.fees > 0
-                WHERE mr.member_id = ? AND (mr.date >= ? OR mr.iscomplete = 0)
+                LEFT JOIN tbl_member_recieved AS f ON mr.id = f.receiveble_id AND f.fees > 0 AND (f.cancel = 0 OR f.cancel IS NULL)
+                WHERE mr.member_id = ? AND (mr.date >= ? OR (mr.iscomplete = 0 AND (mr.cancel = 0 OR mr.cancel IS NULL)))
                 GROUP BY mr.id
-                ORDER BY mr.date DESC";
+                ORDER BY mr.cancel ASC, mr.date DESC";
 
                 $sqlcountrows = "SELECT COUNT(*) AS total
                 FROM tbl_member_recievable
-                WHERE member_id = ? AND (date >= ? OR iscomplete = 0)";
+                WHERE member_id = ? AND (date >= ? OR (iscomplete = 0 AND (cancel = 0 OR cancel IS NULL)))";
                 
                 $sqldatarows_query = $sqldatarows . " LIMIT $offset , $rowsPerPage ";
+                $target_member_id = !empty($_POST['member_id']) ? (int)$_POST['member_id'] : (!empty($_SESSION['member_id']) ? (int)$_SESSION['member_id'] : 0);
         
-                $result = app_exec_getresult($sqldatarows_query, [(int)$_SESSION['member_id'], $active_year_start], "is");
+                $result = app_exec_getresult($sqldatarows_query, [$target_member_id, $active_year_start], "is");
                     
-                $totalRowsResult = app_exec_getresult($sqlcountrows, [(int)$_SESSION['member_id'], $active_year_start], "is");
+                $totalRowsResult = app_exec_getresult($sqlcountrows, [$target_member_id, $active_year_start], "is");
                 $totalRows = $totalRowsResult->fetch_assoc()['total'];
         
                 //stringify

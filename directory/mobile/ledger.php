@@ -862,7 +862,7 @@ function renderMonthBoxes(transactions, summary){
 
     transactions.forEach(function(t){
         if(!t.date) return;
-        const ym = t.date.substring(0, 7); // "YYYY-MM"
+        const ym = t.month_key || t.date.substring(0, 7); // "YYYY-MM"
         const parts = ym.split('-');
         const y = parts[0];
         const m = parts[1];

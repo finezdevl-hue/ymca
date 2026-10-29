@@ -1,12 +1,47 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-
-    $db = new Database();
+require_once __DIR__ . '/api_bootstrap.php';
+require_admin();
+$db = new Database();
     $conn = $db->getConnection();
     $tm = new TransactionManager($conn);
 
     include '../../app_pagination/pagination.php';
+
+    if (!function_exists('checkShuttlePaymentFeeLock')) {
+        function checkShuttlePaymentFeeLock($payable_id) {
+            $pid = (int)$payable_id;
+            if ($pid <= 0) {
+                return ['is_locked' => false, 'reason' => '', 'month_label' => '', 'total_cost' => 0.0];
+            }
+            $chk_stk = app_exec_getresult("SELECT id, purchase_date, group_id, total_cost FROM tbl_shuttle_cock_stock_in WHERE payable_id = ? LIMIT 1", [$pid], "i");
+            if ($chk_stk && $stk = $chk_stk->fetch_assoc()) {
+                $month = substr($stk['purchase_date'], 0, 7);
+                $from_date = $month . '-01';
+                $to_date = date('Y-m-t', strtotime($from_date));
+                $month_label = date('F Y', strtotime($from_date));
+
+                $fx = app_exec_getresult("SELECT id FROM tbl_fixed_months WHERE fixed_month = ? LIMIT 1", [$month], "s");
+                $is_fixed = ($fx && $fx->num_rows > 0);
+
+                $gid_clause = ((int)$stk['group_id'] > 0) ? " AND (ma.member_id IN (SELECT member_id FROM tbl_group_member_map WHERE group_id = " . (int)$stk['group_id'] . "))" : "";
+                $ma = app_exec_getresult("SELECT COUNT(ma.id) as cnt FROM tbl_monthly_attendance ma WHERE ma.from_date = ? AND ma.to_date = ? AND ma.isreceiveble = 1{$gid_clause}", [$from_date, $to_date], "ss");
+                $has_ma = ($ma && (int)$ma->fetch_assoc()['cnt'] > 0);
+
+                $mr = app_exec_getresult("SELECT COUNT(id) as cnt FROM tbl_member_recievable WHERE (discription LIKE ? OR discription LIKE ?) AND fees > 0", ["%{$month_label}%", "%{$month}%"], "ss");
+                $has_mr = ($mr && (int)$mr->fetch_assoc()['cnt'] > 0);
+
+                if ($is_fixed || $has_ma || $has_mr) {
+                    return [
+                        'is_locked' => true,
+                        'reason' => "This payment voucher is linked to a Shuttle Purchase for {$month_label} which is locked because monthly fees have already been generated.",
+                        'month_label' => $month_label,
+                        'total_cost' => (float)$stk['total_cost']
+                    ];
+                }
+            }
+            return ['is_locked' => false, 'reason' => '', 'month_label' => '', 'total_cost' => 0.0];
+        }
+    }
 
     // actions start
     if(isset($_POST['action']) && !empty($_POST['action'])) {
@@ -15,47 +50,66 @@
         // action to delete payment start
         if($action=="delete_payment"){
             $amount=$_POST['amount'];
+            $paid_id = (int)($_POST['id'] ?? 0);
+            $payable_id = (int)($_POST['payable_id'] ?? 0);
+
+            if ($payable_id <= 0 && $paid_id > 0) {
+                $sel_p = app_exec_getresult("SELECT payable_id FROM tbl_paid WHERE id = ? LIMIT 1", [$paid_id], "i");
+                if ($sel_p && $row_p = $sel_p->fetch_assoc()) {
+                    $payable_id = (int)$row_p['payable_id'];
+                }
+            }
+
+            if ($payable_id > 0) {
+                $lock = checkShuttlePaymentFeeLock($payable_id);
+                if ($lock['is_locked']) {
+                    http_response_code(400);
+                    echo "Cannot delete payment: " . $lock['reason'];
+                    exit();
+                }
+            }
+
             try{
                 $tm->begin();
+
+                $del_id = (int)$_POST['id'];
+                $paid_chk = app_exec_getresult("SELECT payable_id FROM tbl_paid WHERE id = ?", [$del_id], "i");
+                $payable_id = ($paid_chk && $prow = $paid_chk->fetch_assoc()) ? (int)$prow['payable_id'] : (int)($_POST['payable_id'] ?? 0);
                 
                 $sql = "DELETE FROM tbl_paid WHERE id = ?";
-                $types="i";
-                $parameters = [
-                $_POST['id'],
-                ];
-                
-                app_exec_roll_back_nonquery($conn,$sql, $parameters, $types);
-
-                $sql = "SELECT p.amount AS total_payable_amount,
-                SUM(pd.amount) AS total_paid_amount
-                FROM tbl_payable AS p
-                LEFT JOIN tbl_payment_head_master AS g ON p.head = g.id
-                LEFT JOIN tbl_paid AS pd ON p.id = pd.payable_id where pd.payable_id = ?
-                GROUP BY p.id, p.date, p.particuler, p.amount, p.head, g.type, g.name ";
-
-                $parameters = [
-                    $_POST['payable_id'],
-                ];
                 $types = "i";
-               
-                $result = app_exec_getresult($sql, $parameters, $types);
+                $parameters = [$del_id];
                 
-                if (mysqli_num_rows($result) > 0) {
-                    // output data of each row
-                    while($row = mysqli_fetch_assoc($result)) {
-                        $total_payable_amount = (int)$row["total_payable_amount"];
-                        $total_paid_amount = $row["total_paid_amount"] !== null ? (int)$row["total_paid_amount"] : 0;
+                if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                    throw new Exception("Error deleting paid record");
+                }
 
-                        $isComplete = ($total_payable_amount - $total_paid_amount == 0) ? 1 : 0;
-                        $sql = "UPDATE tbl_payable SET iscomplete = ? WHERE id = ?";
+                if ($payable_id > 0) {
+                    $sql = "SELECT p.id, p.amount AS total_payable_amount,
+                            COALESCE(SUM(pd.amount), 0.00) AS total_paid_amount
+                            FROM tbl_payable AS p
+                            LEFT JOIN tbl_paid AS pd ON p.id = pd.payable_id AND (pd.cancel = 0 OR pd.cancel IS NULL)
+                            WHERE p.id = ?
+                            GROUP BY p.id";
+
+                    $parameters = [$payable_id];
+                    $types = "i";
+                   
+                    $result = app_exec_getresult($sql, $parameters, $types);
+                    
+                    if ($result && $row = $result->fetch_assoc()) {
+                        $total_payable_amount = (float)$row["total_payable_amount"];
+                        $total_paid_amount = (float)$row["total_paid_amount"];
+
+                        $isComplete = ((int)round($total_paid_amount * 100) >= (int)round($total_payable_amount * 100)) ? 1 : 0;
+                        $sql_up = "UPDATE tbl_payable SET iscomplete = ? WHERE id = ?";
                         $parameters = [
                             $isComplete,
-                            $_POST['payable_id'],
+                            $payable_id,
                         ];
-                        $types="ii";
-                        // app_exec_nonquery($sql, $parameters, $types);
+                        $types = "ii";
                         
-                        if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                        if (!app_exec_roll_back_nonquery($conn, $sql_up, $parameters, $types)) {
                             throw new Exception("Error in Updation");
                         }
                     }
@@ -110,16 +164,22 @@
                     $uploadDir = '../../image_upload/payments/';
                     
                     if (!is_dir($uploadDir)) {
-                        mkdir($uploadDir, 0777, true);
+                        mkdir($uploadDir, 0755, true);
                     }
                     
                     $mimeType = mime_content_type($file['tmp_name']);
-                    $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+                    $mimeToExt = [
+                        'image/jpeg' => 'jpg',
+                        'image/png'  => 'png',
+                        'image/gif'  => 'gif',
+                        'image/webp' => 'webp',
+                        'application/pdf' => 'pdf'
+                    ];
                     
-                    if (in_array($mimeType, $allowedMimeTypes)) {
+                    if (array_key_exists($mimeType, $mimeToExt)) {
                         date_default_timezone_set('Asia/Kolkata');
-                        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-                        $bill_photo_name = 'bill_' . date('Ymd_His') . '_' . uniqid() . '.' . $extension;
+                        $extension = $mimeToExt[$mimeType];
+                        $bill_photo_name = 'bill_' . date('Ymd_His') . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
                         $targetPath = $uploadDir . $bill_photo_name;
                         
                         if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
@@ -140,18 +200,18 @@
                         $_POST['payable_date'] = $_POST['paid_date'];
                     }
 
-                    $isCompleteVal = ($_POST['payable'] == $_POST['paid']) ? 1 : 0;
+                    $isCompleteVal = ((int)round((float)$_POST['paid'] * 100) >= (int)round((float)$_POST['payable'] * 100)) ? 1 : 0;
                     $sql = "INSERT INTO tbl_payable (date, head, particuler, amount, iscomplete, flag, group_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
                     $parameters = [
                         $_POST['payable_date'],
                         $_POST['head'],
                         $_POST['particuler'],
-                        $_POST['payable'],
+                        (float)$_POST['payable'],
                         $isCompleteVal,
                         $_POST['flag'],
                         $group_id
                     ];
-                    $types = "sisiiii";
+                    $types = "sisdiii";
                     $payable_id = app_exec_getlast_id_roll_back($conn, $sql, $parameters, $types);
                     
                     if ($payable_id !== null) {
@@ -160,14 +220,14 @@
                             $_POST['paid_date'],
                             $_POST['head'],
                             $_POST['particuler'],
-                            $_POST['paid'],
+                            (float)$_POST['paid'],
                             $payable_id,
                             $_POST['flag'],
                             $_POST['transaction_type'],
                             $bill_photo_name,
                             $group_id
                         ];
-                        $types = "sisiiiisi";
+                        $types = "sisdiiisi";
                     
                         if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
                             throw new Exception("Error in Updation");
@@ -189,11 +249,23 @@
                     }
                     
                     // 1. Get payable_id from tbl_paid
-                    $sql_sel = "SELECT payable_id FROM tbl_paid WHERE id = ?";
+                    $sql_sel = "SELECT payable_id, amount FROM tbl_paid WHERE id = ?";
                     $res_sel = app_exec_getresult($sql_sel, [$paid_id], "i");
                     if ($res_sel && mysqli_num_rows($res_sel) > 0) {
                         $row_sel = mysqli_fetch_assoc($res_sel);
-                        $payable_id = $row_sel['payable_id'];
+                        $payable_id = (int)$row_sel['payable_id'];
+                        $orig_paid = (float)$row_sel['amount'];
+
+                        if ($payable_id > 0) {
+                            $lock = checkShuttlePaymentFeeLock($payable_id);
+                            if ($lock['is_locked']) {
+                                $new_paid = (float)($_POST['paid'] ?? 0);
+                                $new_payable = (float)($_POST['payable'] ?? $new_paid);
+                                if (abs($new_paid - $orig_paid) > 0.001 || abs($new_payable - $lock['total_cost']) > 0.001) {
+                                    throw new Exception("Cannot alter payment amount: " . $lock['reason'] . " Shuttle purchase amounts and fee receivables are fixed.");
+                                }
+                            }
+                        }
                         
                         // 2. Update tbl_paid
                         if ($bill_photo_name !== null) {
@@ -241,17 +313,16 @@
                         }
                         
                         // 4. Recalculate iscomplete in tbl_payable
-                        $sql_sum = "SELECT pay.amount AS total_payable, SUM(pd.amount) AS total_paid 
+                        $sql_sum = "SELECT pay.amount AS total_payable, COALESCE(SUM(pd.amount), 0.00) AS total_paid 
                                     FROM tbl_payable pay 
-                                    LEFT JOIN tbl_paid pd ON pay.id = pd.payable_id 
+                                    LEFT JOIN tbl_paid pd ON pay.id = pd.payable_id AND (pd.cancel = 0 OR pd.cancel IS NULL)
                                     WHERE pay.id = ? 
                                     GROUP BY pay.id";
                         $res_sum = app_exec_getresult($sql_sum, [$payable_id], "i");
-                        if ($res_sum && mysqli_num_rows($res_sum) > 0) {
-                            $row_sum = mysqli_fetch_assoc($res_sum);
-                            $total_payable = (int)$row_sum['total_payable'];
-                            $total_paid = $row_sum['total_paid'] !== null ? (int)$row_sum['total_paid'] : 0;
-                            $isComplete = ($total_payable - $total_paid == 0) ? 1 : 0;
+                        if ($res_sum && $row_sum = $res_sum->fetch_assoc()) {
+                            $total_payable = (float)$row_sum['total_payable'];
+                            $total_paid = (float)$row_sum['total_paid'];
+                            $isComplete = ((int)round($total_paid * 100) >= (int)round($total_payable * 100)) ? 1 : 0;
                             
                             $sql_up_comp = "UPDATE tbl_payable SET iscomplete = ? WHERE id = ?";
                             if (!app_exec_roll_back_nonquery($conn, $sql_up_comp, [$isComplete, $payable_id], "ii")) {
@@ -266,6 +337,7 @@
             }
             catch (Exception $e) {
                 $tm->rollback();
+                http_response_code(400);
                 echo $e->getMessage();
             }
         }
@@ -276,14 +348,25 @@
 
             $tm->begin(); // begin transaction 
             try{
-                $paid_id = $_POST['id'];
+                $paid_id = (int)$_POST['id'];
+                $new_amount = (float)($_POST['amount'] ?? 0);
                 
                 // Get payable_id from tbl_paid
-                $sql_sel = "SELECT payable_id FROM tbl_paid WHERE id = ?";
+                $sql_sel = "SELECT payable_id, amount FROM tbl_paid WHERE id = ?";
                 $res_sel = app_exec_getresult($sql_sel, [$paid_id], "i");
                 if ($res_sel && mysqli_num_rows($res_sel) > 0) {
                     $row_sel = mysqli_fetch_assoc($res_sel);
-                    $payable_id = $row_sel['payable_id'];
+                    $payable_id = (int)$row_sel['payable_id'];
+                    $orig_amount = (float)$row_sel['amount'];
+
+                    if ($payable_id > 0) {
+                        $lock = checkShuttlePaymentFeeLock($payable_id);
+                        if ($lock['is_locked']) {
+                            if (abs($new_amount - $orig_amount) > 0.001) {
+                                throw new Exception("Cannot alter payment amount: " . $lock['reason'] . " Shuttle purchase amounts and fee receivables are fixed.");
+                            }
+                        }
+                    }
                     
                     // Update tbl_paid
                     $sql_paid = "UPDATE tbl_paid SET date = ?, head = ?, particuler = ?, amount = ? WHERE id = ?";
@@ -312,17 +395,16 @@
                     }
                     
                     // Recalculate completeness
-                    $sql_sum = "SELECT pay.amount AS total_payable, SUM(pd.amount) AS total_paid 
+                    $sql_sum = "SELECT pay.amount AS total_payable, COALESCE(SUM(pd.amount), 0.00) AS total_paid 
                                 FROM tbl_payable pay 
-                                LEFT JOIN tbl_paid pd ON pay.id = pd.payable_id 
+                                LEFT JOIN tbl_paid pd ON pay.id = pd.payable_id AND (pd.cancel = 0 OR pd.cancel IS NULL)
                                 WHERE pay.id = ? 
                                 GROUP BY pay.id";
                     $res_sum = app_exec_getresult($sql_sum, [$payable_id], "i");
-                    if ($res_sum && mysqli_num_rows($res_sum) > 0) {
-                        $row_sum = mysqli_fetch_assoc($res_sum);
-                        $total_payable = (int)$row_sum['total_payable'];
-                        $total_paid = $row_sum['total_paid'] !== null ? (int)$row_sum['total_paid'] : 0;
-                        $isComplete = ($total_payable - $total_paid == 0) ? 1 : 0;
+                    if ($res_sum && $row_sum = $res_sum->fetch_assoc()) {
+                        $total_payable = (float)$row_sum['total_payable'];
+                        $total_paid = (float)$row_sum['total_paid'];
+                        $isComplete = ((int)round($total_paid * 100) >= (int)round($total_payable * 100)) ? 1 : 0;
                         
                         $sql_up_comp = "UPDATE tbl_payable SET iscomplete = ? WHERE id = ?";
                         if (!app_exec_roll_back_nonquery($conn, $sql_up_comp, [$isComplete, $payable_id], "ii")) {

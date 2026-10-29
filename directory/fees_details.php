@@ -39,10 +39,39 @@ if(isset($_REQUEST['last_name'])){
         });  
         
         
-        // Helper: extract month+year from date string (ignores description for monthly fee display)
-        function getMonthNameFromRecord(dateStr) {
+        // Helper: extract month+year from description or date string
+        function getMonthNameFromRecord(dateStr, description) {
             var monthNames = ["", "January", "February", "March", "April", "May", "June",
                               "July", "August", "September", "October", "November", "December"];
+            
+            var foundMonth = null;
+            var foundYear = null;
+
+            if (description) {
+                var descLower = description.toLowerCase();
+                for (var i = 1; i < monthNames.length; i++) {
+                    var mLower = monthNames[i].toLowerCase();
+                    if (descLower.indexOf(mLower) !== -1) {
+                        foundMonth = monthNames[i];
+                        break;
+                    }
+                }
+                var yearMatch = description.match(/\b(20\d{2})\b/);
+                if (yearMatch) {
+                    foundYear = yearMatch[1];
+                }
+            }
+
+            if (foundMonth) {
+                if (!foundYear && dateStr) {
+                    var parts = dateStr.split('-');
+                    if (parts.length > 0) {
+                        foundYear = parts[0];
+                    }
+                }
+                return foundMonth + (foundYear ? ' ' + foundYear : '');
+            }
+
             if (!dateStr) return '';
             var parts = dateStr.split('-');
             if (parts.length < 2) return '';
@@ -98,10 +127,14 @@ if(isset($_REQUEST['last_name'])){
 
                         var billed = parseFloat(obj[1][i].billed_amount);
                         var received = parseFloat(obj[1][i].amount_received);
-                        var balance = billed - received;
-                        var statusBadge = obj[1][i].iscomplete == 1
-                            ? "<span style='color:green; font-weight:bold;'>Paid</span>"
-                            : "<span style='color:red; font-weight:bold;'>Pending</span>";
+                        var isCancelled = (parseInt(obj[1][i].cancel) === 1);
+                        var balance = isCancelled ? 0 : (billed - received);
+                        if (balance < 0) balance = 0;
+                        var statusBadge = isCancelled
+                            ? "<span style='color:#ef4444; font-weight:bold;'><i class='fa fa-ban'></i> Cancelled</span>"
+                            : (obj[1][i].iscomplete == 1
+                                ? "<span style='color:green; font-weight:bold;'>Paid</span>"
+                                : "<span style='color:red; font-weight:bold;'>Pending</span>");
 
                         var j= i+1;
                         var slno=((page-1)*8)+j;
@@ -115,10 +148,10 @@ if(isset($_REQUEST['last_name'])){
                         var rawDesc  = obj[1][i].discription ? obj[1][i].discription.trim() : '';
                         var particularHtml = '';
                         if (headName.toLowerCase() === 'monthly fee' || headName.toLowerCase() === 'monthly fees') {
-                            var monthYearStr = getMonthNameFromRecord(obj[1][i].date);
+                            var monthYearStr = getMonthNameFromRecord(obj[1][i].date, rawDesc);
                             var monthLabel = monthYearStr ? headName + ' \u2014 ' + monthYearStr : headName;
                             particularHtml = "<strong>" + monthLabel + "</strong>";
-                            if (rawDesc && rawDesc.toLowerCase() !== headName.toLowerCase()) {
+                            if (rawDesc && rawDesc.toLowerCase() !== headName.toLowerCase() && !rawDesc.toLowerCase().startsWith('monthly fee')) {
                                 particularHtml += "<br><span style='font-size:11px; color:#888;'>" + rawDesc + "</span>";
                             }
                         } else {
@@ -128,7 +161,11 @@ if(isset($_REQUEST['last_name'])){
 
                         htm=htm+ "<td>₹ "+billed.toFixed(2)+"</td>";
                         htm=htm+ "<td>₹ "+received.toFixed(2)+"</td>";
-                        htm=htm+ "<td>₹ "+balance.toFixed(2)+"</td>";
+                        if (isCancelled) {
+                            htm=htm+ "<td><span style='color:#888;'>—</span></td>";
+                        } else {
+                            htm=htm+ "<td>₹ "+balance.toFixed(2)+"</td>";
+                        }
                         htm=htm+ "<td>"+statusBadge+"</td>";
                         htm=htm+ "</tr>";
                     }                

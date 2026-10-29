@@ -30,6 +30,7 @@ include '../app_common/enums.php';
     <link href="../css/animate.css" rel="stylesheet">
     <link href="../css/style.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
     <link href="../css/plugins/sweetalert/sweetalert.css" rel="stylesheet">
     <script src="../js/plugins/sweetalert/sweetalert.min.js"></script>
     <script src="../app_js/sweetalert-finez.js"></script>
@@ -64,7 +65,16 @@ include '../app_common/enums.php';
                 }
                 prevPaidDate = currentDate;
             });
-        });  
+        });
+
+        function openBillInvoice(fileName) {
+            if (!fileName) return;
+            var path = "../image_upload/payments/" + fileName;
+            if (fileName.indexOf('shuttle_bill_') === 0) {
+                path = "../image_upload/shuttle_cock_bills/" + fileName;
+            }
+            window.open(path, "_blank");
+        }
 
         function load_groups() {
             $.post('api/attendance.php', { action: 'load_groups' }, function(data) {
@@ -94,9 +104,8 @@ include '../app_common/enums.php';
                 // val:$('#txt_search').val()
                },
                 success: function(data) {
-
-                    var obj = jQuery.parseJSON(data);
-                    console.log(obj);
+                    var obj = typeof data === 'string' ? JSON.parse(data) : data;
+                    if (!obj || !obj[0]) return;
                                        
                     var totalrows = obj[0].total_rows;
                     var htm="";
@@ -135,7 +144,7 @@ include '../app_common/enums.php';
                         // htm=htm+ "<td>"+obj[1][i].type+"</td>";
                         htm=htm+ "<td>";
                         if (obj[1][i].bill_photo) {
-                            htm=htm+ "<button type='button' class='btn-custom-action btn-custom-invoice' onclick='window.open(\"../image_upload/payments/" + obj[1][i].bill_photo + "\", \"_blank\");'><i class='fa fa-eye'></i> Invoice</button>";
+                            htm=htm+ "<button type='button' class='btn-custom-action btn-custom-invoice' onclick='openBillInvoice(\"" + obj[1][i].bill_photo + "\");'><i class='fa fa-eye'></i> Invoice</button>";
                         } else {
                             htm=htm+ "<button type='button' class='btn-custom-action btn-custom-invoice' disabled title='No bill uploaded'><i class='fa fa-eye'></i> Invoice</button>";
                         }
@@ -324,7 +333,10 @@ include '../app_common/enums.php';
                         
                         },
                         error: function(xhr, status, error) {
-                        console.log('AJAX error:', status, error);
+                            close_overlay();
+                            var msg = xhr.responseText || 'Error deleting payment';
+                            alerterror(msg);
+                            console.log('AJAX error:', status, error);
                         }
                     });
                         
@@ -590,8 +602,6 @@ include '../app_common/enums.php';
     </div>
        
     <!-- Mainly scripts -->
-    <script src="../js/jquery-3.1.1.min.js"></script>
-    <script src="../js/bootstrap.min.js"></script>
     <script src="../js/plugins/metisMenu/jquery.metisMenu.js"></script>
     <script src="../js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
 

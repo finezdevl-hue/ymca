@@ -1,6 +1,5 @@
 <?php
-session_start();
-include '../../app_common/db_connect.php';
+require_once __DIR__ . '/api_bootstrap.php';
 include '../../app_pagination/pagination.php';
 
     // action start
@@ -11,16 +10,14 @@ include '../../app_pagination/pagination.php';
         //action to delete family starts
         if($action=="delete_family"){
             try{
-                echo $_POST['id'];
-                // $sql = "UPDATE tbl_members SET group_id = 0 where id=?";
-                $sql = "DELETE FROM tbl_family_group_map WHERE family_id = ? AND group_id= ". $_SESSION['id'];
-                $types="i";
-                $parameters = [
-                $_POST['id'],
-                ];
-    
+                $target_group_id = (int)($_SESSION['selected_group_id'] ?? 0);
+                $family_id = (int)($_POST['id'] ?? 0);
+                $sql = "DELETE FROM tbl_family_group_map WHERE family_id = ? AND group_id = ?";
+                $types="ii";
+                $parameters = [$family_id, $target_group_id];
                 app_exec_nonquery($sql, $parameters, $types);
-    
+                echo json_encode(['status' => 'success']);
+                exit();
             }
             catch (Throwable $e) {
                 throw new Exception('Oops! Something went wrong.');
@@ -33,52 +30,33 @@ include '../../app_pagination/pagination.php';
         // action to load family details starts
         if($action=="load_family_data"){
             try{
+                $target_group_id = (int)($_SESSION['selected_group_id'] ?? 0);
                 $rowsPerPage = 8;
-
                 $current_page = (int)$_POST['page'];
-
-                // Pagination logic
-                $sql="";  
-                $sqlcountrows="";
-                $sqldatarows="";   
-                
                 $offset = ($current_page - 1) * $rowsPerPage;
                 
                 if($_POST['val']== ''){
                     $sqldatarows ="SELECT f.id,f.name FROM tbl_family AS f JOIN tbl_family_group_map AS gmm ON f.id = gmm.family_id
-                    WHERE gmm.group_id =" . $_SESSION['id'];
+                    WHERE gmm.group_id = ? LIMIT ?, ?";
                      
                     $sqlcountrows = "SELECT COUNT(*) AS total FROM tbl_family m
-                    JOIN tbl_family_group_map gmm ON m.id = gmm.family_id WHERE gmm.group_id = " . $_SESSION['id'];
+                    JOIN tbl_family_group_map gmm ON m.id = gmm.family_id WHERE gmm.group_id = ?";
+
+                    $result = app_exec_getresult($sqldatarows, [$target_group_id, $offset, $rowsPerPage], "iii");
+                    $totalRowsResult = app_exec_getresult($sqlcountrows, [$target_group_id], "i");
+                    $totalRows = ($totalRowsResult && $tr = $totalRowsResult->fetch_assoc()) ? $tr['total'] : 0;
                 }
                 else{            
-
+                    $search = '%' . $_POST['val'] . '%';
                     $sqldatarows ="SELECT f.id,f.name FROM tbl_family AS f JOIN tbl_family_group_map AS gmm ON f.id = gmm.family_id
-                    WHERE name LIKE ? AND gmm.group_id =" . $_SESSION['id'];
+                    WHERE name LIKE ? AND gmm.group_id = ? LIMIT ?, ?";
 
                     $sqlcountrows = "SELECT COUNT(*) AS total FROM tbl_family m
-                    JOIN tbl_family_group_map gmm ON m.id = gmm.family_id WHERE name LIKE ? AND gmm.group_id = " . $_SESSION['id'];       
-                }    
-                
-                $sqldatarows .= " LIMIT $offset , $rowsPerPage ";
-            
-                if($_POST['val']== '') {
-                    $result = app_exec_query($sqldatarows);
-                    
-                    $totalRowsResult = app_exec_query($sqlcountrows);
-                    $totalRows = $totalRowsResult->fetch_assoc()['total'];
-                }
-                else{
-                    $searchvalue= $_POST['val'];
-                    $parameters = [
-                        '%' . $searchvalue . '%' 
-                    ];
-                    
-                    $types="s";
-                    $result=app_exec_getresult($sqldatarows,$parameters,$types);
+                    JOIN tbl_family_group_map gmm ON m.id = gmm.family_id WHERE name LIKE ? AND gmm.group_id = ?";
 
-                    $totalRowsResult = app_exec_getresult($sqlcountrows,$parameters,$types);
-                    $totalRows = $totalRowsResult->fetch_assoc()['total'];
+                    $result = app_exec_getresult($sqldatarows, [$search, $target_group_id, $offset, $rowsPerPage], "siii");
+                    $totalRowsResult = app_exec_getresult($sqlcountrows, [$search, $target_group_id], "si");
+                    $totalRows = ($totalRowsResult && $tr = $totalRowsResult->fetch_assoc()) ? $tr['total'] : 0;
                 }
 
                 //stringify

@@ -127,44 +127,6 @@ $active_tab = 'reports';
         <?php endif; ?>
 
         <?php if (isSuperAdmin($login_id) || isGroupAdmin($login_id)): ?>
-        <!-- Coke Readings Box -->
-        <div class="rep-coke-card" style="background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 14px 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-            <div style="font-size: 13.5px; font-weight: 800; color: #0f172a; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-                <span><i class="fa fa-glass" style="color:#8b5cf6;"></i> Coke Readings</span>
-                <span style="font-size: 12px; font-weight: 700; color: #4f46e5; background: rgba(79,70,229,0.1); padding: 3px 8px; border-radius: 6px;">
-                    Used: <span id="coke_used_badge">0</span>
-                </span>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px;">
-                <div class="rep-field">
-                    <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Coke Starts</label>
-                    <input type="number" id="start_shuttle_no" class="form-control" placeholder="Starts" oninput="calcCokeReadings()">
-                </div>
-                <div class="rep-field">
-                    <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Coke Ends</label>
-                    <input type="number" id="end_shuttle_no" class="form-control" placeholder="Ends" oninput="calcCokeReadings()">
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; align-items: flex-end;">
-                <div class="rep-field">
-                    <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Avg Coke Price (₹)</label>
-                    <input type="number" id="shuttle_price_input" class="form-control" placeholder="0.00" step="0.01" min="0" oninput="calcCokeReadings()">
-                </div>
-                <div class="rep-field" style="display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 4px;">
-                    <div style="font-size: 11px; font-weight: 700; color: #059669; text-transform: uppercase;">Total Coke Cost</div>
-                    <div id="coke_total_cost_badge" style="font-size: 15px; font-weight: 800; color: #059669; margin-top: 2px;">₹0.00</div>
-                </div>
-            </div>
-
-            <div style="display: flex; justify-content: flex-end;">
-                <button type="button" class="btn" id="btn_save_readings" onclick="saveCokeReadings()" style="background: #10b981; color: #fff; border: none; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(16,185,129,0.2); cursor: pointer;">
-                    <i class="fa fa-save"></i> Save Coke Readings
-                </button>
-            </div>
-        </div>
-
         <!-- Fix Attendance Action Bar -->
         <div style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
             <button class="btn" id="btn_fix_attendance" onclick="toggleFixAttendance()" style="background: linear-gradient(135deg, #4f46e5, #3b82f6); color: #fff; border: none; border-radius: 12px; padding: 10px 18px; font-weight: 800; font-size: 13.5px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(79,70,229,0.22); cursor: pointer;">
@@ -360,17 +322,27 @@ $active_tab = 'reports';
         });
     }
 
+    let isCurrentMonthFixed = false;
+    let isCurrentMonthEnded = false;
+
     function checkFixedStatus(month) {
         $.post('../api/monthly_attendance_report.php', { action: 'check_fixed_status', month: month }, function(res) {
             try {
                 let data = typeof res === 'string' ? JSON.parse(res) : res;
+                isCurrentMonthFixed = !!data.is_fixed;
+                isCurrentMonthEnded = !!data.is_month_ended;
+
                 if (data.is_fixed) {
-                    $('#btn_fix_attendance').html('<i class="fa fa-lock"></i> Attendance Fixed')
-                        .css({'background': '#94a3b8', 'cursor': 'not-allowed', 'box-shadow': 'none'})
+                    $('#btn_fix_attendance').html('<i class="fa fa-check-circle"></i> Attendance Fixed')
+                        .css({'background': '#059669', 'color': '#fff', 'cursor': 'default', 'box-shadow': 'none'})
+                        .prop('disabled', true);
+                } else if (!data.is_month_ended) {
+                    $('#btn_fix_attendance').html('<i class="fa fa-clock-o"></i> Month Ongoing')
+                        .css({'background': '#64748b', 'color': '#fff', 'cursor': 'not-allowed', 'box-shadow': 'none'})
                         .prop('disabled', true);
                 } else {
-                    $('#btn_fix_attendance').html('<i class="fa fa-wrench"></i> Fix Attendance')
-                        .css({'background': 'linear-gradient(135deg, #4f46e5, #3b82f6)', 'cursor': 'pointer', 'box-shadow': '0 4px 12px rgba(79,70,229,0.22)'})
+                    $('#btn_fix_attendance').html('<i class="fa fa-lock"></i> Fix Attendance')
+                        .css({'background': 'linear-gradient(135deg, #4f46e5, #3b82f6)', 'color': '#fff', 'cursor': 'pointer', 'box-shadow': '0 4px 12px rgba(79,70,229,0.22)'})
                         .prop('disabled', false);
                 }
             } catch(e) {}
@@ -380,6 +352,24 @@ $active_tab = 'reports';
     function toggleFixAttendance() {
         let month = $('#rep_month').val();
         if (!month) return;
+
+        if (isCurrentMonthFixed) {
+            if (typeof swal !== 'undefined') {
+                swal("Attendance Fixed", "Attendance for this month is already fixed and cannot be changed.", "info");
+            } else {
+                alert("Attendance for this month is already fixed and cannot be changed.");
+            }
+            return;
+        }
+
+        if (!isCurrentMonthEnded) {
+            if (typeof swal !== 'undefined') {
+                swal("Month Ongoing", "Attendance for " + month + " can only be fixed after the month ends.", "info");
+            } else {
+                alert("Attendance for " + month + " can only be fixed after the month ends.");
+            }
+            return;
+        }
 
         if (typeof swal !== 'undefined') {
             swal({

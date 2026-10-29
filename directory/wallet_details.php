@@ -1,7 +1,7 @@
 <?php
 session_start();
 if(isset($_POST['id'])){
-    $_SESSION['id']=$_POST['id'];
+    $_SESSION['selected_wallet_client_id'] = (int)$_POST['id'];
 }
 
 if(isset($_POST['first_name'])){
@@ -15,10 +15,10 @@ if(isset($_POST['last_name'])){
 }
 
 include '../app_common/db_connect.php';
-$client_id = isset($_SESSION['id']) ? (int)$_SESSION['id'] : 0;
+$client_id = isset($_SESSION['selected_wallet_client_id']) ? (int)$_SESSION['selected_wallet_client_id'] : 0;
 $balance = 0.00;
 if ($client_id > 0) {
-    $bal_res = app_exec_query("SELECT SUM(CASE WHEN type='credit' THEN amount WHEN type='debit' THEN -amount ELSE 0 END) AS balance FROM tbl_wallet WHERE client_id = " . $client_id);
+    $bal_res = app_exec_getresult("SELECT SUM(CASE WHEN type='credit' THEN amount WHEN type='debit' THEN -amount ELSE 0 END) AS balance FROM tbl_wallet WHERE client_id = ?", [$client_id], "i");
     if ($bal_res && $row = $bal_res->fetch_assoc()) {
         $balance = $row['balance'] ? (float)$row['balance'] : 0.00;
     }

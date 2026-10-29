@@ -13,9 +13,6 @@ if (isNormalMember($login_id)) {
     exit();
 }
 
-if(isset($_POST['id'])){
-    $_SESSION['id']=$_POST['id'];
-}
 ?>
 <!DOCTYPE html>
 <html>

@@ -219,7 +219,7 @@ $is_admin = ($_SESSION['login_id'] == 1);
             min-width: 100%;
             border-collapse: separate;
             border-spacing: 0;
-            font-size: 13.5px;
+            font-size: 14.5px;
             font-family: 'Inter', sans-serif;
         }
         #tbl_attendance_grid thead tr {
@@ -227,8 +227,8 @@ $is_admin = ($_SESSION['login_id'] == 1);
         }
         #tbl_attendance_grid thead th {
             padding: 14px 10px;
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.06em;
             color: #475569;
@@ -242,8 +242,11 @@ $is_admin = ($_SESSION['login_id'] == 1);
         }
         #tbl_attendance_grid thead th.col-name {
             text-align: left;
-            min-width: 180px;
-            padding-left: 24px;
+            min-width: 160px;
+            max-width: 190px;
+            padding-left: 20px;
+            font-size: 12.5px;
+            font-weight: 800;
             position: sticky;
             left: 0;
             background: #f8fafc;
@@ -251,16 +254,27 @@ $is_admin = ($_SESSION['login_id'] == 1);
             border-right: 1px solid #e8edf5;
         }
         #tbl_attendance_grid thead th.col-total {
-            min-width: 80px;
+            min-width: 65px;
+            width: 65px;
+            font-size: 12.5px;
+            font-weight: 800;
             border-right: 1px solid #e8edf5;
         }
         #tbl_attendance_grid thead th.col-rate {
-            min-width: 80px;
+            min-width: 90px;
+            width: 90px;
+            font-size: 12.5px;
+            font-weight: 800;
             border-right: none;
+            white-space: nowrap;
         }
         /* Day number header */
         #tbl_attendance_grid thead th.col-day {
-            min-width: 42px;
+            min-width: 34px;
+            max-width: 38px;
+            padding: 12px 4px;
+            font-size: 12px;
+            font-weight: 700;
         }
         #tbl_attendance_grid thead th.col-day.today {
             color: #3b82f6;
@@ -279,6 +293,7 @@ $is_admin = ($_SESSION['login_id'] == 1);
             padding: 13px 10px;
             text-align: center;
             color: #334155;
+            font-size: 14px;
             border-bottom: 1px solid #e8edf5;
             border-right: 1px solid #e8edf5;
         }
@@ -287,41 +302,90 @@ $is_admin = ($_SESSION['login_id'] == 1);
         }
         #tbl_attendance_grid tbody td.cell-name {
             text-align: left;
-            padding-left: 24px;
-            font-weight: 600;
+            padding-left: 20px;
+            padding-right: 14px;
+            font-size: 15.5px;
+            font-weight: 700;
             color: #0f172a;
             position: sticky;
             left: 0;
             background: #fff;
             z-index: 1;
             border-right: 1px solid #e8edf5;
+            vertical-align: middle;
         }
         #tbl_attendance_grid tbody tr:hover td.cell-name {
             background: #f8faff;
+        }
+        .mem-name-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            line-height: 1.25;
+        }
+        .mem-name-wrap .name-first {
+            font-size: 15.5px;
+            font-weight: 700;
+            color: #0f172a;
+            white-space: nowrap;
+        }
+        .mem-name-wrap .name-last {
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        #tbl_attendance_grid tbody td.cell-total,
+        #tbl_attendance_grid tbody td.cell-total strong {
+            font-size: 17px;
+            font-weight: 800;
+            color: #0f172a;
+            text-align: center;
+        }
+        #tbl_attendance_grid tbody td.cell-total {
+            background: #f8fafc;
+        }
+        #tbl_attendance_grid tbody tr:hover td.cell-total {
+            background: #f1f5f9;
         }
 
         /* P / A / — cells */
         .cell-present {
             color: #10b981;
-            font-weight: 700;
-            font-size: 13px;
+            font-weight: 800;
+            font-size: 14.5px;
         }
         .cell-absent {
             color: #ef4444;
-            font-weight: 700;
-            font-size: 13px;
+            font-weight: 800;
+            font-size: 14.5px;
         }
         .cell-nosession {
             color: #94a3b8;
-            font-size: 13px;
+            font-size: 14.5px;
+            font-weight: 600;
+        }
+
+        #tbl_attendance_grid tbody td.cell-rate {
+            min-width: 90px;
+            width: 90px;
+            text-align: center;
+            padding: 10px 12px;
+            white-space: nowrap;
+            vertical-align: middle;
         }
 
         /* Rate badge */
         .rate-badge {
             display: inline-block;
-            font-weight: 700;
-            font-size: 13px;
+            font-weight: 800;
+            font-size: 14px;
             color: #0f172a;
+            padding: 4px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+            text-align: center;
         }
         .rate-high   { background: #dcfce7; color: #15803d; }
         .rate-medium { background: #fef9c3; color: #b45309; }
@@ -331,9 +395,13 @@ $is_admin = ($_SESSION['login_id'] == 1);
         /* Group divider row */
         .group-header-row td {
             background: linear-gradient(135deg, #eff6ff, #f5f3ff);
-            color: #3b82f6; font-size: 11px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.07em;
-            padding: 8px 22px !important; text-align: left !important;
+            color: #2563eb;
+            font-size: 13.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 10px 24px !important;
+            text-align: left !important;
         }
 
         /* Empty / loading state */
@@ -392,27 +460,37 @@ $is_admin = ($_SESSION['login_id'] == 1);
                 width: 100% !important;
                 min-width: 100% !important;
                 table-layout: fixed !important;
-                font-size: 8px !important;
+                font-size: 10px !important;
             }
             #tbl_attendance_grid thead th,
             #tbl_attendance_grid tbody td {
                 padding: 4px 2px !important;
                 border: 1.5px solid #bbb !important;
-                font-size: 8px !important;
+                font-size: 10px !important;
                 word-wrap: break-word !important;
             }
             #tbl_attendance_grid thead th.col-name,
             #tbl_attendance_grid tbody td.cell-name {
                 position: static !important;
                 background: #ffffff !important;
-                font-size: 8.5px !important;
+                font-size: 11px !important;
                 font-weight: bold !important;
                 padding-left: 4px !important;
-                width: 150px !important;
-                min-width: 150px !important;
-                max-width: 150px !important;
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
+                width: 160px !important;
+                min-width: 160px !important;
+                max-width: 160px !important;
+                vertical-align: middle !important;
+            }
+            .mem-name-wrap .name-first {
+                font-size: 11px !important;
+                font-weight: bold !important;
+                color: #000000 !important;
+                white-space: nowrap !important;
+            }
+            .mem-name-wrap .name-last {
+                font-size: 10px !important;
+                font-weight: bold !important;
+                color: #333333 !important;
                 white-space: nowrap !important;
             }
             #tbl_attendance_grid thead th.col-day {
@@ -420,19 +498,27 @@ $is_admin = ($_SESSION['login_id'] == 1);
                 min-width: 25px !important;
                 max-width: 25px !important;
             }
-            #tbl_attendance_grid thead th.col-total {
+            #tbl_attendance_grid thead th.col-total,
+            #tbl_attendance_grid tbody td.cell-total,
+            #tbl_attendance_grid tbody td.cell-total strong {
                 width: 45px !important;
                 min-width: 45px !important;
                 max-width: 45px !important;
+                font-size: 12px !important;
+                font-weight: bold !important;
+                color: #000000 !important;
             }
-            #tbl_attendance_grid thead th.col-rate {
+            #tbl_attendance_grid thead th.col-rate,
+            .rate-badge {
                 width: 50px !important;
                 min-width: 50px !important;
                 max-width: 50px !important;
+                font-size: 11.5px !important;
+                font-weight: bold !important;
             }
-            .cell-present { color: #000000 !important; font-weight: bold !important; }
-            .cell-absent { color: #000000 !important; font-weight: bold !important; }
-            .cell-nosession { color: #777777 !important; }
+            .cell-present { color: #000000 !important; font-weight: bold !important; font-size: 10.5px !important; }
+            .cell-absent { color: #000000 !important; font-weight: bold !important; font-size: 10.5px !important; }
+            .cell-nosession { color: #777777 !important; font-size: 10.5px !important; }
         }
         .print-only { display: none; }
     </style>
@@ -510,43 +596,32 @@ $is_admin = ($_SESSION['login_id'] == 1);
                 </div>
             </div>
 
-            <!-- Coke Readings Panel -->
-            <div class="rep-filter-card btn-print-hide shuttle-field" id="coke_readings_panel" style="display:none;">
-                <h2><i class="fa fa-glass"></i> Coke Readings</h2>
-                <div class="rep-filter-row" style="align-items: center;">
-                    <div class="rep-filter-field">
-                        <label>Coke no Starts</label>
-                        <input type="number" id="start_shuttle_no" class="form-control text-center" style="width:110px; height: 38px;" placeholder="Starts">
-                    </div>
-                    <div class="rep-filter-field" style="margin-left: 10px;">
-                        <label>Coke no ends</label>
-                        <input type="number" id="end_shuttle_no" class="form-control text-center" style="width:110px; height: 38px;" placeholder="Ends">
-                    </div>
-                    <div class="rep-filter-field" style="justify-content: flex-end; height: 58px; margin-left: 15px;">
-                        <span style="font-size: 13px; font-weight: 700; color: #4f46e5; margin-bottom: 10px;">
-                            Cokes Used: <span id="total_shuttles_used" style="font-size:15px; background:rgba(79,70,229,0.1); padding:4px 10px; border-radius:6px;">0</span>
+            <!-- Shuttle Cock Readings Summary Bar (Auto-fetched from Shuttle Cock Readings page) -->
+            <div class="rep-filter-card btn-print-hide shuttle-field" id="shuttle_cock_summary_bar" style="display:none; background: #f8fafc; border-left: 4px solid #4f46e5; padding: 14px 20px; border-radius: 12px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="background: rgba(79,70,229,0.1); color: #4f46e5; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            <i class="fa fa-cubes"></i>
                         </span>
+                        <div>
+                            <h4 style="margin: 0; font-weight: 700; color: #1e293b; font-size: 16px;">Shuttle Cock Consumption Summary</h4>
+                            <small class="text-muted" id="shuttle_reading_subtitle">Auto-synced from Shuttle Cock Readings</small>
+                        </div>
                     </div>
-                    <?php if ($is_admin): ?>
-                    <div class="rep-filter-field" style="margin-left: 15px;">
-                        <label>Avg coke Price</label>
-                        <input type="number" id="shuttle_price_input" class="form-control text-center" style="width:140px; height: 38px;" placeholder="0.00" step="0.01" min="0">
-                    </div>
-                    <?php endif; ?>
-                    <input type="hidden" id="month_avg_shuttle_price" value="">
-                    <input type="hidden" id="calculated_shuttle_price" value="">
-                    <div class="rep-filter-field" style="justify-content: flex-end; height: 58px; margin-left: 15px;">
-                        <span style="font-size: 13px; font-weight: 700; color: #059669; margin-bottom: 10px;">
-                            Coke Price: <span id="calculated_shuttle_price_badge" class="rep-price-badge">Rs. 0.00</span>
+                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                        <span style="font-weight: 600; color: #475569; font-size: 13px;">
+                            Shuttles Used: <strong id="total_shuttles_used_badge" style="color: #dc2626; font-size: 15px; background: #fee2e2; padding: 4px 10px; border-radius: 6px;">0 Shuttles</strong>
                         </span>
+                        <span style="font-weight: 600; color: #475569; font-size: 13px;">
+                            Avg Price: <strong id="avg_shuttle_price_badge" style="color: #2563eb; font-size: 14px;">Rs. 0.00</strong>
+                        </span>
+                        <span style="font-weight: 600; color: #475569; font-size: 13px;">
+                            Total Expense: <strong id="total_shuttle_expense_badge" style="color: #16a34a; font-size: 15px; background: #dcfce7; padding: 4px 10px; border-radius: 6px;">Rs. 0.00</strong>
+                        </span>
+                        <a href="shuttle_cock_readings.php" target="_blank" class="rep-btn rep-btn-primary" style="height: 34px; line-height: 34px; padding: 0 14px; font-size: 12px; border-radius: 8px; text-decoration: none;">
+                            <i class="fa fa-list-alt"></i> Shuttle Cock Readings
+                        </a>
                     </div>
-                    <?php if ($is_admin): ?>
-                    <div class="rep-filter-field" style="justify-content: flex-end; height: 58px; margin-left: auto;">
-                        <button type="button" class="rep-btn rep-btn-primary" id="btn_save_readings" style="height: 38px; margin-bottom: 10px;">
-                            <i class="fa fa-save"></i> Save Readings
-                        </button>
-                    </div>
-                    <?php endif; ?>
                 </div>
             </div>
 
@@ -567,6 +642,14 @@ $is_admin = ($_SESSION['login_id'] == 1);
                 <div class="rep-stat-chip">
                     <span class="chip-dot" style="background:#f59e0b;"></span>
                     <span id="stat-full-label"><?php echo $is_admin ? '100% Attendance:' : 'Days Present:'; ?></span> <span class="chip-val" id="stat-full">0</span>
+                </div>
+                <div class="rep-stat-chip" style="background: #fef2f2; border: 1px solid #fca5a5;">
+                    <span class="chip-dot" style="background:#ef4444;"></span>
+                    Cokes Used: <span class="chip-val" id="stat-cokes-used" style="color:#b91c1c;">0</span>
+                </div>
+                <div class="rep-stat-chip" style="background: #ecfdf5; border: 1px solid #a7f3d0;">
+                    <span class="chip-dot" style="background:#10b981;"></span>
+                    Total Coke Cost: <span class="chip-val" id="stat-coke-cost" style="color:#047857;">Rs. 0.00</span>
                 </div>
             </div>
 
@@ -757,12 +840,28 @@ function generateReport() {
                 return;
             }
 
-            // Populate monthly/group shuttle readings
-            $('#start_shuttle_no').val(data.group_start_shuttle !== null ? data.group_start_shuttle : '');
-            $('#end_shuttle_no').val(data.group_end_shuttle !== null ? data.group_end_shuttle : '');
-            calculateGroupShuttles();
+            // Populate monthly/group shuttle cock readings from tbl_shuttle_cock_readings
+            var totShuttles = data.month_total_shuttles || 0;
+            var totAmount = parseFloat(data.month_total_amount) || 0.00;
+            var avgPrice = parseFloat(data.month_avg_shuttle_price) || 0.00;
+
+            $('#stat-cokes-used').text(totShuttles);
+            $('#stat-coke-cost').text(formatCokePrice(totAmount));
+
+            $('#total_shuttles_used_badge').text(totShuttles + ' Shuttles');
+            $('#avg_shuttle_price_badge').text(formatCokePrice(avgPrice));
+            $('#total_shuttle_expense_badge').text(formatCokePrice(totAmount));
+            $('#table_shuttle_badge').text('Shuttles Used: ' + totShuttles).show();
+            $('#table_avg_shuttle_badge').text('Avg Price: ' + formatCokePrice(avgPrice)).show();
+            $('#table_total_price_badge').text('Shuttle Expense: ' + formatCokePrice(totAmount)).show();
+
+            var printMetaText = 'Month: ' + monthName + '  |  Group: ' + ($('#filter_group option:selected').text());
+            printMetaText += '  |  Cokes Used: ' + totShuttles;
+            printMetaText += '  |  Total Coke Cost: ' + formatCokePrice(totAmount);
+            $('#print_meta').text(printMetaText);
+
+            $('#shuttle_cock_summary_bar').show();
             $('.shuttle-field').show();
-            updateCokePriceSummary();
 
             // Build header row
             var theadHtml = '<tr><th class="col-name">Member Name</th>';
@@ -803,11 +902,31 @@ function generateReport() {
                 var grpMembers = groups[grpName];
                 for (var j = 0; j < grpMembers.length; j++) {
                     var m = grpMembers[j];
-                    var fullName = [m.first_name, m.middle_name, m.last_name]
-                        .filter(function(p){ return p && p.trim(); }).join(' ');
+                    var firstPart = [m.first_name, m.middle_name].filter(function(p){ return p && p.trim(); }).join(' ');
+                    var lastPart = (m.last_name || '').trim();
+
+                    var nameHtml = '';
+                    if (firstPart && lastPart) {
+                        var fullLen = (firstPart + ' ' + lastPart).length;
+                        if (fullLen > 15 || lastPart.length > 7) {
+                            nameHtml = '<div class="mem-name-wrap"><span class="name-first">' + firstPart + '</span><span class="name-last">' + lastPart + '</span></div>';
+                        } else {
+                            nameHtml = '<div class="mem-name-wrap"><span class="name-first">' + firstPart + ' ' + lastPart + '</span></div>';
+                        }
+                    } else {
+                        var singleName = (firstPart || lastPart || 'Member');
+                        if (singleName.length > 15 && singleName.indexOf(' ') !== -1) {
+                            var words = singleName.split(' ');
+                            var lastW = words.pop();
+                            var firstW = words.join(' ');
+                            nameHtml = '<div class="mem-name-wrap"><span class="name-first">' + firstW + '</span><span class="name-last">' + lastW + '</span></div>';
+                        } else {
+                            nameHtml = '<div class="mem-name-wrap"><span class="name-first">' + singleName + '</span></div>';
+                        }
+                    }
 
                     tbodyHtml += '<tr>';
-                    tbodyHtml += '<td class="cell-name">' + fullName + '</td>';
+                    tbodyHtml += '<td class="cell-name">' + nameHtml + '</td>';
 
                     for (var d = 0; d < dayCols.length; d++) {
                         var day  = dayCols[d];
@@ -825,7 +944,7 @@ function generateReport() {
                     tbodyHtml += '<td class="cell-total"><strong>' + m.present + '</strong></td>';
                     var pct = m.percentage;
                     var rateClass = pct >= 75 ? 'rate-high' : (pct >= 50 ? 'rate-medium' : (pct > 0 ? 'rate-low' : 'rate-zero'));
-                    tbodyHtml += '<td><span class="rate-badge ' + rateClass + '">' + pct + '%</span></td>';
+                    tbodyHtml += '<td class="cell-rate"><span class="rate-badge ' + rateClass + '">' + pct + '%</span></td>';
                     
                     tbodyHtml += '</tr>';
                 }
@@ -863,7 +982,7 @@ function checkMonthLockStatus() {
         url: 'api/monthly_attendance_report.php',
         data: { action: 'check_fixed_status', month: month },
         success: function(res) {
-            var data = JSON.parse(res);
+            var data = typeof res === 'object' ? res : JSON.parse(res);
             var btn = $('#btn_lock_status');
             var icon = $('#icon_lock');
             var lbl = $('#lbl_lock');
@@ -872,15 +991,26 @@ function checkMonthLockStatus() {
             
             if (data.is_fixed) {
                 btn.removeClass('rep-btn-red rep-btn-orange').addClass('rep-btn-green').prop('disabled', true).css('cursor', 'default');
-                icon.removeClass('fa-lock fa-unlock').addClass('fa-check-circle');
+                icon.removeClass('fa-lock fa-unlock fa-clock-o').addClass('fa-check-circle');
                 lbl.text('Attendance Fixed');
                 btn.data('status', 'fixed');
+                btn.attr('title', 'Attendance for this month has been fixed and locked.');
                 $('#start_shuttle_no, #end_shuttle_no').prop('disabled', true);
+            } else if (!data.is_month_ended) {
+                btn.removeClass('rep-btn-red rep-btn-green').addClass('rep-btn-orange').prop('disabled', true).css('cursor', 'not-allowed');
+                icon.removeClass('fa-lock fa-unlock fa-check-circle').addClass('fa-clock-o');
+                lbl.text('Month Ongoing');
+                btn.data('status', 'ongoing');
+                btn.attr('title', 'Attendance can only be fixed after the month ends.');
+                if (<?php echo $is_admin ? 'true' : 'false'; ?>) {
+                    $('#start_shuttle_no, #end_shuttle_no').prop('disabled', false);
+                }
             } else {
                 btn.removeClass('rep-btn-orange rep-btn-green').addClass('rep-btn-red').prop('disabled', false).css('cursor', 'pointer');
-                icon.removeClass('fa-check-circle fa-unlock').addClass('fa-lock');
+                icon.removeClass('fa-check-circle fa-unlock fa-clock-o').addClass('fa-lock');
                 lbl.text('Fix Attendance');
                 btn.data('status', 'not_fixed');
+                btn.attr('title', 'Click to fix attendance for this completed month.');
                 if (<?php echo $is_admin ? 'true' : 'false'; ?>) {
                     $('#start_shuttle_no, #end_shuttle_no').prop('disabled', false);
                 }
@@ -897,11 +1027,10 @@ function toggleLockMonth() {
         swal("Attendance Fixed", "Attendance for this month is already fixed and cannot be unfixed or changed.", "info");
         return;
     }
-
-    var startVal = $('#start_shuttle_no').val();
-    var endVal = $('#end_shuttle_no').val();
-    if (!startVal || !endVal || $.trim(startVal) === '' || $.trim(endVal) === '') {
-        swal("Coke Readings Required", "Attendance can only be fixed after adding the Coke Readings. Please enter and save the Coke Readings first.", "warning");
+    if (status === 'ongoing') {
+        var dateObj = new Date(month + '-01');
+        var monthName = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+        swal("Month Ongoing", "Attendance for " + monthName + " can only be fixed after the month ends.", "info");
         return;
     }
     

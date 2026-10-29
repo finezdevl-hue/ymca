@@ -1,9 +1,6 @@
 <?php
-
-//db Connection
-
-
-//Application navigation url
-$app_url="www.fineztechnologies.com"
-
-?>
+/**
+ * Backward compatibility bridge for Application Values and Constants.
+ * Canonical configuration in config/app.php
+ */
+require_once __DIR__ . '/../config/app.php';

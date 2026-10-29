@@ -17,14 +17,51 @@ $is_admin = isSuperAdmin($login_id) || isGroupAdmin($login_id);
 $allowed_groups = getUserAllowedGroupIds($login_id);
 $primary_role = getUserPrimaryRoleName($login_id);
 
-$active_tab = 'reports';
+if (!function_exists('getFormattedReceiptDescription')) {
+    function getFormattedReceiptDescription($desc, $rec_desc, $head_name, $date, $rec_date = '') {
+        $candidates = [trim((string)$desc), trim((string)$rec_desc)];
+        $month_names = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+        
+        // 1. Check if any provided description already has an explicit month name in it
+        foreach ($candidates as $c) {
+            if (!empty($c)) {
+                $c_lower = strtolower($c);
+                foreach ($month_names as $mn) {
+                    if (strpos($c_lower, $mn) !== false) {
+                        return $c;
+                    }
+                }
+            }
+        }
+        
+        // 2. Prioritize the receivable's billing date (rec_date) to determine the target billing month
+        $target_date = (!empty($rec_date) && $rec_date !== '0000-00-00' && strtotime($rec_date) !== false) ? $rec_date : $date;
+        $month_str = (!empty($target_date) && $target_date !== '0000-00-00' && strtotime($target_date) !== false) ? date('F Y', strtotime($target_date)) : '';
+        
+        foreach ($candidates as $c) {
+            if (!empty($c) && !in_array(strtolower($c), ['fee collection', 'fee received', 'monthly fee', 'fee', 'fee receipt'])) {
+                return !empty($month_str) ? ($c . ' - ' . $month_str) : $c;
+            }
+        }
+        
+        // 3. Fallback with Month and Year
+        if (!empty($month_str)) {
+            $prefix = (!empty($head_name) && !in_array(strtolower($head_name), ['fee collection', 'fee receipt', 'fee'])) ? $head_name : 'Monthly Fee';
+            return $prefix . ' - ' . $month_str;
+        }
+        
+        return !empty($head_name) ? $head_name : 'Monthly Fee';
+    }
+}
 
 // Fetch recent fee collection history
 $sql = "
-    SELECT mr.id, mr.date, mr.fees as amount, fhm.name as head_name,
+    SELECT mr.id, mr.date, mr.fees as amount, mr.discription, rec.discription as rec_discription, rec.date as rec_date,
+           fhm.name as head_name,
            m.first_name, m.middle_name, m.last_name
     FROM tbl_member_recieved mr
     JOIN tbl_members m ON mr.member_id = m.id
+    LEFT JOIN tbl_member_recievable rec ON mr.receiveble_id = rec.id
     LEFT JOIN tbl_fees_head_master fhm ON mr.head = fhm.id
     LEFT JOIN tbl_group_member_map gmm ON m.id = gmm.member_id
     WHERE mr.cancel = 0 AND mr.fees > 0
@@ -94,12 +131,15 @@ $res = app_exec_query($sql);
         <div>
             <?php if ($res && $res->num_rows > 0): ?>
                 <?php while ($r = $res->fetch_assoc()): ?>
-                    <?php $name = trim($r['first_name'] . ' ' . $r['middle_name'] . ' ' . $r['last_name']); ?>
+                    <?php 
+                    $name = trim($r['first_name'] . ' ' . $r['middle_name'] . ' ' . $r['last_name']); 
+                    $desc = getFormattedReceiptDescription($r['discription'] ?? '', $r['rec_discription'] ?? '', $r['head_name'] ?? '', $r['date'] ?? '', $r['rec_date'] ?? '');
+                    ?>
                     <div class="hist-item-card">
                         <div>
                             <div class="hist-date"><i class="fa fa-calendar"></i> <?php echo ($r['date'] && $r['date'] !== '0000-00-00' && strtotime($r['date']) !== false) ? date('d M Y', strtotime($r['date'])) : '--'; ?></div>
                             <h4 class="hist-head"><?php echo htmlspecialchars($name); ?></h4>
-                            <div class="hist-narr"><?php echo htmlspecialchars($r['head_name'] ?: 'Fee Receipt'); ?></div>
+                            <div class="hist-narr"><?php echo htmlspecialchars($desc); ?></div>
                         </div>
                         <div class="hist-amt">
                             +₹<?php echo number_format((float)$r['amount'], 2); ?>

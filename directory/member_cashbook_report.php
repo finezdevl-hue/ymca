@@ -856,12 +856,13 @@ if (empty($_SESSION['login_id'])) {
 
         // Open Single Row Invoice Modal (Admin)
         function openSingleRowInvoice(idx) {
-            if(!window.currentCashbookData || !window.currentCashbookData.transactions[idx]) return;
+            if(!window.currentCashbookData || !window.currentCashbookData.transactions || !window.currentCashbookData.transactions[idx]) return;
             const res = window.currentCashbookData;
-            const info = res.member_info;
+            const info = res.member_info || {};
+            const summary = res.summary || {};
             const t = res.transactions[idx];
             const selectedYear = $('#sel_financial_year').val();
-            const fullName = info.first_name + " " + (info.middle_name ? info.middle_name + " " : "") + info.last_name;
+            const fullName = (info.first_name || '') + " " + (info.middle_name ? info.middle_name + " " : "") + (info.last_name || '');
             const formattedDate = new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
             $('#arcpt-modal-title').text('FEE INVOICE ITEM');
@@ -872,13 +873,13 @@ if (empty($_SESSION['login_id'])) {
             $('#arcpt-period').text(formattedDate);
 
             const deb = parseFloat(t.debit || 0);
-            const pendingBal = summary ? summary.closing_balance : deb;
+            const pendingBal = (summary && typeof summary.closing_balance !== 'undefined') ? summary.closing_balance : deb;
 
             $('#arcpt-total-debit').text('₹' + deb.toFixed(2));
             $('#arcpt-total-credit').text('₹0.00');
             $('#arcpt-closing-balance').text('₹' + pendingBal.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
 
-            $('#arcpt-stamp-area').html('<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:900;background:#fee2e2;color:#dc2626;border:1px solid #ef4444;"><i class="fa fa-file-text-o"></i> FEE CHARGE BILLEDS</span>');
+            $('#arcpt-stamp-area').html('<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:900;background:#fee2e2;color:#dc2626;border:1px solid #ef4444;"><i class="fa fa-file-text-o"></i> FEE CHARGE BILLED</span>');
 
             let tableHtm = `<tr>
                 <td style="padding:8px 10px;font-size:12px;border-bottom:1px solid #f1f5f9;">${formattedDate}</td>
@@ -895,24 +896,24 @@ if (empty($_SESSION['login_id'])) {
         function openAdminReceiptModal() {
             if(!window.currentCashbookData) return;
             const res = window.currentCashbookData;
-            const info = res.member_info;
-            const summary = res.summary;
+            const info = res.member_info || {};
+            const summary = res.summary || {};
             const trans = res.transactions || [];
             const selectedYear = $('#sel_financial_year').val();
-            const fullName = info.first_name + " " + (info.middle_name ? info.middle_name + " " : "") + info.last_name;
+            const fullName = (info.first_name || '') + " " + (info.middle_name ? info.middle_name + " " : "") + (info.last_name || '');
 
             $('#arcpt-modal-title').text('OFFICIAL PAYMENT RECEIPT');
             $('#arcpt-doc-title-text').text('PAYMENT RECEIPT');
-            $('#arcpt-no').text('RCPT-' + selectedYear + '-' + info.id);
+            $('#arcpt-no').text('RCPT-' + selectedYear + '-' + (info.id || '0'));
             $('#arcpt-member-name').text(fullName);
             $('#arcpt-member-groups').text('Groups: ' + (info.group_names || 'N/A'));
             $('#arcpt-period').text('FY ' + selectedYear + ' - ' + (parseInt(selectedYear)+1));
 
-            $('#arcpt-total-debit').text('₹' + summary.total_debit.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
-            $('#arcpt-total-credit').text('₹' + summary.total_credit.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
-            $('#arcpt-closing-balance').text('₹' + summary.closing_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+            $('#arcpt-total-debit').text('₹' + (summary.total_debit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+            $('#arcpt-total-credit').text('₹' + (summary.total_credit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+            $('#arcpt-closing-balance').text('₹' + (summary.closing_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }));
 
-            if(summary.total_credit > 0){
+            if((summary.total_credit || 0) > 0){
                 $('#arcpt-stamp-area').html('<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:900;background:#d1fae5;color:#047857;border:1px solid #10b981;"><i class="fa fa-check-circle"></i> PAYMENT RECEIVED & VERIFIED</span>');
             } else {
                 $('#arcpt-stamp-area').html('<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:900;background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;"><i class="fa fa-clock-o"></i> NO PAYMENTS RECORDED YET</span>');
@@ -938,14 +939,17 @@ if (empty($_SESSION['login_id'])) {
 
         // Open Single Row Receipt Modal (Admin)
         function openSingleRowReceipt(idx) {
-            if(!window.currentCashbookData || !window.currentCashbookData.transactions[idx]) return;
+            if(!window.currentCashbookData || !window.currentCashbookData.transactions || !window.currentCashbookData.transactions[idx]) return;
             const res = window.currentCashbookData;
-            const info = res.member_info;
+            const info = res.member_info || {};
+            const summary = res.summary || {};
             const t = res.transactions[idx];
             const selectedYear = $('#sel_financial_year').val();
-            const fullName = info.first_name + " " + (info.middle_name ? info.middle_name + " " : "") + info.last_name;
+            const fullName = (info.first_name || '') + " " + (info.middle_name ? info.middle_name + " " : "") + (info.last_name || '');
             const formattedDate = new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+            $('#arcpt-modal-title').text('PAYMENT RECEIPT ITEM');
+            $('#arcpt-doc-title-text').text('PAYMENT RECEIPT');
             $('#arcpt-no').text('RCPT-' + t.date.replace(/-/g,'') + '-' + (t.id || idx));
             $('#arcpt-member-name').text(fullName);
             $('#arcpt-member-groups').text('Groups: ' + (info.group_names || 'N/A'));

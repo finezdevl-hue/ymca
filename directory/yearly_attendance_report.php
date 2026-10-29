@@ -1,11 +1,13 @@
 <?php
 session_start();
-session_write_close();
 
 if (empty($_SESSION['login_id'])) {
     header("Location: ../app_login_manager/logout.php");
     exit();
 }
+
+include_once __DIR__ . '/../app_common/auth_helper.php';
+session_write_close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -497,7 +499,7 @@ if (empty($_SESSION['login_id'])) {
             <div class="dropdown profile-element">
                 <center>
                     <span><img alt="image" class="img-circle" src="../img/customer.png" style="padding-top:20px;"/></span>
-                    <span class="clear"><span class="block m-t-xs"><strong class="font-bold"><?php echo htmlspecialchars($_SESSION['name']); ?></strong></span></span>
+                    <span class="clear"><span class="block m-t-xs"><strong class="font-bold"><?php echo htmlspecialchars($_SESSION['name'] ?? 'Admin'); ?></strong></span></span>
                 </center>
             </div>
             <div class="sidebar-collapse" id="divMenuContainer">
@@ -612,13 +614,13 @@ if (empty($_SESSION['login_id'])) {
                     <div class="btn-print-hide" style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                         <button class="rep-btn rep-btn-outline" onclick="showMembersList()" <?php 
                             $lid = (int)$_SESSION['login_id'];
-                            if (!isSuperAdmin($lid) && !isGroupAdmin($lid) && !isAttendanceMaster($lid)) echo 'style="display:none;"'; 
+                            if (!isSuperAdmin($lid) && !isGroupAdmin($lid) && !isAttendanceMaster($lid) && !isExecutiveMember($lid)) echo 'style="display:none;"'; 
                         ?>><i class="fa fa-arrow-left"></i> Back to Members</button>
                         <h4 style="font-weight: 700; margin:0; color:#1e293b;"><i class="fa fa-bar-chart" style="color:#3b82f6;"></i> Yearly Attendance Summary (<span id="details_year_label"></span>)</h4>
                         <?php if ($_SESSION['login_id'] != 1): ?>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <label style="font-size:12px; font-weight:600; color:#64748b; margin:0; text-transform:uppercase;">Select Year:</label>
-                            <select id="details_select_year" class="form-control" style="width:140px; padding:6px 12px; border-radius:8px; height:34px; font-weight:600;" onchange="viewYearlyReport(<?php echo $_SESSION['user_id'] ?? 0; ?>)">
+                            <select id="details_select_year" class="form-control" style="width:140px; padding:6px 12px; border-radius:8px; height:34px; font-weight:600;" onchange="viewYearlyReport()">
                                 <!-- Populated dynamically in script -->
                             </select>
                         </div>
@@ -801,13 +803,12 @@ if (empty($_SESSION['login_id'])) {
 
             loadMenu(true);
             <?php 
-                include_once '../app_common/auth_helper.php';
                 $lid = (int)$_SESSION['login_id'];
-                if (isSuperAdmin($lid) || isGroupAdmin($lid) || isAttendanceMaster($lid)) { 
+                if (isSuperAdmin($lid) || isGroupAdmin($lid) || isAttendanceMaster($lid) || isExecutiveMember($lid)) { 
             ?>
                 loadData(1);
             <?php } else { ?>
-                viewYearlyReport(<?php echo $_SESSION['user_id'] ?? 0; ?>);
+                viewYearlyReport(<?php echo (int)($_SESSION['user_id'] ?? 0); ?>);
             <?php } ?>
         });
 
@@ -925,8 +926,18 @@ if (empty($_SESSION['login_id'])) {
 
         // View specific member's yearly report
         var currentMemberReportData = null; // Store globally for printing
+        var currentViewingMemberId = null;
         function viewYearlyReport(memberId) {
-            var selectedYear = $('#select_year').val();
+            if (memberId) {
+                currentViewingMemberId = memberId;
+            } else {
+                memberId = currentViewingMemberId;
+            }
+            if (!memberId) return;
+
+            var selectedYear = $('#details_select_year').val() || $('#select_year').val();
+            $('#select_year').val(selectedYear);
+            $('#details_select_year').val(selectedYear);
             console.log("Loading yearly summary for member ID " + memberId + ", year: " + selectedYear);
             
             // Show loading state

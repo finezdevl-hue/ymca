@@ -1,8 +1,7 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_admin();
+include '../../app_pagination/pagination.php';
 
     // actions start
     if(isset($_POST['action']) && !empty($_POST['action'])) {
@@ -10,86 +9,83 @@
 
         // action to save paymet details start
         if($action=="save_payment"){ 
-
             $current_payment = $_POST['amount'];
+            $expense_id = (int)($_POST['id'] ?? 0);
             try{
                 $tm->begin();
                 $group_id = !empty($_POST['group_id']) ? (int)$_POST['group_id'] : 2;
                 $flag = !empty($_POST['flag']) ? (int)$_POST['flag'] : 3;
 
-                $bill_photo = '';
-                if (!empty($_FILES['bill']['name'])) {
+                $bill_photo = null;
+                if (!empty($_FILES['bill']['name']) && isset($_FILES['bill']['tmp_name']) && is_uploaded_file($_FILES['bill']['tmp_name'])) {
                     $upload_dir = '../../image_upload/bills/';
                     if (!is_dir($upload_dir)) {
-                        mkdir($upload_dir, 0777, true);
+                        mkdir($upload_dir, 0755, true);
                     }
-                    $ext = strtolower(pathinfo($_FILES['bill']['name'], PATHINFO_EXTENSION));
-                    $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'];
-                    if (in_array($ext, $allowed_exts)) {
-                        $bill_photo = 'bill_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+                    $mimeType = mime_content_type($_FILES['bill']['tmp_name']);
+                    $mimeToExt = [
+                        'image/jpeg' => 'jpg',
+                        'image/png'  => 'png',
+                        'image/gif'  => 'gif',
+                        'image/webp' => 'webp',
+                        'application/pdf' => 'pdf'
+                    ];
+                    if (isset($mimeToExt[$mimeType])) {
+                        $ext = $mimeToExt[$mimeType];
+                        $bill_photo = 'bill_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
                         move_uploaded_file($_FILES['bill']['tmp_name'], $upload_dir . $bill_photo);
                     }
                 }
 
-                $sql = "INSERT INTO tbl_paid (date, head, particuler, amount, payable_id, flag, transaction_type, group_id, bill_photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                $parameters = [
-                    $_POST['date'],
-                    $_POST['head'],
-                    $_POST['particuler'],
-                    $_POST['amount'],
-                    $_POST['id'],
-                    $flag,
-                    $_POST['transaction_type'],
-                    $group_id,
-                    $bill_photo
-                ];
-                $types = "sisiiiiis";
-               
-                app_exec_roll_back_nonquery($conn, $sql, $parameters, $types);
-
-                // query to select total payable and total paid amount start
-                $sql = "SELECT p.amount AS total_payable_amount,
-                SUM(pd.amount) AS total_paid_amount
-                FROM tbl_payable AS p
-                LEFT JOIN tbl_payment_head_master AS g ON p.head = g.id
-                LEFT JOIN tbl_paid AS pd ON p.id = pd.payable_id where pd.payable_id = ?
-                GROUP BY p.id, p.date, p.particuler, p.amount, p.head, g.type, g.name ";
-                $parameters = [
-                    $_POST['id'],
-                ];
-                $types = "i";
-                
-                $result = app_exec_getresult($sql, $parameters, $types);
-                // Query to select total payable and total paid amount end
-
-                // update query to using the result of another query start
-                if (mysqli_num_rows($result) > 0) {
-                    // output data of each row
-                    while($row = mysqli_fetch_assoc($result)) {
-                        $total_payable_amount = (int)$row["total_payable_amount"];
-                        $total_paid_amount = $row["total_paid_amount"] !== null ? (int)$row["total_paid_amount"] : 0;
-                        $isComplete = ($total_payable_amount - $total_paid_amount == 0) ? 1 : 0;
-                        $sql = "UPDATE tbl_payable SET iscomplete = ? WHERE id = ?";
-                        
-                        $parameters = [
-                            $isComplete,
-                            $_POST['id'],
-                        ];
-                        $types="ii";
-                        
-                        // app_exec_nonquery($sql, $parameters, $types);
-                        if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
-                            throw new Exception("Error in Updation");
-                        }
+                if ($expense_id > 0) {
+                    if ($bill_photo !== null) {
+                        $sql = "UPDATE tbl_paid SET date = ?, head = ?, particuler = ?, amount = ?, transaction_type = ?, group_id = ?, bill_photo = ? WHERE id = ?";
+                        $parameters = [$_POST['date'], $_POST['head'], $_POST['particuler'], $_POST['amount'], $_POST['transaction_type'], $group_id, $bill_photo, $expense_id];
+                        $types = "sisiiisi";
+                    } else {
+                        $sql = "UPDATE tbl_paid SET date = ?, head = ?, particuler = ?, amount = ?, transaction_type = ?, group_id = ? WHERE id = ?";
+                        $parameters = [$_POST['date'], $_POST['head'], $_POST['particuler'], $_POST['amount'], $_POST['transaction_type'], $group_id, $expense_id];
+                        $types = "sisiiii";
                     }
+                    app_exec_roll_back_nonquery($conn, $sql, $parameters, $types);
+                } else {
+                    $sql = "INSERT INTO tbl_paid (date, head, particuler, amount, payable_id, flag, transaction_type, group_id, bill_photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    $parameters = [
+                        $_POST['date'],
+                        $_POST['head'],
+                        $_POST['particuler'],
+                        $_POST['amount'],
+                        0,
+                        $flag,
+                        $_POST['transaction_type'],
+                        $group_id,
+                        ($bill_photo ?? '')
+                    ];
+                    $types = "sisiiiiis";
+                    app_exec_roll_back_nonquery($conn, $sql, $parameters, $types);
                 }
-                // update query to using the result of another query end
+
                 $tm->commit();
-                echo 'Updated Sucessfully';
+                echo 'Updated Successfully';
             }
             catch (Exception $e) {
                 $tm->rollback();
                 echo $e->getMessage();
+            }
+        }
+
+        if($action=="delete_payment"){
+            try{
+                $id = (int)$_POST['id'];
+                if ($id > 0) {
+                    $sql = "UPDATE tbl_paid SET cancel = 1 WHERE id = ?";
+                    app_exec_getresult($sql, [$id], "i");
+                    echo 'Deleted Successfully';
+                }
+                exit();
+            } catch (Exception $e) {
+                echo $e->getMessage();
+                exit();
             }
         }
         // action to save payment details ends

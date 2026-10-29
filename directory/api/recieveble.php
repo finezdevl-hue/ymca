@@ -1,7 +1,6 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-    // include '../../app_common/save_query.php';
+require_once __DIR__ . '/api_bootstrap.php';
+// include '../../app_common/save_query.php';
     include '../../app_pagination/pagination.php';
 
     // actions start
@@ -23,44 +22,39 @@
                     $_POST['discription'],
                     $_POST['id'],
                 ];
-                $types = "iisiisi";
+                $types = "idsiisi";
                 
-                app_exec_roll_back_nonquery($conn, $sql, $parameters, $types);
+                if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                    throw new Exception("Error in recording payment");
+                }
 
-                // select query to get the total recieved and total recieveble amount start
-                $sql = "SELECT p.fees as total_recieveble_Amount,SUM(pd.fees) AS total_recieved_amount
+                // select query to get the total recieved and total recieveble amount
+                $sql = "SELECT p.id, p.fees AS total_recieveble_Amount, COALESCE(SUM(pd.fees), 0.00) AS total_recieved_amount
                 FROM tbl_member_recievable AS p
-                LEFT JOIN tbl_payment_head_master AS g ON p.head = g.id
-                LEFT JOIN tbl_member_recieved AS pd ON p.id = pd.receiveble_id where pd.receiveble_id = ?
-                GROUP BY p.id, p.date, p.discription, p.fees, p.head, g.type, g.name";
+                LEFT JOIN tbl_member_recieved AS pd ON p.id = pd.receiveble_id AND (pd.cancel = 0 OR pd.cancel IS NULL)
+                WHERE p.id = ?
+                GROUP BY p.id";
                 $parameters = [
                     $_POST['id'],
                 ];
                 $types = "i";
                 
                 $result = app_exec_getresult($sql, $parameters, $types);
-                // select query to get the total recieved ans total recieveble amount end
 
-                // update query using the result of another query start
-                if (mysqli_num_rows($result) > 0) {
-                    // output data of each row
-                    while($row = mysqli_fetch_assoc($result)) {
-                        $total_recieveble_Amount = (int)$row["total_recieveble_Amount"];
-                        $total_recieved_amount = $row["total_recieved_amount"] !== null ? (int)$row["total_recieved_amount"] : 0;
-                        $isComplete = ($total_recieveble_Amount - $total_recieved_amount == 0) ? 1 : 0;
+                if ($result && $row = $result->fetch_assoc()) {
+                    $total_recieveble_Amount = (float)$row["total_recieveble_Amount"];
+                    $total_recieved_amount = (float)$row["total_recieved_amount"];
+                    $isComplete = ((int)round($total_recieved_amount * 100) >= (int)round($total_recieveble_Amount * 100)) ? 1 : 0;
 
-                        $sql = "UPDATE tbl_member_recievable SET iscomplete = ?  WHERE id = ?";
-                        $parameters = [
-                            $isComplete,
-                            $_POST['id'],
-                        ];
-                        $types="ii";
-                        
-                        // app_exec_nonquery($sql, $parameters, $types);
-                        if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
-                            throw new Exception("Error in Updation");
-                        }
-                       
+                    $sql = "UPDATE tbl_member_recievable SET iscomplete = ?  WHERE id = ?";
+                    $parameters = [
+                        $isComplete,
+                        $_POST['id'],
+                    ];
+                    $types="ii";
+                    
+                    if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                        throw new Exception("Error in Updation");
                     }
                 }
                 // update query using the result of another query

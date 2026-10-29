@@ -1,6 +1,5 @@
 <?php
-session_start();
-include '../../app_common/db_connect.php';
+require_once __DIR__ . '/api_bootstrap.php';
 include '../../app_pagination/pagination.php';
 
 // actions start
@@ -10,18 +9,14 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
     // action remove a member from family starts
     if($action=="remove_member"){
         try{
-            $member_id = $_POST['id'];
-            
-            $sql = "DELETE FROM tbl_family_member_map WHERE member_id = ? AND family_id=" . $_SESSION['id'];
-
-            $types="i";
-            
-            $parameters = [
-            $_POST['id'],
-            ];
-
+            $member_id = (int)$_POST['id'];
+            $target_family_id = (int)($_SESSION['selected_family_id'] ?? 0);
+            $sql = "DELETE FROM tbl_family_member_map WHERE member_id = ? AND family_id = ?";
+            $types="ii";
+            $parameters = [$member_id, $target_family_id];
             app_exec_nonquery($sql, $parameters, $types);
-
+            echo json_encode(['status' => 'success']);
+            exit();
         }
         catch (Throwable $e) {
             throw new Exception('Oops! Something went wrong.');
@@ -32,53 +27,35 @@ if(isset($_POST['action']) && !empty($_POST['action'])) {
     //action load family members data starts
     if($action=="load_data"){
         try{
+            $target_family_id = (int)($_SESSION['selected_family_id'] ?? 0);
             $rowsPerPage = 8;
             $current_page = (int)$_POST['page'];
-            // Pagination logic
-            $sql="";  
-            $sqlcountrows="";
-            $sqldatarows="";   
-    
             $offset = ($current_page - 1) * $rowsPerPage;
        
             if($_POST['val']== ''){
                 $sqldatarows ="SELECT m.first_name,m.middle_name,m.last_name,m.id,m.email,m.phone,m.whtsapp,m.img
                 FROM tbl_members AS m JOIN tbl_family_member_map AS fm ON m.id = fm.member_id
-                WHERE fm.family_id =" . $_SESSION['id'] . " order by m.dob";
+                WHERE fm.family_id = ? order by m.dob LIMIT ?, ?";
     
                 $sqlcountrows = "SELECT COUNT(*) AS total FROM tbl_members m
-                JOIN tbl_family_member_map fm ON m.id = fm.member_id WHERE fm.family_id = " . $_SESSION['id'];
+                JOIN tbl_family_member_map fm ON m.id = fm.member_id WHERE fm.family_id = ?";
+
+                $result = app_exec_getresult($sqldatarows, [$target_family_id, $offset, $rowsPerPage], "iii");
+                $totalRowsResult = app_exec_getresult($sqlcountrows, [$target_family_id], "i");
+                $totalRows = ($totalRowsResult && $tr = $totalRowsResult->fetch_assoc()) ? $tr['total'] : 0;
             }
             else{            
-    
+                $search = '%' . $_POST['val'] . '%';
                 $sqldatarows = "SELECT m.first_name,m.middle_name,m.last_name,m.id,m.email,m.phone,m.whtsapp,m.img
                 FROM tbl_members AS m JOIN tbl_family_member_map AS fm ON m.id = fm.member_id
-                WHERE m.first_name LIKE ? AND fm.family_id =" . $_SESSION['id'];
+                WHERE m.first_name LIKE ? AND fm.family_id = ? order by m.dob LIMIT ?, ?";
     
                 $sqlcountrows = "SELECT COUNT(*) AS total FROM tbl_members m
-                JOIN tbl_family_member_map fm ON m.id = fm.member_id Where m.first_name LIKE ?  AND family_id = " . $_SESSION['id'] . " order by m.dob";
-            }       
-    
-            $sqldatarows .= " LIMIT $offset , $rowsPerPage ";
-    
-            if($_POST['val']== '') {
-                $result = app_exec_query($sqldatarows);
-                
-                $totalRowsResult = app_exec_query($sqlcountrows);
-                $totalRows = $totalRowsResult->fetch_assoc()['total'];
-            }
-            else{
-                $searchvalue= $_POST['val'];
-                $parameters = [
-                    '%' . $searchvalue . '%', 
-                                        
-                ];
-                
-                $types="s";
-                $result=app_exec_getresult($sqldatarows,$parameters,$types);
-    
-                $totalRowsResult = app_exec_getresult($sqlcountrows,$parameters,$types);
-                $totalRows = $totalRowsResult->fetch_assoc()['total'];
+                JOIN tbl_family_member_map fm ON m.id = fm.member_id Where m.first_name LIKE ? AND family_id = ?";
+
+                $result = app_exec_getresult($sqldatarows, [$search, $target_family_id, $offset, $rowsPerPage], "siii");
+                $totalRowsResult = app_exec_getresult($sqlcountrows, [$search, $target_family_id], "si");
+                $totalRows = ($totalRowsResult && $tr = $totalRowsResult->fetch_assoc()) ? $tr['total'] : 0;
             }
     
             //stringify

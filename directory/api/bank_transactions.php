@@ -1,7 +1,7 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+require_admin();
+include '../../app_pagination/pagination.php';
 
     // actions start
     if(isset($_POST['action']) && !empty($_POST['action'])) {
@@ -27,19 +27,19 @@
                 $id = (int)$_POST['id'];
                 $date = $_POST['date'];
                 $type = $_POST['type'];
-                $amount = (int)$_POST['amount'];
+                $amount = (float)$_POST['amount'];
                 $reference_no = $_POST['reference_no'];
                 $description = $_POST['description'];
 
                 if($id == 0){
                     $sql = "INSERT INTO tbl_bank_transactions (date, type, amount, reference_no, description) VALUES (?, ?, ?, ?, ?)";
                     $parameters = [$date, $type, $amount, $reference_no, $description];
-                    app_exec_nonquery($sql, $parameters, "ssiss");
+                    app_exec_nonquery($sql, $parameters, "ssdss");
                     echo 'Saved Successfully';
                 } else {
                     $sql = "UPDATE tbl_bank_transactions SET date = ?, type = ?, amount = ?, reference_no = ?, description = ? WHERE id = ?";
                     $parameters = [$date, $type, $amount, $reference_no, $description, $id];
-                    app_exec_nonquery($sql, $parameters, "ssissi");
+                    app_exec_nonquery($sql, $parameters, "ssdssi");
                     echo 'Updated Successfully';
                 }
             }
@@ -53,7 +53,7 @@
         if($action=="load_data"){
             try{
                 $rowsPerPage = 8;
-                $current_page = (int)$_POST['page'];
+                $current_page = max(1, (int)($_POST['page'] ?? 1));
                 $offset = ($current_page - 1) * $rowsPerPage;
                 
                 $sqldatarows = "SELECT id, date, type, amount, reference_no, description FROM tbl_bank_transactions ORDER BY date DESC, id DESC LIMIT $offset , $rowsPerPage";

@@ -174,7 +174,7 @@ if (isNormalMember($login_id)) {
                     htm=htm+ "<th>Member Name</th>";
                     htm=htm+ "<th>Batch / Group</th>";
                     htm=htm+ "<th>Days Attended</th>";
-                    htm=htm+ "<th style='text-align: right;'>Action</th>";
+                    htm=htm+ "<th style='text-align: right;'>Receivable Status</th>";
                     htm=htm+ "</tr>";
                     htm=htm+ "</thead>";
                     htm=htm+ "<tbody>";
@@ -191,11 +191,14 @@ if (isNormalMember($login_id)) {
                         htm=htm+ "<td style='vertical-align:middle; font-weight:700;'><span class='badge badge-primary' style='padding: 6px 12px; border-radius:8px;'>"+item.attendance+" Days</span></td>";
                         
                         htm=htm+ "<td style='vertical-align:middle; text-align: right;'>";
-                        if(item.isreceiveble==0){
-                            htm=htm+ "<button type='button' class='btn btn-table-action receivable' onclick='setReceiveble(" + item.id + "," + item.member_id + "," + item.attendance + ",\"" + item.from_date + "\",\"" + item.to_date + "\");'><i class='fa fa-plus-circle'></i> Set Receivable</button>";
+                        if(parseInt(item.isreceiveble, 10) === 1){
+                            htm=htm+ "<span class='status-badge-custom completed'><i class='fa fa-check-circle'></i> Generated</span>";
+                        }
+                        else if(parseInt(item.attendance, 10) > 0){
+                            htm=htm+ "<span class='badge' style='background:rgba(245,158,11,0.1); color:#d97706; font-weight:700; padding:6px 12px; border-radius:8px;'><i class='fa fa-clock-o'></i> Processing</span>";
                         }
                         else{
-                            htm=htm+ "<button type='button' class='status-badge-custom completed' disabled><i class='fa fa-check-circle'></i> Created</button>";
+                            htm=htm+ "<span class='badge' style='background:rgba(100,116,139,0.1); color:#64748b; font-weight:700; padding:6px 12px; border-radius:8px;'><i class='fa fa-minus-circle'></i> No Fee (0 Days)</span>";
                         }
                         htm=htm+ "</td>";
                         htm=htm+ "</tr>";
@@ -214,8 +217,6 @@ if (isNormalMember($login_id)) {
                 }
             });
             loadMenu();
-            load_heads();
-            load_closing_years();
             load_groups();
             loadPendingMonths();
         }
@@ -257,9 +258,14 @@ if (isNormalMember($login_id)) {
                         htm += "<div class='row' style='row-gap: 15px;'>";
                         for (var i = 0; i < list.length; i++) {
                             var item = list[i];
-                            var lockBadge = item.is_fixed
-                                ? "<span class='badge' style='background:rgba(16,185,129,0.1); color:#10b981; font-weight:700; padding:4px 8px; border-radius:6px; font-size:11px;'><i class='fa fa-check-circle'></i> Fixed</span>"
-                                : "<span class='badge' style='background:rgba(239,68,68,0.1); color:#ef4444; font-weight:700; padding:4px 8px; border-radius:6px; font-size:11px;'><i class='fa fa-lock'></i> Not Fixed</span>";
+                            var lockBadge = "";
+                            if (item.is_fixed) {
+                                lockBadge = "<span class='badge' style='background:rgba(16,185,129,0.1); color:#10b981; font-weight:700; padding:4px 8px; border-radius:6px; font-size:11px;'><i class='fa fa-check-circle'></i> Fixed</span>";
+                            } else if (!item.is_month_ended) {
+                                lockBadge = "<span class='badge' style='background:rgba(100,116,139,0.1); color:#64748b; font-weight:700; padding:4px 8px; border-radius:6px; font-size:11px;'><i class='fa fa-clock-o'></i> Month Ongoing</span>";
+                            } else {
+                                lockBadge = "<span class='badge' style='background:rgba(16,185,129,0.1); color:#10b981; font-weight:700; padding:4px 8px; border-radius:6px; font-size:11px;'><i class='fa fa-calendar-check-o'></i> Ready to Process</span>";
+                            }
 
                             htm += "<div class='col-md-6 col-lg-4'>";
                             htm += "<div style='border: 1px solid #fde68a; background: #fffdf5; border-radius: 14px; padding: 16px; transition: all 0.2s;'>";
@@ -270,7 +276,7 @@ if (isNormalMember($login_id)) {
                             htm += "<div style='font-size:12.5px; color:#64748b; margin-bottom:12px;'>";
                             htm += "<i class='fa fa-users'></i> " + item.total_members + " Members &bull; <i class='fa fa-calendar'></i> " + item.attendance_days + " Days Recorded";
                             htm += "</div>";
-                            htm += "<button type='button' class='btn btn-xs btn-primary' style='border-radius:8px; font-weight:700; padding:7px 14px; width:100%; font-size:12px;' onclick='quickProcessAttendance(\"" + item.month_val + "\", " + item.group_id + ", " + (item.is_fixed ? "true" : "false") + ")'><i class='fa fa-flash'></i> Process " + item.month_label + "</button>";
+                            htm += "<button type='button' class='btn btn-xs btn-primary' style='border-radius:8px; font-weight:700; padding:7px 14px; width:100%; font-size:12px;' onclick='quickProcessAttendance(\"" + item.month_val + "\", " + item.group_id + ")'><i class='fa fa-flash'></i> Process " + item.month_label + "</button>";
                             htm += "</div>";
                             htm += "</div>";
                         }
@@ -282,7 +288,7 @@ if (isNormalMember($login_id)) {
             });
         }
 
-        function quickProcessAttendance(monthVal, groupId, isFixed) {
+        function quickProcessAttendance(monthVal, groupId) {
             var parts = monthVal.split('-');
             var year = parseInt(parts[0], 10);
             var month = parseInt(parts[1], 10);
@@ -302,14 +308,9 @@ if (isNormalMember($login_id)) {
                 return;
             }
 
-            if (isFixed === false) {
-                showFixAttendanceRequiredAlert(monthVal, monthLabel);
-                return;
-            }
-
             swal({
                 title: "Process Monthly Attendance?",
-                text: "Do you want to compile attendance for " + monthLabel + "?",
+                text: "Do you want to compile attendance and generate fee receivables for " + monthLabel + "? (Previous month will be locked automatically).",
                 type: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#6366f1",
@@ -329,17 +330,13 @@ if (isNormalMember($login_id)) {
                             group_id: groupId
                         },
                         success: function(response) {
-                            alertsuccess('Monthly attendance processed successfully');
+                            alertsuccess('Monthly attendance processed and fee receivables generated successfully');
                             loadPendingMonths();
                             loadData($('#hdn_current_page').val());
                         },
                         error: function(xhr) {
                             try {
                                 var msgObj = JSON.parse(xhr.responseText);
-                                if (msgObj && msgObj.fixed_required) {
-                                    showFixAttendanceRequiredAlert(monthVal, monthLabel);
-                                    return;
-                                }
                                 alerterror(msgObj, xhr);
                             } catch(e) {
                                 alerterror({ Message: "Unexpected error occurred." }, xhr);
@@ -348,159 +345,6 @@ if (isNormalMember($login_id)) {
                     });
                 }
             });
-        }
-    </script>
-
-    <script>
-        function load_heads(){
-            $.ajax({
-                type: "POST",
-                url: "api/monthly_attendance.php",
-                data: {
-                action: 'load_heads',
-                },
-                success: function(data) {
-                    var obj = jQuery.parseJSON(data);
-                    var htm="";
-                    htm=htm+ "<div class='dropdown form-group'><select id='selected_head' class='form-control'>";
-                    for (var i = 0; i < obj[0].length; i++) {
-                        htm=htm+"<option value='"+obj[0][i].id+"'>"+obj[0][i].name+"</option>";
-                    }                
-                    htm=htm+"</select></div>";
-
-                    $('#select_heads').html(htm);
-                },
-                error: function(xhr, status, error) {
-                    console.error('AJAX error: ', status, error);
-                }
-            });
-        }
-
-        var isBulkMode = false;
-
-        function setAllReceivebles() {
-            isBulkMode = true;
-            $('#payment_modal_title').text("Allocate Bulk Fee Receivable");
-            $('#payment_modal_subtitle').text("Assign calculated dues for pending member attendance records in one click");
-            $('#payment_btn_text').text("Create Receivables");
-            
-            $('#group_payable_date').hide();
-            $('#group_txt_attendance').hide();
-            $('#group_txt_fees').hide();
-            $('#group_bulk_group').show();
-
-            $('#paymentModel').modal('show');
-        }
-
-        function setReceiveble(id,member_id,attendance,from_date,to_date){
-            isBulkMode = false;
-            $('#payment_modal_title').text("Allocate Fee Receivable");
-            $('#payment_modal_subtitle').text("Assign calculated dues based on member monthly attendance");
-            $('#payment_btn_text').text("Create Receivable");
-
-            $('#group_payable_date').show();
-            $('#group_txt_attendance').show();
-            $('#group_txt_fees').show();
-            $('#group_bulk_group').hide();
-
-            var fees = 300;
-            if (from_date < '2026-04-01') {
-                if (attendance <= 5) {
-                    fees = 150;
-                } else {
-                    fees = 300;
-                }
-            }
-
-            $('#payable_date').val(to_date);
-            $("#hdn_id").val(id);
-
-            $('#rec_from_date').val(from_date);
-            $('#rec_to_date').val(to_date);
-            $("#hdn_member_id").val(member_id);
-            $("#txt_attendance").val(attendance);
-            $('#txt_fees').val(fees);
-            $('#paymentModel').modal('show');
-        }
-
-        function closeaddRecieveble(){
-            $('#payment_form')[0].reset();
-            $('#hdn_member_id').val(0);
-            $('#hdn_id').val(0);
-            $('#paymentModel').modal('hide');
-        }
-
-        function saveReceiveble() {
-            var discription = $("#txt_discription").val();
-            let length = discription.length; 
-            var head = $('#selected_head').val();
-
-            if (head === "0" || head === 0 || head === null) {
-                alertinfo("Select a head");
-                return;
-            }
-
-            if (length >= 150) {
-                alertinfo("Description should be less than 150 characters.");
-                return;
-            }
-            
-            swal({
-                title: "Are you sure?",
-                text: isBulkMode ? "Do you want to set monthly attendance receivables for the selected batch?" : "Do you want to save this data!",
-                type: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#DD6B55",
-                confirmButtonText: "Yes, Save!",
-                cancelButtonText: "Cancel",
-                closeOnConfirm: false,
-                closeOnCancel: true
-            },
-            function (isConfirm) {
-                if (isConfirm){
-                    var data = {};
-                    if (isBulkMode) {
-                        data = {
-                            action: 'save_all_receivables',
-                            discription: $('#txt_discription').val(),
-                            head: $('#selected_head').val(),
-                            selected_year: $('#selected_year').val(),
-                            group_id: $('#selected_bulk_group').val() || 0,
-                        };
-                    } else {
-                        data = {
-                            action: 'save_recieveble',
-                            id: $('#hdn_id').val(),
-                            date: $('#payable_date').val(),
-                            attendance: $('#txt_attendance').val(),
-                            fees: $('#txt_fees').val(),
-                            discription: $('#txt_discription').val(),
-                            head: $('#selected_head').val(),
-                            member_id: $('#hdn_member_id').val(),
-                            selected_year: $('#selected_year').val(),
-                        };
-                    }
-                    $.ajax({
-                        type: "POST",
-                        url: "api/monthly_attendance.php",
-                        data: data,
-                        success: function(response) {
-                            closeaddRecieveble();
-                            alertsuccess('Saved Successfully');
-                            loadData($('#hdn_current_page').val());
-                        },
-                        error: function (xhr, status){
-                            closeaddRecieveble();
-                            var msgObj = { Message: "Oops! Something went wrong." };
-                            try {
-                                msgObj = JSON.parse(xhr.responseText);
-                            } catch(e) {}
-                            alerterror(msgObj, xhr);
-                            $('#payment_form')[0].reset();
-                        }
-                    });
-                }
-            });   
         }
 
         function load_groups(){
@@ -525,8 +369,8 @@ if (isNormalMember($login_id)) {
                     var curModalGrp = $('#selected_group').val() || 0;
                     $('#select_groups').html("<div class='dropdown form-group'><select id='selected_group' class='form-control'>" + opts + "</select></div>").find('#selected_group').val(curModalGrp);
 
-                    var curBulkGrp = $('#selected_bulk_group').val() || 0;
-                    $('#select_bulk_groups').html("<div class='dropdown form-group'><select id='selected_bulk_group' class='form-control'>" + opts + "</select></div>").find('#selected_bulk_group').val(curBulkGrp);
+                    var curUndoGrp = $('#undo_selected_group').val() || 0;
+                    $('#undo_select_groups').html("<div class='dropdown form-group'><select id='undo_selected_group' class='form-control'>" + opts + "</select></div>").find('#undo_selected_group').val(curUndoGrp);
                 },
                 error: function(xhr, status, error) {
                     console.error('AJAX error: ', status, error);
@@ -539,33 +383,77 @@ if (isNormalMember($login_id)) {
             $('#attendanceModel').modal('show');
         }
 
-        function load_closing_years(){
-            $.ajax({
-                type: "POST",
-                url: "api/monthly_attendance.php",
-                data: {
-                action: 'load_closing_years',
-                },
-                success: function(data) {
-                    var obj = jQuery.parseJSON(data);
-                    var htm="";
-                    htm=htm+ "<div class='dropdown form-group'><select id='selected_year' class='form-control'>";
-                    for (var i = 0; i < obj[0].length; i++) {
-                        htm=htm+"<option value='"+obj[0][i].id+"'>"+obj[0][i].from_year+" - "+obj[0][i].to_year+"</option>";
-                    }                
-                    htm=htm+"</select></div>";
-
-                    $('#select_from_year').html(htm);
-                },
-                error: function(xhr, status, error) {
-                    console.error('AJAX error: ', status, error);
-                }
-            });
-        }
-
         function closeaddMonthlyAttendance(){
             $('#attendance_form')[0].reset();
             $('#attendanceModel').modal('hide');
+        }
+
+        function openUndoModal() {
+            load_groups();
+            $('#undoAttendanceModal').modal('show');
+        }
+
+        function closeUndoModal() {
+            $('#undo_attendance_form')[0].reset();
+            $('#undoAttendanceModal').modal('hide');
+        }
+
+        function submitUndoMonthlyAttendance() {
+            var selectedMonthVal = $("#txt_undo_month").val();
+
+            if (!selectedMonthVal) {
+                alertinfo("Please select a month to undo.");
+                return;
+            }
+
+            var parts = selectedMonthVal.split('-');
+            var year = parseInt(parts[0], 10);
+            var month = parseInt(parts[1], 10);
+            var fromDateStr = year + "-" + ("0" + month).slice(-2) + "-01";
+            var lastDayDate = new Date(year, month, 0);
+            var toDateStr = year + "-" + ("0" + month).slice(-2) + "-" + ("0" + lastDayDate.getDate()).slice(-2);
+            var monthLabel = getMonthLabel(fromDateStr);
+            var groupId = $('#undo_selected_group').val() || 0;
+
+            swal({
+                title: "Undo Processed Month?",
+                text: "Are you sure you want to reset and undo attendance & fee receivables for " + monthLabel + "? This will remove generated receivables so the month can be recalculated and reprocessed.",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#ef4444",
+                confirmButtonText: "Yes, Reset & Undo!",
+                cancelButtonText: "Cancel",
+                closeOnConfirm: false,
+                closeOnCancel: true
+            },
+            function (isConfirm) {
+                if (isConfirm){
+                    $.ajax({
+                        type: "POST",
+                        url: "api/monthly_attendance.php",
+                        data: {
+                            action: 'undo_monthly_attendance',
+                            from_date: fromDateStr,
+                            to_date: toDateStr,
+                            group_id: groupId
+                        },
+                        success: function(response) {
+                            closeUndoModal();
+                            alertsuccess('Monthly attendance and receivables reset successfully');
+                            loadPendingMonths();
+                            loadData($('#hdn_current_page').val());
+                        },
+                        error: function (xhr, status) {
+                            try {
+                                var msgObj = JSON.parse(xhr.responseText);
+                                alerterror(msgObj, xhr); 
+                            } catch (e) {
+                                alerterror({ Message: "Unexpected error occurred." }, xhr);
+                            }
+                        }
+                    });
+                }
+            });
         }
 
         function saveMonthlyAttendance() {
@@ -630,10 +518,6 @@ if (isNormalMember($login_id)) {
                             closeaddMonthlyAttendance();
                             try {
                                 var msgObj = JSON.parse(xhr.responseText);
-                                if (msgObj && msgObj.fixed_required) {
-                                    showFixAttendanceRequiredAlert(selectedMonthVal, getMonthLabel(fromDateStr));
-                                    return;
-                                }
                                 if (msgObj.errmsg) {
                                     msgObj.Message = msgObj.errmsg;
                                 }
@@ -700,9 +584,9 @@ if (isNormalMember($login_id)) {
                 <div>
                     <h2 style="font-weight: 800; font-size: 24px; letter-spacing: -0.5px; margin: 0 !important; color: var(--text-primary, #0f172a);">Monthly Attendance Process</h2>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button type="button" class="btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important; color: #ffffff !important; border-radius: 12px !important; padding: 10px 20px !important; font-weight: 700 !important; border: none !important; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2) !important; transition: all 0.2s ease;" onclick="setAllReceivebles()"><i class="fa fa-money"></i> Set All as Receivable</button>
-                    <button type="button" class="btn-set-attendance" onclick="addMonthlyAttendance(0)"><i class="fa fa-cogs"></i> Set Monthly Attendance</button>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-outline btn-danger" style="border-radius:12px; font-weight:700; padding:10px 18px; border: 1.5px solid #ef4444; color:#ef4444; background: #fff5f5;" onclick="openUndoModal()"><i class="fa fa-undo"></i> Undo Processed Month</button>
+                    <button type="button" class="btn-set-attendance" onclick="addMonthlyAttendance(0)"><i class="fa fa-cogs"></i> Process Monthly Attendance</button>
                 </div>
             </div>
             <!-- page heading ends -->
@@ -723,8 +607,8 @@ if (isNormalMember($login_id)) {
                     <form method="POST" id="attendance_form">
                         <div class="modal-header" style="background: var(--primary-gradient, linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)); padding: 24px 30px; color: #ffffff; text-align: left;">
                             <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8; font-size: 24px;" onclick="closeaddMonthlyAttendance();">&times;</button>
-                            <h3 style="margin: 0; font-weight: 800; font-size: 20px; letter-spacing: -0.5px;"><i class="fa fa-calendar-check-o"></i> Set Monthly Attendance</h3>
-                            <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 13.5px;">Mark start and end dates to compile monthly attendance figures</p>
+                            <h3 style="margin: 0; font-weight: 800; font-size: 20px; letter-spacing: -0.5px;"><i class="fa fa-calendar-check-o"></i> Process Monthly Attendance</h3>
+                            <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 13.5px;">Compile monthly attendance and automatically generate member fee receivables</p>
                         </div>
                         <div class="modal-body" style="padding: 30px; background: var(--card-bg, #ffffff);">
                             <div class="form-group">
@@ -748,62 +632,40 @@ if (isNormalMember($login_id)) {
         </div>
         <!-- popup modal for add attendance of a month ends -->
 
-        <!-- popup modal for add new recieveble fees into master starts -->
-        <div class="modal inmodal" id="paymentModel" tabindex="-1" role="dialog" aria-hidden="true">
+        <!-- popup modal for undo monthly attendance starts -->
+        <div class="modal inmodal" id="undoAttendanceModal" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content animated bounceInRight" style="border-radius: 20px; overflow: hidden; border: none; box-shadow: var(--shadow-lg);">
-                    <form method="POST" id="payment_form">
-                        <div class="modal-header" style="background: var(--primary-gradient, linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)); padding: 24px 30px; color: #ffffff; text-align: left;">
-                            <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8; font-size: 24px;" onclick="closeaddRecieveble();">&times;</button>
-                            <h3 style="margin: 0; font-weight: 800; font-size: 20px; letter-spacing: -0.5px;"><i class="fa fa-money"></i> <span id="payment_modal_title">Allocate Fee Receivable</span></h3>
-                            <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 13.5px;" id="payment_modal_subtitle">Assign calculated dues based on member monthly attendance</p>
+                    <form method="POST" id="undo_attendance_form">
+                        <div class="modal-header" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 24px 30px; color: #ffffff; text-align: left;">
+                            <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8; font-size: 24px;" onclick="closeUndoModal();">&times;</button>
+                            <h3 style="margin: 0; font-weight: 800; font-size: 20px; letter-spacing: -0.5px;"><i class="fa fa-undo"></i> Undo Processed Month</h3>
+                            <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 13.5px;">Reset processed attendance & uncollected fee receivables to re-compile</p>
                         </div>
                         <div class="modal-body" style="padding: 30px; background: var(--card-bg, #ffffff);">
-                            <div class="form-group" id="group_bulk_group" style="display: none;">
-                                <label>Target Batch / Group</label>
-                                <div id="select_bulk_groups">
-                                    <!-- dropdown injected via ajax -->
-                                </div>
-                            </div>
-                            <div class="form-group" id="group_payable_date">
-                                <label>Receivable Date</label>
-                                <input type="date" id="payable_date" name="payable_date" class="form-control">
-                            </div>
-                            <div class="form-group" id="group_txt_attendance">
-                                <label>Days Attended</label>
-                                <input type="number" id="txt_attendance" name="attendance" class="form-control" readonly>
-                            </div>
-                            <div class="form-group" id="group_txt_fees">
-                                <label>Calculated Fees</label>
-                                <input type="number" id="txt_fees" name="fees" placeholder="Fees amount" class="form-control">
+                            <div class="alert alert-warning" style="border-radius:12px; font-size:13px; font-weight:600;">
+                                <i class="fa fa-exclamation-triangle"></i> Undoing a month will remove generated monthly fee receivables and restore the month to pending status so it can be reprocessed under new fee settings.
                             </div>
                             <div class="form-group">
-                                <label>Payment Head</label>
-                                <div id="select_heads">
-                                    <!-- dropdown injected via ajax -->
-                                </div>
+                                <label>Select Month to Reset</label>
+                                <input type="month" id="txt_undo_month" name="undo_month" class="form-control">
                             </div>
                             <div class="form-group">
-                                <label>Financial Year</label>
-                                <div id="select_from_year">
+                                <label>Select Batch / Group</label>
+                                <div id="undo_select_groups">
                                     <!-- dropdown injected via ajax -->
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Description</label>
-                                <textarea id="txt_discription" name="discription" rows="3" placeholder="Additional details (max 150 chars)" class="form-control"></textarea>
                             </div>
                         </div>
-                        
                         <div class="modal-footer" style="background: var(--card-bg, #ffffff); border-top: 1px solid var(--border-color, #e2e8f0); padding: 18px 30px; display: flex; justify-content: flex-end; gap: 12px;">
-                            <button type="button" class="btn btn-white" style="border-radius: 10px; font-weight: 700; padding: 8px 16px;" onclick="closeaddRecieveble();">Close</button>
-                            <button type="button" class="btn btn-primary" style="border-radius: 10px; font-weight: 700; padding: 8px 20px;" onclick="saveReceiveble();"><span id="payment_btn_text">Create Receivable</span></button>
+                            <button type="button" class="btn btn-white" style="border-radius: 10px; font-weight: 700; padding: 8px 16px;" onclick="closeUndoModal();">Close</button>
+                            <button type="button" class="btn btn-danger" style="border-radius: 10px; font-weight: 700; padding: 8px 20px; background:#ef4444; border:none;" onclick="submitUndoMonthlyAttendance();">Reset & Undo</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-        <!-- popup modal for add new recieveble fees into master ends -->
+        <!-- popup modal for undo monthly attendance ends -->
     </div>
        
     <!-- Mainly scripts -->

@@ -1,7 +1,6 @@
 <?php
-    session_start();
-    include '../../app_common/db_connect.php';
-    include '../../app_pagination/pagination.php';
+require_once __DIR__ . '/api_bootstrap.php';
+include '../../app_pagination/pagination.php';
 
     // action start
     if(isset($_POST['action']) && !empty($_POST['action'])) {

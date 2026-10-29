@@ -897,3 +897,77 @@ input[type="month"]::-webkit-calendar-picker-indicator {
     opacity: 0 !important;
     cursor: pointer !important;
 }
+
+/* =============================================
+   Mobile Modal Fixes for High z-index & Scroll
+   ============================================= */
+body.modal-open {
+    overflow: hidden !important;
+}
+
+body.modal-open .mob-bottom-nav {
+    display: none !important;
+}
+
+.modal-backdrop {
+    z-index: 1000000 !important;
+}
+
+.modal {
+    z-index: 1000005 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+.sweet-overlay {
+    z-index: 20000000 !important;
+}
+
+.sweet-alert {
+    z-index: 20000050 !important;
+}
+
+.modal-dialog {
+    margin: 12px auto !important;
+    max-width: 94% !important;
+}
+
+.modal-content {
+    max-height: calc(100vh - 40px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modal-content > form {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+}
+
+.modal-header {
+    flex-shrink: 0 !important;
+}
+
+.modal-body {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    padding-bottom: 30px !important;
+}
+
+.modal-footer {
+    flex-shrink: 0 !important;
+    background: #ffffff !important;
+    border-top: 1px solid #f1f5f9 !important;
+    padding: 12px 18px 16px 18px !important;
+    position: relative !important;
+    z-index: 10 !important;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05) !important;
+}

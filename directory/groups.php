@@ -8,9 +8,6 @@ if($_SESSION['login_id'] != 1){
     header("Location: user_attendance.php");
     exit();
 }
-if(isset($_POST['id'])){
-    $_SESSION['id']=$_POST['id'];
-}
 ?>
 <!DOCTYPE html>
 <html>

@@ -1,7 +1,7 @@
 <?php
 session_start();
-include '../app_common/db_connect.php';
-include '../app_common/auth_helper.php';
+include_once __DIR__ . '/../app_common/db_connect.php';
+include_once __DIR__ . '/../app_common/auth_helper.php';
 
 if (empty($_SESSION['login_id'])) {
     header("Location: ../index.php");
@@ -188,12 +188,17 @@ if (!isSuperAdmin($login_id) && !isGroupAdmin($login_id)) {
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
             position: relative;
             overflow: hidden;
+            text-decoration: none !important;
+            color: inherit !important;
+            cursor: pointer;
         }
 
         .stat-card-item:hover {
             transform: translateY(-4px);
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
             border-color: #cbd5e1;
+            text-decoration: none !important;
+            color: inherit !important;
         }
 
         .stat-card-top {
@@ -313,6 +318,7 @@ if (!isSuperAdmin($login_id) && !isGroupAdmin($login_id)) {
         .act-amber { background: #fffbeb; color: #d97706; }
         .act-purple { background: #f3e8ff; color: #9333ea; }
         .act-indigo { background: #e0e7ff; color: #4338ca; }
+        .act-rose { background: #ffe4e6; color: #e11d48; }
 
         .action-card-title {
             font-size: 16px;
@@ -394,16 +400,16 @@ if (!isSuperAdmin($login_id) && !isGroupAdmin($login_id)) {
 
             <!-- Stats Grid -->
             <div class="stat-grid">
-                <div class="stat-card-item">
+                <a href="members_list.php" id="link-members" class="stat-card-item" title="View Group Members">
                     <div class="stat-card-top">
                         <div class="stat-meta-title">Group Members</div>
                         <div class="stat-icon-wrap icon-blue"><i class="fa fa-users"></i></div>
                     </div>
                     <div class="stat-big-val" id="stat-members">0</div>
-                    <div style="font-size:12px; color:var(--text-sub); margin-top:8px; font-weight:600;">Active enrolled members</div>
-                </div>
+                    <div style="font-size:12px; color:var(--text-sub); margin-top:8px; font-weight:600;">Active enrolled members &rarr;</div>
+                </a>
 
-                <div class="stat-card-item">
+                <a href="attendance.php" id="link-today-att" class="stat-card-item" title="Mark / View Today's Attendance">
                     <div class="stat-card-top">
                         <div class="stat-meta-title">Today's Attendance</div>
                         <div class="stat-icon-wrap icon-emerald"><i class="fa fa-calendar-check-o"></i></div>
@@ -412,34 +418,34 @@ if (!isSuperAdmin($login_id) && !isGroupAdmin($login_id)) {
                     <div class="stat-progress-bar">
                         <div class="stat-progress-fill" id="att-progress-bar"></div>
                     </div>
-                </div>
+                </a>
 
-                <div class="stat-card-item">
+                <a href="member_fees.php" id="link-income" class="stat-card-item" title="View Fee Receipts">
                     <div class="stat-card-top">
                         <div class="stat-meta-title">Month Income</div>
                         <div class="stat-icon-wrap icon-purple"><i class="fa fa-money"></i></div>
                     </div>
                     <div class="stat-big-val" id="stat-income">₹0.00</div>
-                    <div style="font-size:12px; color:var(--text-sub); margin-top:8px; font-weight:600;">Fee collections this month</div>
-                </div>
+                    <div style="font-size:12px; color:var(--text-sub); margin-top:8px; font-weight:600;">Fee collections this month &rarr;</div>
+                </a>
 
-                <div class="stat-card-item">
+                <a href="payable.php" id="link-exp" class="stat-card-item" title="View Group Expenses">
                     <div class="stat-card-top">
                         <div class="stat-meta-title">Month Expenses</div>
                         <div class="stat-icon-wrap icon-amber"><i class="fa fa-credit-card"></i></div>
                     </div>
                     <div class="stat-big-val" id="stat-exp">₹0.00</div>
-                    <div style="font-size:12px; color:var(--text-sub); margin-top:8px; font-weight:600;">Recorded group payables</div>
-                </div>
+                    <div style="font-size:12px; color:var(--text-sub); margin-top:8px; font-weight:600;">Recorded group payables &rarr;</div>
+                </a>
 
-                <div class="stat-card-item">
+                <a href="member_fees.php" id="link-dues" class="stat-card-item" title="View Pending Dues">
                     <div class="stat-card-top">
                         <div class="stat-meta-title">Pending Dues</div>
                         <div class="stat-icon-wrap icon-rose"><i class="fa fa-exclamation-triangle"></i></div>
                     </div>
                     <div class="stat-big-val" id="stat-dues">₹0.00</div>
-                    <div style="font-size:12px; color:var(--text-sub); margin-top:8px; font-weight:600;">Outstanding receivables</div>
-                </div>
+                    <div style="font-size:12px; color:var(--text-sub); margin-top:8px; font-weight:600;">Outstanding receivables &rarr;</div>
+                </a>
             </div>
 
             <!-- Quick Action Grid -->
@@ -447,34 +453,46 @@ if (!isSuperAdmin($login_id) && !isGroupAdmin($login_id)) {
                 <i class="fa fa-bolt" style="color:#2563eb;"></i> Quick Management Shortcuts
             </div>
             <div class="actions-grid">
-                <a href="attendance.php" class="action-card-item">
+                <a href="attendance.php" id="act-att" class="action-card-item">
                     <div class="action-icon-circle act-blue"><i class="fa fa-calendar-check-o"></i></div>
                     <h4 class="action-card-title">Mark Group Attendance</h4>
                     <p class="action-card-desc">Record & edit daily attendance for your group members</p>
                 </a>
 
-                <a href="fees_receiveble.php" class="action-card-item">
+                <a href="fees.php" id="act-fees" class="action-card-item">
                     <div class="action-icon-circle act-emerald"><i class="fa fa-inr"></i></div>
+                    <h4 class="action-card-title">Set Monthly Fee</h4>
+                    <p class="action-card-desc">Configure & update monthly group membership fee amount</p>
+                </a>
+
+                <a href="member_fees.php" id="act-receipts" class="action-card-item">
+                    <div class="action-icon-circle act-emerald"><i class="fa fa-credit-card"></i></div>
                     <h4 class="action-card-title">Group Fee Receipts</h4>
                     <p class="action-card-desc">Collect member payments and issue fee receipts</p>
                 </a>
 
-                <a href="payable.php" class="action-card-item">
+                <a href="payable.php" id="act-exp" class="action-card-item">
                     <div class="action-icon-circle act-amber"><i class="fa fa-file-text-o"></i></div>
                     <h4 class="action-card-title">Record Expense</h4>
                     <p class="action-card-desc">Add group expenses and manage vendor payables</p>
                 </a>
 
-                <a href="cashbook.php" class="action-card-item">
+                <a href="cashbook.php" id="act-cashbook" class="action-card-item">
                     <div class="action-icon-circle act-purple"><i class="fa fa-book"></i></div>
                     <h4 class="action-card-title">Group Cashbook</h4>
                     <p class="action-card-desc">View group ledger transactions and cash balance</p>
                 </a>
 
-                <a href="members_list.php" class="action-card-item">
+                <a href="members_list.php" id="act-members" class="action-card-item">
                     <div class="action-icon-circle act-indigo"><i class="fa fa-id-card-o"></i></div>
                     <h4 class="action-card-title">Group Members List</h4>
                     <p class="action-card-desc">View roster and contact details of group members</p>
+                </a>
+
+                <a href="add_dates.php" id="act-holidays" class="action-card-item">
+                    <div class="action-icon-circle act-rose"><i class="fa fa-calendar-times-o"></i></div>
+                    <h4 class="action-card-title">Manage Holidays</h4>
+                    <p class="action-card-desc">Configure club holidays and attendance date exemptions</p>
                 </a>
             </div>
 
@@ -517,6 +535,22 @@ function loadAssignedGroups() {
 function onGroupChange() {
     var groupId = $('#dashboard-group-select').val();
     if (!groupId) return;
+
+    // Update stat card links to preserve selected group
+    $('#link-members').attr('href', 'members_list.php?group_id=' + groupId);
+    $('#link-today-att').attr('href', 'attendance.php?group_id=' + groupId);
+    $('#link-income').attr('href', 'member_fees.php?group_id=' + groupId);
+    $('#link-exp').attr('href', 'payable.php?group_id=' + groupId);
+    $('#link-dues').attr('href', 'member_fees.php?group_id=' + groupId);
+
+    // Update quick management shortcuts to preserve selected group
+    $('#act-att').attr('href', 'attendance.php?group_id=' + groupId);
+    $('#act-fees').attr('href', 'fees.php?group_id=' + groupId);
+    $('#act-receipts').attr('href', 'member_fees.php?group_id=' + groupId);
+    $('#act-exp').attr('href', 'payable.php?group_id=' + groupId);
+    $('#act-cashbook').attr('href', 'cashbook.php?group_id=' + groupId);
+    $('#act-members').attr('href', 'members_list.php?group_id=' + groupId);
+    $('#act-holidays').attr('href', 'add_dates.php?group_id=' + groupId);
 
     $.post('api/group_dashboard.php', { action: 'load_group_metrics', group_id: groupId }, function(res) {
         try {
