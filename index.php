@@ -409,7 +409,8 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
         /* ── Right Login Panel ── */
         .right-panel {
             flex: 0.85;
-            min-width: 440px;
+            min-width: 0;
+            width: 100%;
             max-width: 540px;
             display: flex;
             align-items: center;
@@ -582,19 +583,26 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 
         .toggle-pw {
             position: absolute;
-            right: 15px;
+            right: 4px;
             top: 50%;
             transform: translateY(-50%);
-            color: #475569;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
             cursor: pointer;
-            font-size: 0.95rem;
-            transition: color 0.2s ease, transform 0.2s ease;
-            padding: 4px;
+            font-size: 1rem;
+            border-radius: 10px;
+            transition: color 0.2s ease, background 0.2s ease;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .toggle-pw:hover {
+        .toggle-pw:hover, .toggle-pw:active {
             color: #60a5fa;
-            transform: translateY(-50%) scale(1.1);
+            background: rgba(255, 255, 255, 0.06);
         }
 
         /* ── Remember & Forgot Row ── */
@@ -604,37 +612,44 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
             justify-content: space-between;
             margin-bottom: 26px;
             margin-top: 4px;
+            gap: 10px;
         }
 
         .remember-check {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 9px;
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .remember-check input[type="checkbox"] {
-            width: 17px !important;
-            height: 17px !important;
+            width: 18px !important;
+            height: 18px !important;
             border-radius: 5px;
             accent-color: #2563eb;
             cursor: pointer;
+            margin: 0;
+            flex-shrink: 0;
         }
 
         .remember-check label {
-            font-size: 0.85rem;
+            font-size: 0.86rem;
             color: #94a3b8;
             cursor: pointer;
             margin: 0;
             user-select: none;
+            padding: 4px 0;
         }
 
         .forgot-link {
-            font-size: 0.85rem;
+            font-size: 0.86rem;
             color: #60a5fa;
             text-decoration: none;
             font-weight: 500;
             transition: all 0.2s ease;
+            padding: 4px 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .forgot-link:hover {
@@ -721,34 +736,241 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
             to { opacity: 1; transform: translateY(0); }
         }
 
+        .mobile-brand-header {
+            display: none;
+        }
+
         /* ── Responsive Styling ── */
         @media (max-width: 991px) {
+            html, body {
+                overflow-x: hidden;
+                width: 100%;
+            }
+
+            .login-wrapper {
+                min-height: 100vh;
+                min-height: 100dvh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 28px 16px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
             .left-panel {
                 display: none;
             }
+
             .right-panel {
-                flex: 1;
-                max-width: 480px;
-                width: 100%;
+                flex: none;
+                min-width: 0 !important;
+                width: 100% !important;
+                max-width: 440px;
                 margin: 0 auto;
-                padding: 30px 20px;
+                padding: 0 !important;
+                box-sizing: border-box;
             }
+
+            .mobile-brand-header {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                margin-bottom: 20px;
+                width: 100%;
+                animation: cardSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+            }
+
+            .mobile-logo-ring {
+                width: 68px;
+                height: 68px;
+                background: radial-gradient(circle, rgba(37, 99, 235, 0.35) 0%, rgba(13, 20, 36, 0.95) 100%);
+                border: 1.5px solid rgba(59, 130, 246, 0.5);
+                border-radius: 20px;
+                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 
+                    0 12px 28px -8px rgba(37, 99, 235, 0.6),
+                    0 0 16px rgba(59, 130, 246, 0.25) inset;
+                margin-bottom: 10px;
+            }
+
+            .mobile-logo-img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+            }
+
+            .mobile-brand-title {
+                font-family: 'Plus Jakarta Sans', sans-serif;
+                font-size: 1.45rem;
+                font-weight: 800;
+                color: #ffffff;
+                letter-spacing: -0.02em;
+                line-height: 1.2;
+            }
+
+            .mobile-brand-subtitle {
+                font-size: 0.8rem;
+                color: #93c5fd;
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                margin-top: 3px;
+            }
+
+            .mobile-brand-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                background: rgba(37, 99, 235, 0.15);
+                border: 1px solid rgba(59, 130, 246, 0.3);
+                border-radius: 50px;
+                padding: 4px 12px;
+                font-size: 11px;
+                font-weight: 700;
+                color: #93c5fd;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                margin-top: 10px;
+            }
+
+            .desktop-only-logo {
+                display: none !important;
+            }
+
+            .card-brand-top {
+                margin-bottom: 16px;
+            }
+
             .login-card {
-                padding: 34px 26px;
-                border-radius: 22px;
+                padding: 32px 24px;
+                border-radius: 24px;
+                width: 100%;
+                box-sizing: border-box;
+                box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+                    0 24px 60px -12px rgba(0, 0, 0, 0.75),
+                    0 0 35px -10px rgba(37, 99, 235, 0.2);
+            }
+
+            .card-title {
+                font-size: 1.55rem;
+            }
+
+            .card-subtitle {
+                font-size: 0.86rem;
+                margin-bottom: 22px;
+            }
+
+            .field-group {
+                margin-bottom: 18px;
+            }
+
+            .field-wrap input {
+                font-size: 16px !important; /* Critical: Prevents iOS Safari auto-zoom on focus */
+                padding: 13px 44px 13px 44px !important;
+                border-radius: 13px !important;
+                min-height: 48px !important;
+            }
+
+            .field-icon {
+                left: 15px;
+                font-size: 0.95rem;
+            }
+
+            .btn-signin {
+                min-height: 48px;
+                font-size: 0.98rem;
+                border-radius: 13px;
+                padding: 14px 18px;
+            }
+
+            .remember-row {
+                margin-bottom: 22px;
             }
         }
 
         @media (max-width: 480px) {
+            .login-wrapper {
+                padding: 18px 12px;
+            }
+
             .login-card {
-                padding: 28px 20px;
+                padding: 26px 18px;
+                border-radius: 20px;
             }
+
+            .mobile-brand-header {
+                margin-bottom: 16px;
+            }
+
+            .mobile-logo-ring {
+                width: 60px;
+                height: 60px;
+                border-radius: 16px;
+                margin-bottom: 8px;
+            }
+
+            .mobile-brand-title {
+                font-size: 1.35rem;
+            }
+
+            .mobile-brand-subtitle {
+                font-size: 0.75rem;
+            }
+
             .card-title {
-                font-size: 1.45rem;
+                font-size: 1.4rem;
             }
-            .card-logo-container {
-                width: 46px;
-                height: 46px;
+
+            .card-subtitle {
+                font-size: 0.82rem;
+                margin-bottom: 18px;
+            }
+
+            .field-label {
+                font-size: 11px;
+                margin-bottom: 6px;
+            }
+
+            .field-wrap input {
+                padding: 12px 42px 12px 42px !important;
+                min-height: 46px !important;
+            }
+
+            .field-icon {
+                left: 14px;
+            }
+
+            .btn-signin {
+                min-height: 46px;
+                font-size: 0.95rem;
+                padding: 12px 16px;
+            }
+
+            .card-footer-text {
+                margin-top: 20px;
+                padding-top: 16px;
+                font-size: 0.74rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .login-card {
+                padding: 22px 14px;
+            }
+
+            .remember-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                margin-bottom: 18px;
             }
         }
     </style>
@@ -846,17 +1068,30 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 
         <!-- ── Right Login Panel ── -->
         <div class="right-panel">
+
+            <!-- Mobile Brand Header (Visible only on mobile <= 991px) -->
+            <div class="mobile-brand-header">
+                <div class="mobile-logo-ring">
+                    <img src="favicon.png" alt="YMCA BCP Logo" class="mobile-logo-img" onerror="this.onerror=null; this.src='favicon.ico';">
+                </div>
+                <div class="mobile-brand-title">YMCA BCP</div>
+                <div class="mobile-brand-subtitle">Poovathussery Badminton Club</div>
+                <div class="mobile-brand-badge">
+                    <span class="live-dot" style="width:6px; height:6px;"></span> Member &amp; Admin Portal
+                </div>
+            </div>
+
             <div class="login-card">
 
                 <!-- ── Sign In View ── -->
                 <div id="signin-view" class="view-pane">
 
                     <div class="card-brand-top">
-                        <div class="card-logo-container">
+                        <div class="card-logo-container desktop-only-logo">
                             <img src="favicon.png" alt="YMCA BCP Logo" class="card-logo-img" onerror="this.onerror=null; this.src='favicon.ico';">
                         </div>
                         <div class="card-brand-text">
-                            <div class="card-eyebrow">YMCA BCP Portal</div>
+                            <div class="card-eyebrow">Member &amp; Admin Access</div>
                             <div class="card-title">Sign In</div>
                         </div>
                     </div>
@@ -935,7 +1170,7 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
                 <div id="forgot-view" class="view-pane" style="display: none;">
 
                     <div class="card-brand-top">
-                        <div class="card-logo-container">
+                        <div class="card-logo-container desktop-only-logo">
                             <img src="favicon.png" alt="YMCA BCP Logo" class="card-logo-img" onerror="this.onerror=null; this.src='favicon.ico';">
                         </div>
                         <div class="card-brand-text">
