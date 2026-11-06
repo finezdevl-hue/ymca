@@ -796,18 +796,25 @@ $is_guest_desktop = ($member_type === 1);
             $('#setOffwalletModel').modal('show');
         }
 
+        var isSetOffSubmitting = false;
+
         function closesetOffformforWallet(){
+            isSetOffSubmitting = false;
             $('#setoff_form_wallet')[0].reset();
             $('#setOffwalletModel').modal('hide');
         }
         
         function closesetOffform(){
+            isSetOffSubmitting = false;
             $('#setoff_form')[0].reset();
             $('#desktop_modal_excess_info').hide();
             $('#setOffModel').modal('hide');
         }
 
         function setOffReceiveble() {
+            if (isSetOffSubmitting) {
+                return;
+            }
             var receivedArray = [];
 
             $('#tbl_receiveble tbody tr').each(function() {
@@ -864,6 +871,18 @@ $is_guest_desktop = ($member_type === 1);
             },
             function (isConfirm) {
                 if (isConfirm){
+                    if (isSetOffSubmitting) {
+                        return;
+                    }
+                    isSetOffSubmitting = true;
+
+                    swal({
+                        title: "Processing Payment...",
+                        text: "Saving transaction and generating receipt, please wait...",
+                        type: "info",
+                        showConfirmButton: false
+                    });
+
                     var formData = new FormData();
                     formData.append('action', 'setoff_receiveble');
                     formData.append('received_array', JSON.stringify(receivedArray));
@@ -890,10 +909,43 @@ $is_guest_desktop = ($member_type === 1);
                             $('#desktop_excess_wallet_msg').hide();
                             window.desktopExcessAmount = 0;
                             window.desktopTotalPaid = 0;
-                            var successMsg = excessAmount > 0 
-                                ? "Payment processed successfully! ₹" + excessAmount.toFixed(2) + " credited to member's wallet."
-                                : (response || "Payment processed successfully");
-                            alertsuccess(successMsg);
+
+                            var resObj = null;
+                            if (typeof response === 'object') {
+                                resObj = response;
+                            } else {
+                                try { resObj = JSON.parse(response); } catch(e) {}
+                            }
+                            var successMsg = (resObj && resObj.message) ? resObj.message : (response || "Payment processed successfully");
+
+                            if (resObj && resObj.whatsapp) {
+                                if (resObj.whatsapp.status === 'sent') {
+                                    alertsuccess(successMsg + "\n\n📱 WhatsApp PDF receipt sent to member!");
+                                } else if (resObj.whatsapp.wa_url && resObj.whatsapp.status !== 'no_phone') {
+                                    swal({
+                                        title: "Payment Saved!",
+                                        text: successMsg + "\n\nWhatsApp message and PDF receipt are ready. Do you want to open WhatsApp now?",
+                                        type: "success",
+                                        showCancelButton: true,
+                                        confirmButtonColor: "#25D366",
+                                        confirmButtonText: "<i class='fa fa-whatsapp'></i> Open WhatsApp",
+                                        cancelButtonText: "Done",
+                                        html: true
+                                    }, function(isConfirm){
+                                        if (isConfirm && resObj.whatsapp.wa_url) {
+                                            if (resObj.whatsapp.pdf_url) {
+                                                window.open(resObj.whatsapp.pdf_url, '_blank');
+                                            }
+                                            window.open(resObj.whatsapp.wa_url, '_blank');
+                                        }
+                                    });
+                                } else {
+                                    alertsuccess(successMsg);
+                                }
+                            } else {
+                                alertsuccess(successMsg);
+                            }
+
                             loadData($('#hdn_current_page').val());
                             load_wallet_amount();
                             load_pending_payment();
@@ -908,6 +960,9 @@ $is_guest_desktop = ($member_type === 1);
                             } catch(e) {}
                             alerterror(msg);
                             $('#setoff_form')[0].reset();
+                        },
+                        complete: function() {
+                            isSetOffSubmitting = false;
                         }
                     });
                 }
@@ -915,6 +970,9 @@ $is_guest_desktop = ($member_type === 1);
         }
 
         function setOffReceivebleFromWallet() {
+            if (isSetOffSubmitting) {
+                return;
+            }
             var receivedArray = [];
 
             $('#tbl_receiveble tbody tr').each(function() {
@@ -964,6 +1022,18 @@ $is_guest_desktop = ($member_type === 1);
             },
             function (isConfirm) {
                 if (isConfirm){
+                    if (isSetOffSubmitting) {
+                        return;
+                    }
+                    isSetOffSubmitting = true;
+
+                    swal({
+                        title: "Processing Wallet Payment...",
+                        text: "Saving transaction and generating receipt, please wait...",
+                        type: "info",
+                        showConfirmButton: false
+                    });
+
                     var data = {
                         action: 'setoff_receiveble_from_wallet',
                         received_array: JSON.stringify(receivedArray),
@@ -978,13 +1048,54 @@ $is_guest_desktop = ($member_type === 1);
                             closesetOffformforWallet();
                             $('#txt_wallet_amount_input').val('');
                             $('#setoff_buttuon_wallet').hide();
-                            alertsuccess('Payment processed from wallet');
+
+                            var resObj = null;
+                            if (typeof response === 'object') {
+                                resObj = response;
+                            } else {
+                                try { resObj = JSON.parse(response); } catch(e) {}
+                            }
+                            var successMsg = (resObj && resObj.message) ? resObj.message : 'Payment processed from wallet';
+
+                            if (resObj && resObj.whatsapp) {
+                                if (resObj.whatsapp.status === 'sent') {
+                                    alertsuccess(successMsg + "\n\n📱 WhatsApp PDF receipt sent to member!");
+                                } else if (resObj.whatsapp.wa_url && resObj.whatsapp.status !== 'no_phone') {
+                                    swal({
+                                        title: "Payment Saved!",
+                                        text: successMsg + "\n\nWhatsApp message and PDF receipt are ready. Do you want to open WhatsApp now?",
+                                        type: "success",
+                                        showCancelButton: true,
+                                        confirmButtonColor: "#25D366",
+                                        confirmButtonText: "<i class='fa fa-whatsapp'></i> Open WhatsApp",
+                                        cancelButtonText: "Done",
+                                        html: true
+                                    }, function(isConfirm){
+                                        if (isConfirm && resObj.whatsapp.wa_url) {
+                                            if (resObj.whatsapp.pdf_url) {
+                                                window.open(resObj.whatsapp.pdf_url, '_blank');
+                                            }
+                                            window.open(resObj.whatsapp.wa_url, '_blank');
+                                        }
+                                    });
+                                } else {
+                                    alertsuccess(successMsg);
+                                }
+                            } else {
+                                alertsuccess(successMsg);
+                            }
+
                             loadData($('#hdn_current_page').val());
+                            load_wallet_amount();
+                            load_pending_payment();
                         },
                         error: function (xhr, status){
                             var msgObj = JSON.parse(xhr.responseText);
                             alerterror(msgObj, xhr);
                             $('#setoff_form_wallet')[0].reset();
+                        },
+                        complete: function() {
+                            isSetOffSubmitting = false;
                         }
                     });
                 }
@@ -1211,12 +1322,82 @@ $is_guest_desktop = ($member_type === 1);
                         var recVal = parseFloat(obj[0][i].receivable_fees) || 0;
                         var rcvVal = parseFloat(obj[0][i].received_fees) || 0;
                         var pending = recVal - rcvVal;
-                        htm=htm+ "<div style='background:rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.15); border-radius:12px; padding: 10px 20px; font-weight:800; font-size:14px; color:#ef4444; display:inline-block;'><i class='fa fa-exclamation-triangle'></i> Outstanding Balance Dues: ₹ " + pending.toFixed(2) + "</div>";
+                        htm += "<div style='background:rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.15); border-radius:12px; padding: 10px 20px; font-weight:800; font-size:14px; color:#ef4444; display:inline-flex; align-items:center; gap:12px;'>";
+                        htm += "<span><i class='fa fa-exclamation-triangle'></i> Outstanding Balance Dues: ₹ " + pending.toFixed(2) + "</span>";
+                        if (pending > 0) {
+                            htm += "<button type='button' class='btn btn-success btn-xs' style='border-radius:8px; font-weight:700; background:linear-gradient(135deg, #10b981, #059669); border:none; padding:5px 12px; box-shadow:0 2px 6px rgba(16,185,129,0.3);' onclick='sendCurrentMemberBalanceAlert(" + pending + ")'>";
+                            htm += "<i class='fa fa-whatsapp'></i> Send WhatsApp Balance Alert";
+                            htm += "</button>";
+                        }
+                        htm += "</div>";
                     }                
                     $('#pending_balace_table').html(htm);  
                 },
                 error: function(xhr, status, error) {
                     console.error('AJAX error: ', status, error);
+                }
+            });
+        }
+
+        function sendCurrentMemberBalanceAlert(pending) {
+            var memberId = msdActiveMemberId || <?php echo (int)$member_id; ?>;
+            if (!memberId) {
+                alertinfo("Please select a member first.");
+                return;
+            }
+
+            swal({
+                title: "Send WhatsApp Balance Reminder?",
+                text: "Outstanding Dues: ₹" + parseFloat(pending).toFixed(2) + "\nThis will send a WhatsApp message to the member using your configured template.",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#10b981",
+                confirmButtonText: "Yes, Send WhatsApp",
+                cancelButtonText: "Cancel"
+            }, function(isConfirm) {
+                if (isConfirm) {
+                    swal({
+                        title: "Sending WhatsApp Alert...",
+                        text: "Please wait...",
+                        type: "info",
+                        showConfirmButton: false
+                    });
+
+                    $.ajax({
+                        type: "POST",
+                        url: "api/whatsapp.php",
+                        data: {
+                            action: 'send_balance_alert',
+                            member_id: memberId,
+                            balance: pending
+                        },
+                        success: function(res) {
+                            swal.close();
+                            if (res.status === 'success') {
+                                alertsuccess("WhatsApp balance alert sent successfully to member!");
+                            } else if (res.status === 'warning') {
+                                swal({
+                                    title: "WhatsApp Web Ready",
+                                    text: res.message + "\nClick 'Open WhatsApp' to view or send.",
+                                    type: "info",
+                                    showCancelButton: true,
+                                    confirmButtonColor: "#25D366",
+                                    confirmButtonText: "Open WhatsApp",
+                                    cancelButtonText: "Done"
+                                }, function(c) {
+                                    if (c && res.wa_url) {
+                                        window.open(res.wa_url, '_blank');
+                                    }
+                                });
+                            } else {
+                                alerterror(res.message || "Failed to send WhatsApp alert.");
+                            }
+                        },
+                        error: function(xhr) {
+                            swal.close();
+                            alerterror("Failed to send WhatsApp balance alert.");
+                        }
+                    });
                 }
             });
         }
@@ -1515,13 +1696,6 @@ $is_guest_desktop = ($member_type === 1);
                                     <option value="<?= $key ?>"><?= htmlspecialchars($label) ?></option>
                                 <?php endforeach; ?>
                             </select>
-                        </div>
-
-                        <div class="form-group" style="margin-top: 15px;">
-                            <label style="display: block; font-weight: 600; margin-bottom: 6px;">Upload Bill Photo (Optional)</label>
-                            <div class="custom-file" style="position: relative;">
-                                <input type="file" id="bill_photo" name="bill_photo" class="form-control" accept="image/*,application/pdf" style="padding: 6px 12px; border-radius: 8px;">
-                            </div>
                         </div>
                     </div>
                     

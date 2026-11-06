@@ -4,6 +4,11 @@
  * Run from CLI: php db/migrate.php
  */
 
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    exit('Direct web access to migration script is forbidden. Run via CLI: php db/migrate.php');
+}
+
 require_once __DIR__ . '/Connection.php';
 
 try {
@@ -85,6 +90,9 @@ try {
 
         "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tbl_shuttle_cock_stock_in' AND COLUMN_NAME = 'payable_id'" =>
         "ALTER TABLE tbl_shuttle_cock_stock_in ADD COLUMN payable_id INT NOT NULL DEFAULT 0 AFTER bill_file",
+
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tbl_whatsapp_settings' AND COLUMN_NAME = 'send_pdf_receipt'" =>
+        "ALTER TABLE tbl_whatsapp_settings ADD COLUMN send_pdf_receipt TINYINT(1) NOT NULL DEFAULT 1 AFTER auto_send_payment",
     ];
 
     foreach ($col_migrations as $check => $alter) {
@@ -168,6 +176,35 @@ try {
             fee_method VARCHAR(50) NOT NULL DEFAULT 'fixed',
             group_id INT(11) NOT NULL DEFAULT 0
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS tbl_whatsapp_settings (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            provider VARCHAR(50) NOT NULL DEFAULT 'meta',
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            auto_send_payment TINYINT(1) NOT NULL DEFAULT 1,
+            send_pdf_receipt TINYINT(1) NOT NULL DEFAULT 1,
+            api_url VARCHAR(255) NOT NULL DEFAULT '',
+            api_token TEXT DEFAULT NULL,
+            phone_number_id VARCHAR(100) NOT NULL DEFAULT '',
+            business_account_id VARCHAR(100) NOT NULL DEFAULT '',
+            sender_phone VARCHAR(50) NOT NULL DEFAULT '',
+            template_payment TEXT NOT NULL,
+            template_balance TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+        "CREATE TABLE IF NOT EXISTS tbl_whatsapp_logs (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            member_id INT NOT NULL DEFAULT 0,
+            phone VARCHAR(30) NOT NULL DEFAULT '',
+            message_type VARCHAR(50) NOT NULL DEFAULT 'general',
+            message_body TEXT NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'pending',
+            api_response TEXT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_member (member_id),
+            INDEX idx_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     ];
 
     foreach ($table_migrations as $sql) {
@@ -178,6 +215,12 @@ try {
     $col_chk = $conn->query("SHOW COLUMNS FROM tbl_fee_master LIKE 'fee_method'");
     if ($col_chk && $col_chk->num_rows === 0) {
         $conn->query("ALTER TABLE tbl_fee_master ADD COLUMN fee_method VARCHAR(50) NOT NULL DEFAULT 'fixed' AFTER fee");
+    }
+
+    // WhatsApp send_pdf_receipt column check
+    $col_ws_pdf = $conn->query("SHOW COLUMNS FROM tbl_whatsapp_settings LIKE 'send_pdf_receipt'");
+    if ($col_ws_pdf && $col_ws_pdf->num_rows === 0) {
+        $conn->query("ALTER TABLE tbl_whatsapp_settings ADD COLUMN send_pdf_receipt TINYINT(1) NOT NULL DEFAULT 1 AFTER auto_send_payment");
     }
 
     // 6. Decimal money column updates and utf8mb4 charset conversion
@@ -211,9 +254,43 @@ try {
     $conn->query("INSERT IGNORE INTO tbl_menu (id, name, nav_url, parent_id, menu_level, sub_menu, icon) VALUES (53, 'Role & Group Manager', 'role_management.php', 51, 1, 0, 'fa fa-shield')");
     $conn->query("INSERT IGNORE INTO tbl_menu_map (login_id, menu_id, is_active) VALUES (1, 53, 1)");
 
+    // Remove legacy WhatsApp settings menu entry (configured directly in config/whatsapp.php)
+    $conn->query("DELETE FROM tbl_menu WHERE id = 54 OR nav_url = 'whatsapp_settings.php'");
+    $conn->query("DELETE FROM tbl_menu_map WHERE menu_id = 54");
+
     $conn->query("INSERT INTO tbl_fee_master (from_date, to_date, fee, fee_method, group_id)
         SELECT '2024-04-01', '2030-03-31', 300, 'fixed', 0
         WHERE NOT EXISTS (SELECT 1 FROM tbl_fee_master LIMIT 1)");
+
+    // Seed default WhatsApp settings and templates
+    $default_template_payment = "Dear *{member_name}*, your fee payment for *{club_name}* is confirmed!\n\nReceipt Number: *#{receipt_no}*\nAmount Received: *₹{amount}*\nPayment Date: *{date}*\nPayment Mode: *{payment_mode}*\nCurrent Balance Due: *₹{balance}*\n\nYour official Payment Receipt PDF has been attached to this message.\n\nThank you for your timely payment and support!";
+
+    $default_template_balance = "🏸 *{club_name}*\n━━━━━━━━━━━━━━━━━━━━\n*MEMBERSHIP DUES REMINDER*\n\nDear *{member_name}*,\n\nWe would like to remind you that your monthly membership dues have a pending balance:\n\n💰 *Amount Due:* *₹{balance}*\n📲 *UPI ID:* {upi_id} ({payee_name})\n\nPlease clear the dues to ensure uninterrupted access to club facilities.\n\nThank you for your prompt payment!\n━━━━━━━━━━━━━━━━━━━━";
+
+    $chk_ws = $conn->query("SELECT id, template_payment, template_balance FROM tbl_whatsapp_settings WHERE id = 1");
+    if (!$chk_ws || $chk_ws->num_rows === 0) {
+        $stmt_ws = $conn->prepare("INSERT INTO tbl_whatsapp_settings (id, provider, is_active, auto_send_payment, send_pdf_receipt, api_url, api_token, phone_number_id, business_account_id, sender_phone, template_payment, template_balance) VALUES (1, 'meta', 1, 1, 1, '', '', '', '', '', ?, ?)");
+        if ($stmt_ws) {
+            $stmt_ws->bind_param("ss", $default_template_payment, $default_template_balance);
+            $stmt_ws->execute();
+        }
+    } else {
+        $row_ws = $chk_ws->fetch_assoc();
+        if (strpos($row_ws['template_payment'], '{receipt_url}') !== false) {
+            $stmt_up = $conn->prepare("UPDATE tbl_whatsapp_settings SET template_payment = ? WHERE id = 1");
+            if ($stmt_up) {
+                $stmt_up->bind_param("s", $default_template_payment);
+                $stmt_up->execute();
+            }
+        }
+        if (strpos($row_ws['template_balance'] ?? '', '{due_date}') !== false) {
+            $stmt_up_bal = $conn->prepare("UPDATE tbl_whatsapp_settings SET template_balance = ? WHERE id = 1");
+            if ($stmt_up_bal) {
+                $stmt_up_bal->bind_param("s", $default_template_balance);
+                $stmt_up_bal->execute();
+            }
+        }
+    }
 
     $lock_file = __DIR__ . '/.schema_migrated.lock';
     @file_put_contents($lock_file, date('Y-m-d H:i:s'));

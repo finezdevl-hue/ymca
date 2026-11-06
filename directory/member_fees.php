@@ -690,7 +690,40 @@ include '../app_common/enums.php';
                         data: data,
                         success: function(response) {
                             closeaddRecieveble();
-                            alertsuccess('Saved Successfully');
+                            var resObj = null;
+                            if (typeof response === 'object') {
+                                resObj = response;
+                            } else {
+                                try { resObj = JSON.parse(response); } catch(e) {}
+                            }
+                            var successMsg = (resObj && resObj.message) ? resObj.message : 'Saved Successfully';
+                            if (resObj && resObj.whatsapp) {
+                                if (resObj.whatsapp.status === 'sent') {
+                                    alertsuccess(successMsg + "\n\n📱 WhatsApp PDF receipt sent to member!");
+                                } else if (resObj.whatsapp.wa_url && resObj.whatsapp.status !== 'no_phone') {
+                                    swal({
+                                        title: "Payment Saved!",
+                                        text: successMsg + "\n\nWhatsApp message and PDF receipt are ready. Do you want to open WhatsApp now?",
+                                        type: "success",
+                                        showCancelButton: true,
+                                        confirmButtonColor: "#25D366",
+                                        confirmButtonText: "<i class='fa fa-whatsapp'></i> Open WhatsApp",
+                                        cancelButtonText: "Done",
+                                        html: true
+                                    }, function(isConfirm){
+                                        if (isConfirm && resObj.whatsapp.wa_url) {
+                                            if (resObj.whatsapp.pdf_url) {
+                                                window.open(resObj.whatsapp.pdf_url, '_blank');
+                                            }
+                                            window.open(resObj.whatsapp.wa_url, '_blank');
+                                        }
+                                    });
+                                } else {
+                                    alertsuccess(successMsg);
+                                }
+                            } else {
+                                alertsuccess(successMsg);
+                            }
                             loadData($('#hdn_current_page').val());
                         },
                         error: function (xhr, status){

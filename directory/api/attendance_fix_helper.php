@@ -1,4 +1,14 @@
 <?php
+/**
+ * Attendance Fix Helper — shared include only, not a standalone endpoint.
+ * All callers (attendance.php, monthly_attendance.php, etc.) enforce auth upstream.
+ * Direct HTTP access is blocked here as a defence-in-depth measure.
+ */
+if (!defined('APP_API_AUTH_LOADED')) {
+    http_response_code(403);
+    exit('Forbidden');
+}
+
 include_once __DIR__ . '/../../app_common/db_connect.php';
 
 if (!function_exists('isMonthFixed')) {

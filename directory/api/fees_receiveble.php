@@ -19,6 +19,16 @@ include_once __DIR__ . '/../../app_common/enums.php';
     if(isset($_POST['action']) && !empty($_POST['action'])) {
         $action = $_POST['action'];
 
+        // Write/mutating actions require at minimum Group Admin role
+        $write_actions = [
+            'add_custom_guest_receivable', 'save_recieveble', 'save_payment',
+            'cancel_payment', 'setoff_receiveble', 'setoff_receiveble_from_wallet',
+            'save_payment_from_wallet', 'save_receiveble_amount'
+        ];
+        if (in_array($action, $write_actions, true)) {
+            require_admin();
+        }
+
         if ($action == "add_custom_guest_receivable") {
             try {
                 $target_member_id = isset($_POST['member_id']) ? (int)$_POST['member_id'] : 0;
@@ -66,9 +76,10 @@ include_once __DIR__ . '/../../app_common/enums.php';
                 ]);
                 exit();
             } catch (Exception $e) {
+                saveErrorlog("add_custom_guest_receivable: " . $e->getMessage());
                 http_response_code(500);
                 header('Content-Type: application/json');
-                echo json_encode(["status" => "error", "Message" => "Error adding custom fee: " . $e->getMessage()]);
+                echo json_encode(["status" => "error", "message" => "An error occurred while adding the custom fee. Please try again."]);
                 exit();
             }
         }
@@ -177,8 +188,10 @@ include_once __DIR__ . '/../../app_common/enums.php';
 
             }
              catch (Exception $e) {
-                http_response_code(500);   
-                echo "Oops! Something went wrong." . $e->getMessage();
+                saveErrorlog("save_recieveble: " . $e->getMessage());
+                http_response_code(500);
+                header('Content-Type: application/json');
+                echo json_encode(["status" => "error", "message" => "An error occurred while saving the receivable. Please try again."]);
                 return;
             }
     
@@ -314,7 +327,23 @@ include_once __DIR__ . '/../../app_common/enums.php';
                 }
 
                 $tm->commit();
-                echo 'Updated Sucessfully';
+
+                // Trigger WhatsApp payment confirmation
+                $waResult = null;
+                try {
+                    require_once __DIR__ . '/../../includes/whatsapp.php';
+                    $payment_mode = ((int)($_POST['transaction_type'] ?? 1) == 2) ? 'Bank / Online / UPI' : 'Cash';
+                    $waResult = sendPaymentReceiptWhatsApp((int)$_POST['member_id'], (float)$_POST['amount'], 'REC-' . (int)$_POST['id'], $_POST['date'], $payment_mode);
+                } catch (Throwable $we) {
+                    app_log_error("WhatsApp receipt send failed: " . $we->getMessage(), 'whatsapp');
+                }
+
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'status' => 'success',
+                    'message' => 'Payment recorded successfully!',
+                    'whatsapp' => $waResult
+                ]);
             }
             catch (Exception $e) {
                 $tm->rollback();
@@ -382,7 +411,10 @@ include_once __DIR__ . '/../../app_common/enums.php';
             }
             catch (Exception $e) {
                 $tm->rollback();
-                echo $e->getMessage();
+                saveErrorlog("cancel_payment: " . $e->getMessage());
+                http_response_code(500);
+                header('Content-Type: application/json');
+                echo json_encode(["status" => "error", "message" => "An error occurred while cancelling the payment. Please try again."]);
             }
         }
         // action to delete recieved amount end
@@ -641,7 +673,22 @@ include_once __DIR__ . '/../../app_common/enums.php';
                 }
                
                 $tm->commit();
-                echo 'Updated Sucessfully';
+
+                // Trigger WhatsApp payment confirmation
+                $waResult = null;
+                try {
+                    require_once __DIR__ . '/../../includes/whatsapp.php';
+                    $waResult = sendPaymentReceiptWhatsApp((int)$_POST['member_id'], (float)$_POST['amount'], 'WAL-' . (int)$_POST['id'], $_POST['date'], 'Prepaid Member Wallet');
+                } catch (Throwable $we) {
+                    app_log_error("WhatsApp receipt send failed: " . $we->getMessage(), 'whatsapp');
+                }
+
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'status' => 'success',
+                    'message' => 'Payment recorded successfully!',
+                    'whatsapp' => $waResult
+                ]);
             }
             catch (Exception $e) {
                
@@ -716,13 +763,36 @@ include_once __DIR__ . '/../../app_common/enums.php';
                     throw new Exception("No receivable items or wallet amount to process.");
                 }
 
+                $items_processed = 0;
+                $actual_settled_total = 0.0;
+
                 foreach ($receivedArray as $item) {
-                    $receiveble_id = $item['receiveble_id'];
+                    $receiveble_id = (int)($item['receiveble_id'] ?? 0);
                     $flag = $item['flag'];
                     $received = (float)$item['received'];
                     $balance = (float)$item['balance'];
 
                     if ($received <= 0) continue;
+
+                    // Prevent duplicate payment: check if already settled
+                    if ($receiveble_id > 0) {
+                        $res_rec = app_exec_getresult("SELECT fees, iscomplete FROM tbl_member_recievable WHERE id = ?", [$receiveble_id], "i");
+                        if ($res_rec && $row_rec = $res_rec->fetch_assoc()) {
+                            $res_paid = app_exec_getresult("SELECT COALESCE(SUM(fees), 0) as paid FROM tbl_member_recieved WHERE receiveble_id = ? AND (cancel = 0 OR cancel IS NULL)", [$receiveble_id], "i");
+                            $already_paid = (float)($res_paid ? $res_paid->fetch_assoc()['paid'] : 0);
+                            $due = max(0.0, (float)$row_rec['fees'] - $already_paid);
+                            if ($due <= 0.001) {
+                                // Already completely paid in a concurrent request, skip duplicate
+                                continue;
+                            }
+                            if ($received > $due) {
+                                $received = $due;
+                            }
+                        }
+                    }
+
+                    $items_processed++;
+                    $actual_settled_total += $received;
 
                     $sql = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, receiveble_id, flag, transaction_type, bill_photo) 
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -787,6 +857,10 @@ include_once __DIR__ . '/../../app_common/enums.php';
                     }
                 }
 
+                if ($items_processed === 0 && $amount_to_wallet <= 0) {
+                    throw new Exception("This payment has already been processed and settled.");
+                }
+
                 // Credit excess balance to member wallet
                 if ($amount_to_wallet > 0) {
                     $m_group_id = 0;
@@ -809,11 +883,29 @@ include_once __DIR__ . '/../../app_common/enums.php';
                 }
 
                 $tm->commit();
+
+                // Trigger WhatsApp payment receipt confirmation
+                $waResult = null;
+                try {
+                    require_once __DIR__ . '/../../includes/whatsapp.php';
+                    $total_paid_amt = ($actual_settled_total + $amount_to_wallet);
+                    $payment_mode = ((int)($_POST['transaction_type'] ?? 1) == 2) ? 'Bank / Online / UPI' : 'Cash';
+                    $waResult = sendPaymentReceiptWhatsApp($target_member_id, $total_paid_amt, 'REC-' . date('Ymd-His'), $_POST['date'], $payment_mode);
+                } catch (Throwable $we) {
+                    app_log_error("WhatsApp receipt send failed: " . $we->getMessage(), 'whatsapp');
+                }
+
                 $msg = "Transaction Successful!";
                 if ($amount_to_wallet > 0) {
                     $msg = "Payment recorded successfully! ₹" . number_format($amount_to_wallet, 2) . " excess balance credited to member's wallet.";
                 }
-                echo $msg;
+
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'status' => 'success',
+                    'message' => $msg,
+                    'whatsapp' => $waResult
+                ]);
 
             } catch (Exception $e) {
                 $tm->rollback();
@@ -834,11 +926,36 @@ include_once __DIR__ . '/../../app_common/enums.php';
                     throw new Exception("Invalid received array data.");
                 }
 
+                $items_processed = 0;
+                $actual_wallet_used = 0.0;
+
                 foreach ($receivedArray as $item) {
-                    $receiveble_id = $item['receiveble_id'];
+                    $receiveble_id = (int)($item['receiveble_id'] ?? 0);
                     $flag = $item['flag'];
-                    $received = $item['received'];
-                    $balance = $item['balance'];
+                    $received = (float)($item['received'] ?? 0);
+                    $balance = (float)($item['balance'] ?? 0);
+
+                    if ($received <= 0) continue;
+
+                    // Prevent duplicate payment: check if already settled
+                    if ($receiveble_id > 0) {
+                        $res_rec = app_exec_getresult("SELECT fees, iscomplete FROM tbl_member_recievable WHERE id = ?", [$receiveble_id], "i");
+                        if ($res_rec && $row_rec = $res_rec->fetch_assoc()) {
+                            $res_paid = app_exec_getresult("SELECT COALESCE(SUM(fees), 0) as paid FROM tbl_member_recieved WHERE receiveble_id = ? AND (cancel = 0 OR cancel IS NULL)", [$receiveble_id], "i");
+                            $already_paid = (float)($res_paid ? $res_paid->fetch_assoc()['paid'] : 0);
+                            $due = max(0.0, (float)$row_rec['fees'] - $already_paid);
+                            if ($due <= 0.001) {
+                                // Already completely paid in a concurrent request, skip duplicate
+                                continue;
+                            }
+                            if ($received > $due) {
+                                $received = $due;
+                            }
+                        }
+                    }
+
+                    $items_processed++;
+                    $actual_wallet_used += $received;
 
                     $sql = "INSERT INTO tbl_member_recieved (member_id, fees, date,login_id , receiveble_id, iswallet, flag, transaction_type) 
                             VALUES (?, ?, ?, ?, ?, 1, ?, ?)";
@@ -915,8 +1032,27 @@ include_once __DIR__ . '/../../app_common/enums.php';
                     }
                 }
 
+                if ($items_processed === 0) {
+                    throw new Exception("This wallet payment has already been processed and settled.");
+                }
+
                 $tm->commit();
-                echo "Transaction Successful!";
+
+                // Trigger WhatsApp payment receipt confirmation for wallet payment
+                $waResult = null;
+                try {
+                    require_once __DIR__ . '/../../includes/whatsapp.php';
+                    $waResult = sendPaymentReceiptWhatsApp($target_member_id, $actual_wallet_used, 'WAL-' . date('Ymd-His'), $_POST['date'], 'Prepaid Member Wallet');
+                } catch (Throwable $we) {
+                    app_log_error("WhatsApp receipt send failed: " . $we->getMessage(), 'whatsapp');
+                }
+
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'status' => 'success',
+                    'message' => 'Payment processed from wallet successfully!',
+                    'whatsapp' => $waResult
+                ]);
 
             } catch (Exception $e) {
                 $tm->rollback();

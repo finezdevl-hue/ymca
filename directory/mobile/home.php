@@ -984,6 +984,10 @@ function loadGroups(){
             if (groups.length > 0) updateMobTomorrowDateToggle();
             else fetchStatus();
         } catch(e) { console.error(e); fetchStatus(); }
+    }).fail(function(xhr) {
+        console.error('Failed to load groups:', xhr.responseText);
+        $('#mob-session-pills').html('<span style="color:#ef4444; font-size:13px;"><i class="fa fa-exclamation-circle"></i> Unable to load sessions. <a href="javascript:void(0)" onclick="loadGroups()" style="color:#4f46e5; text-decoration:underline; font-weight:700;">Retry</a></span>');
+        $('#mob-action-area').html('<div style="text-align:center; padding:16px; color:#ef4444; font-weight:600; font-size:13px;"><i class="fa fa-exclamation-triangle"></i> Failed to load attendance. <button type="button" onclick="loadGroups()" style="margin-left:8px; padding:4px 10px; border-radius:6px; border:1.5px solid #ef4444; background:#fff; color:#ef4444; font-size:12px; font-weight:700; cursor:pointer;">Retry</button></div>');
     });
 }
 
@@ -1202,16 +1206,19 @@ function fetchStatus(){
     fetchHomeShuttleReading();
 
     $.post('../api/attendance.php', { action:'check_holiday', date:date, group:group }, function(res){
-        const r = JSON.parse(res);
+        var r = {};
+        try { r = (typeof res === 'string') ? JSON.parse(res) : res; } catch(e){}
         if(r.is_holiday){
             $('#mob-action-area').html('<div class="att-status-banner holiday-banner"><span class="att-status-icon"><i class="fa fa-moon-o"></i></span><div><div>Holiday / Leave</div><div style="font-size:11px;font-weight:500;margin-top:2px;">No attendance for this session today</div></div></div>');
             $('#mob-present-card').hide();
         } else {
             $.post('../api/attendance.php', { action:'fetch_Attendance_details', date:date, group:group }, function(data2){
-                const members = JSON.parse(data2);
+                var members = [];
+                try { members = (typeof data2 === 'string') ? JSON.parse(data2) : data2; } catch(e){}
 
                 $.post('../api/attendance.php', { action:'fetch_temp_status', date:date, group:group }, function(resData){
-                    const tempRes    = (typeof resData === 'string') ? JSON.parse(resData) : resData;
+                    var tempRes = null;
+                    try { tempRes = (typeof resData === 'string') ? JSON.parse(resData) : resData; } catch(e){}
                     const tempStatus = tempRes ? tempRes.temp_status   : null;
                     const expTime    = tempRes ? tempRes.expected_time : null;
                     const etaHtml    = expTime ? '<div class="src-eta">⏰ Time: ' + formatTime12h(expTime) + '</div>' : '';
@@ -1221,7 +1228,9 @@ function fetchStatus(){
                     }
 
                     let amPresent = false;
-                    members.forEach(function(m){ if(parseInt(m.member_id) === mob_current_member_id) amPresent = true; });
+                    if (Array.isArray(members)) {
+                        members.forEach(function(m){ if(parseInt(m.member_id) === mob_current_member_id) amPresent = true; });
+                    }
 
                     let actionHtm = '';
                     const canMarkAllAtt = <?php echo $can_mark_all_att ? 'true' : 'false'; ?>;
@@ -1239,7 +1248,6 @@ function fetchStatus(){
                         actionHtm  = '<div class="status-result-card src-absent">';
                         actionHtm += '  <div class="src-icon"><i class="fa fa-times-circle"></i></div>';
                         actionHtm += '  <div class="src-title">Marked Absent</div>';
-                        // actionHtm += '  <div class="src-sub">Temporary · auto-clears in 2 days</div>';
                         actionHtm += '  <div class="src-actions"><button class="src-btn-green" onclick="mobMarkAttendance()"><i class="fa fa-check-circle"></i> Mark Present</button><button class="src-btn-ghost" onclick="mobClearTempStatus()"><i class="fa fa-refresh"></i> Clear</button></div>';
                         actionHtm += '</div>';
 
@@ -1258,11 +1266,17 @@ function fetchStatus(){
                     }
 
                     $('#mob-action-area').html(actionHtm);
-                    loadPresentMembers(date, group, members.length);
+                    loadPresentMembers(date, group, Array.isArray(members) ? members.length : 0);
                     $('#mob-present-card').show();
+                }).fail(function(){
+                    $('#mob-action-area').html('<div style="text-align:center; padding:14px; color:#ef4444; font-size:13px; font-weight:600;"><i class="fa fa-exclamation-triangle"></i> Failed to load status. <a href="javascript:void(0)" onclick="fetchStatus()" style="color:#4f46e5; text-decoration:underline;">Retry</a></div>');
                 });
+            }).fail(function(){
+                $('#mob-action-area').html('<div style="text-align:center; padding:14px; color:#ef4444; font-size:13px; font-weight:600;"><i class="fa fa-exclamation-triangle"></i> Failed to load attendance. <a href="javascript:void(0)" onclick="fetchStatus()" style="color:#4f46e5; text-decoration:underline;">Retry</a></div>');
             });
         }
+    }).fail(function(){
+        $('#mob-action-area').html('<div style="text-align:center; padding:14px; color:#ef4444; font-size:13px; font-weight:600;"><i class="fa fa-exclamation-triangle"></i> Failed to load session info. <a href="javascript:void(0)" onclick="fetchStatus()" style="color:#4f46e5; text-decoration:underline;">Retry</a></div>');
     });
 }
 

@@ -416,8 +416,10 @@ $db = new Database();
                 echo 'Updated Sucessfully';
             }
             catch (Exception $e) {
+                $tm->rollback();
+                saveErrorlog("update_payment: " . $e->getMessage());
                 http_response_code(500);   
-                echo "Oops! Something went wrong." . $e->getMessage();
+                echo "Oops! Something went wrong.";
                 return;
             }
         }
@@ -503,8 +505,9 @@ $db = new Database();
             //     throw new Exception('Oops! Something went wrong.');
             // }
             catch (Exception $e) {
+                saveErrorlog("load_data: " . $e->getMessage());
                 http_response_code(500);   
-                echo "Oops! Something went wrong." . $e->getMessage();
+                echo "Oops! Something went wrong.";
                 return;
             }
         }

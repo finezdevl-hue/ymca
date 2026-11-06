@@ -1,5 +1,9 @@
 <?php
     ob_start();
+
+    require_once __DIR__ . '/../includes/api_auth.php';
+    start_secure_session();
+    require_admin();
     error_reporting(E_ERROR | E_PARSE);
     ini_set('display_errors', 0);
 

@@ -4,6 +4,10 @@ ini_set('display_errors', 0);
 
 ob_start();
 
+require_once __DIR__ . '/../includes/api_auth.php';
+start_secure_session();
+require_admin();
+
 include '../app_common/enums.php';
 include '../app_common/db_connect.php';
 require_once('tcpdf/tcpdf.php');

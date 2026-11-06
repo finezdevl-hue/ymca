@@ -4,6 +4,29 @@
  * Parses and loads .env key-value pairs into environment and server variables.
  */
 
+// PHP < 8.0 Polyfills for backward compatibility across all server environments
+if (!function_exists('str_starts_with')) {
+    function str_starts_with($haystack, $needle) {
+        $haystack = (string)$haystack;
+        $needle = (string)$needle;
+        return $needle === '' || strpos($haystack, $needle) === 0;
+    }
+}
+if (!function_exists('str_ends_with')) {
+    function str_ends_with($haystack, $needle) {
+        $haystack = (string)$haystack;
+        $needle = (string)$needle;
+        return $needle === '' || (strlen($needle) <= strlen($haystack) && substr($haystack, -strlen($needle)) === $needle);
+    }
+}
+if (!function_exists('str_contains')) {
+    function str_contains($haystack, $needle) {
+        $haystack = (string)$haystack;
+        $needle = (string)$needle;
+        return $needle === '' || strpos($haystack, $needle) !== false;
+    }
+}
+
 if (!function_exists('app_load_env')) {
     function app_load_env(?string $path = null): void {
         static $loaded = false;

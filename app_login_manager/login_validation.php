@@ -14,6 +14,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit();
     }
 
+    // Verify DB connectivity before attempting authentication
+    try {
+        $db = new Database();
+        $conn = $db->getConnection();
+    } catch (Throwable $e) {
+        error_log("Database connection failed during login: " . $e->getMessage());
+        header("Location: ../index.php?error=db_connect");
+        exit();
+    }
+
     // 1. Brute-force protection: check rate limit (max 5 failed attempts in 15 mins)
     if (!check_rate_limit($email, 'login', 5, 15)) {
         header("Location: ../index.php?error=locked");

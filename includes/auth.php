@@ -75,7 +75,6 @@ if (!function_exists('isSuperAdmin')) {
         static $cache = [];
         $lid = (int)$login_id;
         if ($lid <= 0) return false;
-        if ($lid === 1) return true;
         if (isset($cache[$lid])) return $cache[$lid];
         
         $sql = "SELECT COUNT(*) as cnt FROM tbl_user_group_roles WHERE login_id = ? AND role_id = 1 AND group_id = 0";

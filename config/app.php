@@ -15,19 +15,19 @@ $app_url = app_env('APP_URL', 'http://localhost/ymca_test');
 
 // Club Profile & Branding Configuration
 if (!defined('CLUB_NAME')) {
-    define('CLUB_NAME', app_env('CLUB_NAME', 'ClubPulse Sports Management'));
+    define('CLUB_NAME', app_env('CLUB_NAME', 'YMCA BCP Poovathussery'));
 }
 if (!defined('CLUB_SHORT_NAME')) {
-    define('CLUB_SHORT_NAME', app_env('CLUB_SHORT_NAME', 'ClubPulse'));
+    define('CLUB_SHORT_NAME', app_env('CLUB_SHORT_NAME', 'YMCA BCP'));
 }
 if (!defined('CLUB_MEMBER_PREFIX')) {
-    define('CLUB_MEMBER_PREFIX', app_env('CLUB_MEMBER_PREFIX', 'CLUB-'));
+    define('CLUB_MEMBER_PREFIX', app_env('CLUB_MEMBER_PREFIX', 'YMCA-'));
 }
 if (!defined('DEFAULT_UPI_ID')) {
-    define('DEFAULT_UPI_ID', app_env('DEFAULT_UPI_ID', 'clubpay@okaxis'));
+    define('DEFAULT_UPI_ID', app_env('DEFAULT_UPI_ID', 'ymcabcp@okaxis'));
 }
 if (!defined('DEFAULT_PAYEE_NAME')) {
-    define('DEFAULT_PAYEE_NAME', app_env('DEFAULT_PAYEE_NAME', 'Club Management'));
+    define('DEFAULT_PAYEE_NAME', app_env('DEFAULT_PAYEE_NAME', 'YMCA BCP Poovathussery'));
 }
 if (!defined('APP_SECRET_KEY')) {
     $secret = app_env('APP_SECRET_KEY', '0d6f4c7d21626c8153da27c9c3b5d251887470e26f74b46c6dc8756449dbce2c');

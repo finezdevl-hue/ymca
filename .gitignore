@@ -10,6 +10,7 @@
 !database/schema.sql
 db/backups/
 db/*.lock
+database/*.lock
 
 # Logs
 *.log

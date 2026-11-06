@@ -64,10 +64,10 @@ include '../../app_pagination/pagination.php';
 
         // action to add new recieved amount details and get the last inserted id start
         if($action=="save_payment"){ 
-
             try{
+                $tm->begin();
+
                 if($_POST['id']==0){
-                    
                     $rec_amt = $_POST['recieveble'];
                     if (empty($rec_amt) || (float)$rec_amt == 0) {
                         $rec_amt = $_POST['recieved'];
@@ -85,32 +85,35 @@ include '../../app_pagination/pagination.php';
                     $types = "sisii";
                     
                     // Use custom insert function that returns insert ID
-                    $recieveble_id = app_exec_getlast_id($sql, $parameters, $types);
-                    
-
-                    if ($recieveble_id !== null) {
-                        $sql = "INSERT INTO tbl_other_recieved (date, head, particuler, amount, recieveble_id) VALUES (?, ?, ?, ?, ?)";
-                        $parameters = [
-                            $_POST['recieved_date'],
-                            $_POST['head'],
-                            $_POST['particuler'],
-                            $_POST['recieved'],
-                            $recieveble_id,
-                        ];
-                        $types = "sisii";
-
-                        // Saving Query as  text file end
-
-                       
-                        app_exec_nonquery($sql, $parameters, $types);
+                    $recieveble_id = app_exec_getlast_id_roll_back($conn, $sql, $parameters, $types);
+                    if ($recieveble_id === null) {
+                        throw new Exception("Error creating other receivable record");
                     }
-                   
+
+                    $sql = "INSERT INTO tbl_other_recieved (date, head, particuler, amount, recieveble_id) VALUES (?, ?, ?, ?, ?)";
+                    $parameters = [
+                        $_POST['recieved_date'],
+                        $_POST['head'],
+                        $_POST['particuler'],
+                        $_POST['recieved'],
+                        $recieveble_id,
+                    ];
+                    $types = "sisii";
+
+                    if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                        throw new Exception("Error creating other received record");
+                    }
                 }
-                
+                $tm->commit();
+                echo 'Saved Successfully';
             }
             catch (Exception $e) {
+                if (isset($tm)) {
+                    $tm->rollback();
+                }
+                saveErrorlog("reports save_payment: " . $e->getMessage());
                 http_response_code(500);   
-                echo "Oops! Something went wrong." . $e->getMessage();
+                echo "Oops! Something went wrong.";
                 return;
             }
         }

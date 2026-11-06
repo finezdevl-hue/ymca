@@ -7,7 +7,9 @@ include '../../app_common/enums.php';
 // include '../../invoice/pdf.php';
 include '../../app_pagination/pagination.php';
 
-    
+    $db = new Database();
+    $conn = $db->getConnection();
+    $tm = new TransactionManager($conn);
 
     // action start
     if(isset($_POST['action']) && !empty($_POST['action'])) {
@@ -315,7 +317,25 @@ include '../../app_pagination/pagination.php';
                         }
                     }
                     $tm->commit();
-                    echo 'Updated Sucessfully';
+
+                    // Send WhatsApp receipt if payment was received
+                    $waResult = null;
+                    if ($amount_received > 0) {
+                        try {
+                            require_once __DIR__ . '/../../includes/whatsapp.php';
+                            $payment_mode = ((int)($_POST['transaction_type'] ?? 1) == 2) ? 'Bank / Online / UPI' : 'Cash';
+                            $waResult = sendPaymentReceiptWhatsApp((int)$_POST['member_id'], $amount_received, 'REC-' . ($recieveble_id ?? date('Ymd')), $_POST['received_date'], $payment_mode);
+                        } catch (Throwable $we) {
+                            app_log_error("WhatsApp receipt send failed: " . $we->getMessage(), 'whatsapp');
+                        }
+                    }
+
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'status' => 'success',
+                        'message' => 'Updated Successfully',
+                        'whatsapp' => $waResult
+                    ]);
                 }
             }
             catch (Exception $e) {
@@ -385,66 +405,69 @@ include '../../app_pagination/pagination.php';
         // action to save recieveble fee of a member start
         if($action=="save_payment_from_wallet"){ 
             try{
+                $tm->begin();
 
-                
                 if($_POST['receiveble']==$_POST['received']){
                     $sql = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete) VALUES (?, ?, ?, ?, ?, ?, 1)";
                 }
                 else{
                     $sql = "INSERT INTO tbl_member_recievable (member_id, fees, date, login_id, head, discription, iscomplete) VALUES (?, ?, ?, ?, ?, ?, 0)";
                 }
-                    $parameters = [
-                        $_POST['member_id'],
-                        $_POST['receiveble'],
-                        $_POST['receiveble_date'],
-                        $_SESSION['login_id'],
-                        $_POST['head'],
-                        $_POST['discription'],
-                    ];
-                    $types="iisiss";
-                    
-                    // Use custom insert function that returns insert ID
-                    $recieveble_id = app_exec_getlast_id($sql, $parameters, $types);
-                    
-
-                    if ($recieveble_id !== null) {
-                        $sql = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet, transaction_type) VALUES (?, ?, ?, ?, ?, ?,?,1,?)";
-                        $parameters = [
-                            $_POST['member_id'],
-                            $_POST['received'],
-                            $_POST['received_date'],
-                            $_SESSION['login_id'],
-                            $_POST['head'],
-                            $_POST['discription'],
-                            $recieveble_id,
-                            $_POST['transaction_type'],
-                        ];
-                        $types="iisissii";
-
-                        // Saving Query as  text file end
-
-                       
-                        app_exec_nonquery($sql, $parameters, $types);
-
-                        $sql = "INSERT INTO tbl_wallet (client_id ,date, amount, type) VALUES (?, ?, ?, 'debit')";
-                        $parameters = [
-                            $_POST['member_id'],
-                            $_POST['received_date'],
-                            $_POST['received'],
-                        ];
-                        $types = "isi";
-                        app_exec_nonquery($sql, $parameters, $types);
-
-                        
-                    }
+                $parameters = [
+                    $_POST['member_id'],
+                    $_POST['receiveble'],
+                    $_POST['receiveble_date'],
+                    $_SESSION['login_id'],
+                    $_POST['head'],
+                    $_POST['discription'],
+                ];
+                $types="iisiss";
                 
+                $recieveble_id = app_exec_getlast_id_roll_back($conn, $sql, $parameters, $types);
+                if ($recieveble_id === null) {
+                    throw new Exception("Error creating fee receivable");
+                }
+
+                $sql = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, iswallet, transaction_type) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)";
+                $parameters = [
+                    $_POST['member_id'],
+                    $_POST['received'],
+                    $_POST['received_date'],
+                    $_SESSION['login_id'],
+                    $_POST['head'],
+                    $_POST['discription'],
+                    $recieveble_id,
+                    $_POST['transaction_type'],
+                ];
+                $types="iisissii";
+
+                if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                    throw new Exception("Error creating fee payment record");
+                }
+
+                $sql = "INSERT INTO tbl_wallet (client_id, date, amount, type) VALUES (?, ?, ?, 'debit')";
+                $parameters = [
+                    $_POST['member_id'],
+                    $_POST['received_date'],
+                    $_POST['received'],
+                ];
+                $types = "isi";
+                if (!app_exec_roll_back_nonquery($conn, $sql, $parameters, $types)) {
+                    throw new Exception("Error recording wallet debit");
+                }
+
+                $tm->commit();
+                echo 'Payment Successful!';
             }
-             catch (Exception $e) {
+            catch (Exception $e) {
+                if (isset($tm)) {
+                    $tm->rollback();
+                }
+                saveErrorlog("save_payment_from_wallet: " . $e->getMessage());
                 http_response_code(500);   
-                echo "Oops! Something went wrong." . $e->getMessage();
+                echo "Oops! Something went wrong.";
                 return;
             }
-    
         }
 
     }

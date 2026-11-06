@@ -23,14 +23,24 @@ if (!function_exists('start_secure_session')) {
                 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
 
             $current_params = session_get_cookie_params();
-            session_set_cookie_params([
-                'lifetime' => $current_params['lifetime'],
-                'path'     => '/',
-                'domain'   => $current_params['domain'] ?? '',
-                'secure'   => $is_https,
-                'httponly' => true,
-                'samesite' => 'Lax'
-            ]);
+            if (PHP_VERSION_ID >= 70300) {
+                session_set_cookie_params([
+                    'lifetime' => $current_params['lifetime'],
+                    'path'     => '/',
+                    'domain'   => $current_params['domain'] ?? '',
+                    'secure'   => $is_https,
+                    'httponly' => true,
+                    'samesite' => 'Lax'
+                ]);
+            } else {
+                session_set_cookie_params(
+                    $current_params['lifetime'],
+                    '/; samesite=Lax',
+                    $current_params['domain'] ?? '',
+                    $is_https,
+                    true
+                );
+            }
         }
 
         @session_start();
@@ -130,6 +140,6 @@ if (!function_exists('require_super_admin')) {
 
 if (!function_exists('require_attendance_master')) {
     function require_attendance_master(?int $group_id = null): int {
-        return require_role(['super_admin', 'admin', 'attendance'], $group_id);
+        return require_role(['super_admin', 'admin', 'attendance', 'executive'], $group_id);
     }
 }

@@ -1,4 +1,8 @@
 <?php
+    require_once __DIR__ . '/../includes/api_auth.php';
+    start_secure_session();
+    require_admin();
+
     include '../app_common/db_connect.php';
     require_once('tcpdf/tcpdf.php');
 

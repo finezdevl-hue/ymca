@@ -59,8 +59,12 @@ include '../../app_pagination/pagination.php';
                 echo 'Deleted Sucessfully';
             }
             catch (Exception $e) {
-                $tm->rollback();
-                echo $e->getMessage();
+                if (isset($tm)) {
+                    $tm->rollback();
+                }
+                saveErrorlog("other_recieved delete_payment: " . $e->getMessage());
+                http_response_code(500);
+                echo "Oops! Something went wrong.";
             }
         }
         // action to delete recieved amount end
@@ -155,8 +159,12 @@ include '../../app_pagination/pagination.php';
                 
             }
             catch (Exception $e) {
-                $tm->rollback();
-                echo $e->getMessage();
+                if (isset($tm)) {
+                    $tm->rollback();
+                }
+                saveErrorlog("other_recieved save_payment: " . $e->getMessage());
+                http_response_code(500);
+                echo "Oops! Something went wrong.";
             }
         }
         // action to add new recieved amount details and get the last inserted id end

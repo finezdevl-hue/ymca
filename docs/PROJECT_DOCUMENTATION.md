@@ -185,6 +185,13 @@ graph TD
     upi://pay?pa=clubpay@okaxis&pn=Club+Management&am=500.00&tn=Monthly+Fee+CLUB-1001
     ```
   * Mobile deep-linking opens Google Pay, PhonePe, Paytm, or BHIM directly on user devices.
+* **WhatsApp API & Automated Notifications (`config/whatsapp.php`, `includes/whatsapp.php`)**:
+  * **File-Based Configuration (`config/whatsapp.php`)**: All WhatsApp API credentials, permanent access tokens, Phone Number IDs, sender details, and message templates are directly configured inside `config/whatsapp.php` (with `.env` override support), eliminating the need for an admin settings UI.
+  * **Configurable Gateway**: Supports Meta WhatsApp Cloud API (Graph API v19.0+), Generic HTTP REST Gateways (UltraMsg, Wablas, Wati, Wassenger), and direct WhatsApp Web/app deep links (`wa.me`).
+  * **Automated Payment Receipts with PDF Attachment**: Dispatches instant WhatsApp payment confirmation whenever fee collections are recorded. Automatically generates a formal PDF receipt via TCPDF and uploads/attaches it directly as a WhatsApp Document (`Receipt_{receipt_no}.pdf`), with the confirmation text as its caption (no receipt URL needed).
+  * **Digital Receipt & PDF Engine (`invoice/receipt.php`)**: Provides responsive digital receipt accessible on mobile browsers with instant 1-click **Download PDF** and **Print** capabilities.
+  * **Pending Balance Alerts**: 1-click WhatsApp dues reminder button on both the Fees Receivables screen (`fees_receiveble.php`) and the Pending Payments Report (`member_receivables_report.php`), with live preview and instant API / WhatsApp Web dispatch.
+  * **Customizable Message Templates**: Configured directly in `config/whatsapp.php` with dynamic tags (`{member_name}`, `{amount}`, `{receipt_no}`, `{date}`, `{payment_mode}`, `{balance}`, `{upi_id}`, `{payee_name}`, `{club_name}`).
 
 ### 5.8. Reports, Ledgers & Analytics
 * **General Cash Book (`directory/cashbook.php`)**: Chronological double-entry cash and bank ledger showing opening balance, debit receipts, credit payments, running closing balances, and voucher numbers.

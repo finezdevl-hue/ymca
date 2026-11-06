@@ -1,5 +1,7 @@
 <?php
-session_start();
+require_once __DIR__ . '/../includes/api_auth.php';
+start_secure_session();
+require_admin();
 ini_set('display_errors', 0);
 error_reporting(0);
 

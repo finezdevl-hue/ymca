@@ -1,2 +1,40 @@
+# ==============================================================================
+# YMCA Badminton Club ERP - Robots Exclusion Protocol
+# ==============================================================================
+
 User-agent: *
-Disallow:/directory
+
+# Disallow indexing and crawling of private ERP portals, reports & financials
+Disallow: /directory/
+Disallow: /invoice/
+
+# Disallow access to uploaded files, member documents, and receipts
+Disallow: /uploads/
+Disallow: /image_upload/
+Disallow: /pdf_upload/
+
+# Disallow internal application and database scripts
+Disallow: /app_common/
+Disallow: /app_login_manager/
+Disallow: /app_menu/
+Disallow: /app_pagination/
+Disallow: /app_js/
+Disallow: /config/
+Disallow: /database/
+Disallow: /db/
+Disallow: /includes/
+Disallow: /logs/
+
+# Allow public landing, login page, and static assets
+Allow: /$
+Allow: /index.php
+Allow: /assets/
+Allow: /css/
+Allow: /js/
+Allow: /img/
+Allow: /favicon.ico
+Allow: /favicon.png
+Allow: /manifest.json
+
+# Sitemap index
+Sitemap: https://ymca.finez.in/sitemap.xml

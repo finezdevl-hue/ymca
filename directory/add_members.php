@@ -14,8 +14,8 @@ if (isNormalMember($login_id)) {
 }
 
 if(isset($_POST['client_id'])){
-    echo $_POST['client_id'];
-    $_SESSION['client_id']=$_POST['client_id'];
+    echo htmlspecialchars((string)$_POST['client_id'], ENT_QUOTES, 'UTF-8');
+    $_SESSION['client_id']=(int)$_POST['client_id'];
 }
 ?>
 <!DOCTYPE html>

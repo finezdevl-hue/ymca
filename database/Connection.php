@@ -8,7 +8,7 @@ require_once __DIR__ . '/../config/database.php';
 
 if (!class_exists('Database')) {
     class Database {
-        private static ?mysqli $connection = null;
+        private static $connection = null;
 
         public function __construct() {
             if (self::$connection instanceof mysqli && @self::$connection->ping()) {

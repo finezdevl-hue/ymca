@@ -3,8 +3,6 @@ require_once __DIR__ . '/includes/api_auth.php';
 require_once __DIR__ . '/includes/auth_security.php';
 require_once __DIR__ . '/includes/auth.php';
 
-start_secure_session();
-
 function getRedirectUrlForLogin($login_id, $base_path = './directory/') {
     if (isMobileClient()) {
         return $base_path . 'mobile/home.php';
@@ -21,35 +19,44 @@ function getRedirectUrlForLogin($login_id, $base_path = './directory/') {
     return $base_path . 'user_attendance.php';
 }
 
-if (!empty($_SESSION['login_id'])) {
-    header("Location: " . getRedirectUrlForLogin((int)$_SESSION['login_id']));
-    exit();
-}
+try {
+    start_secure_session();
 
-// Try secure autologin via cookie (selector/validator)
-if (!empty($_COOKIE['remember_user'])) {
-    $login_id = verify_and_rotate_remember_cookie();
-    if ($login_id) {
-        $db = new Database();
-        $conn = $db->getConnection();
-        $stmt = $conn->prepare("SELECT l.login_id, l.name, m.id AS user_id, l.email FROM tbl_login as l LEFT JOIN tbl_members AS m ON l.email=m.email WHERE l.login_id = ?");
-        $stmt->bind_param("i", $login_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($result && $row = $result->fetch_assoc()) {
-            session_regenerate_id(true);
-            $_SESSION['name']          = $row['name'];
-            $_SESSION['email']         = $row['email'];
-            $_SESSION['id']            = (int)$row["login_id"];
-            $_SESSION['login_id']      = (int)$row["login_id"];
-            $_SESSION['user_id']       = !empty($row["user_id"]) ? (int)$row["user_id"] : 0;
-            $_SESSION['primary_role']  = getUserPrimaryRoleName($login_id);
-            $_SESSION['allowed_groups'] = getUserAllowedGroupIds($login_id);
-            
-            header("Location: " . getRedirectUrlForLogin((int)$_SESSION['login_id']));
-            exit();
+    if (!empty($_SESSION['login_id'])) {
+        header("Location: " . getRedirectUrlForLogin((int)$_SESSION['login_id']));
+        exit();
+    }
+
+    // Try secure autologin via cookie (selector/validator)
+    if (!empty($_COOKIE['remember_user'])) {
+        $login_id = verify_and_rotate_remember_cookie();
+        if ($login_id) {
+            $db = new Database();
+            $conn = $db->getConnection();
+            $stmt = $conn->prepare("SELECT l.login_id, l.name, m.id AS user_id, l.email FROM tbl_login as l LEFT JOIN tbl_members AS m ON l.email=m.email WHERE l.login_id = ?");
+            if ($stmt) {
+                $stmt->bind_param("i", $login_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($result && $row = $result->fetch_assoc()) {
+                    session_regenerate_id(true);
+                    $_SESSION['name']          = $row['name'];
+                    $_SESSION['email']         = $row['email'];
+                    $_SESSION['id']            = (int)$row["login_id"];
+                    $_SESSION['login_id']      = (int)$row["login_id"];
+                    $_SESSION['user_id']       = !empty($row["user_id"]) ? (int)$row["user_id"] : 0;
+                    $_SESSION['primary_role']  = getUserPrimaryRoleName($login_id);
+                    $_SESSION['allowed_groups'] = getUserAllowedGroupIds($login_id);
+                    
+                    header("Location: " . getRedirectUrlForLogin((int)$_SESSION['login_id']));
+                    exit();
+                }
+            }
         }
     }
+} catch (Throwable $e) {
+    // If DB is temporarily unavailable or autologin fails, log and continue to login page
+    error_log("Login page autologin check notice: " . $e->getMessage());
 }
 
 $login_error = '';
@@ -58,6 +65,8 @@ if (isset($_GET['error'])) {
         $login_error = 'Invalid email or password. Please try again.';
     } elseif ($_GET['error'] === 'locked') {
         $login_error = 'Too many failed login attempts. Please wait 15 minutes before trying again.';
+    } elseif ($_GET['error'] === 'db_connect') {
+        $login_error = 'Database connection failed. Please check MySQL settings or .env configuration.';
     } elseif ($_GET['error'] === 'server') {
         $login_error = 'Something went wrong on our end. Please try again.';
     }
@@ -75,127 +84,247 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YMCA BCP | Login</title>
-    <meta name="description" content="Sign in to YMCA BCP Member Management System">
+    <title>YMCA BCP | Member &amp; Admin Login</title>
+    <meta name="description" content="Sign in to YMCA BCP Badminton Club Management ERP">
+    <link rel="canonical" href="https://ymca.finez.in/">
+    <?php if (!empty($_GET['error']) || !empty($_GET['reset'])): ?>
+    <meta name="robots" content="noindex, nofollow">
+    <?php else: ?>
+    <meta name="robots" content="index, follow">
+    <?php endif; ?>
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="192x192" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0f1e">
 
     <link href="./css/bootstrap.min.css" rel="stylesheet">
     <link href="./font-awesome/css/font-awesome.css" rel="stylesheet">
     <link href="./css/animate.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            background: #0a0f1e;
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        /* ── Animated background ── */
+        :root {
+            --primary: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.45);
+            --accent: #06b6d4;
+            --accent-purple: #8b5cf6;
+            --emerald: #10b981;
+            --dark-bg: #070b14;
+            --card-bg: rgba(13, 20, 36, 0.82);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --input-bg: rgba(9, 14, 26, 0.88);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+        }
+
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Dynamic Mesh & Ambient Background ── */
         .bg-canvas {
             position: fixed;
             inset: 0;
-            background: linear-gradient(135deg, #0a0f1e 0%, #0f172a 50%, #0d1b3e 100%);
             z-index: 0;
+            background: 
+                radial-gradient(circle at 15% 20%, rgba(37, 99, 235, 0.18) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+                linear-gradient(145deg, #060911 0%, #0a0f1d 50%, #0d1629 100%);
+            overflow: hidden;
+        }
+
+        /* Subtle grid overlay */
+        .bg-grid {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+            background-size: 32px 32px;
+            opacity: 0.6;
+            mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 80%);
+            -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 80%);
         }
 
         .orb {
             position: absolute;
             border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.25;
-            animation: float 8s ease-in-out infinite;
+            filter: blur(90px);
+            opacity: 0.35;
+            animation: orbFloat 14s ease-in-out infinite alternate;
         }
 
         .orb-1 {
-            width: 500px; height: 500px;
-            background: radial-gradient(circle, #3b82f6, #1d4ed8);
-            top: -150px; left: -100px;
-            animation-delay: 0s;
+            width: 520px; height: 520px;
+            background: radial-gradient(circle, #2563eb, #1e40af);
+            top: -120px; left: -100px;
+            animation-duration: 16s;
         }
 
         .orb-2 {
-            width: 400px; height: 400px;
-            background: radial-gradient(circle, #8b5cf6, #6d28d9);
-            bottom: -100px; right: -80px;
-            animation-delay: -3s;
+            width: 440px; height: 440px;
+            background: radial-gradient(circle, #7c3aed, #4c1d95);
+            bottom: -120px; right: -80px;
+            animation-duration: 18s;
+            animation-delay: -4s;
         }
 
         .orb-3 {
-            width: 300px; height: 300px;
-            background: radial-gradient(circle, #06b6d4, #0284c7);
-            top: 50%; left: 55%;
-            animation-delay: -5s;
+            width: 320px; height: 320px;
+            background: radial-gradient(circle, #0284c7, #0d9488);
+            top: 45%; left: 45%;
+            animation-duration: 20s;
+            animation-delay: -8s;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(20px, -30px) scale(1.05); }
-            66% { transform: translate(-15px, 20px) scale(0.95); }
+        @keyframes orbFloat {
+            0%   { transform: translate(0, 0) scale(1); }
+            50%  { transform: translate(30px, -40px) scale(1.08); }
+            100% { transform: translate(-25px, 30px) scale(0.96); }
         }
 
-        /* ── Layout ── */
+        /* ── Main Layout ── */
         .login-wrapper {
             position: relative;
             z-index: 1;
             display: flex;
-            height: 100vh;
+            min-height: 100vh;
+            width: 100%;
         }
 
-        /* ── Left Panel ── */
+        /* ── Left Branding Hero Panel ── */
         .left-panel {
-            flex: 1;
+            flex: 1.15;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 60px 70px;
+            justify-content: space-between;
+            padding: 56px 64px;
             position: relative;
         }
 
-        .brand-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.25);
-            border-radius: 50px;
-            padding: 8px 18px;
-            margin-bottom: 36px;
+        .left-panel-content {
+            margin-top: auto;
+            margin-bottom: auto;
+            max-width: 580px;
         }
 
-        .brand-badge-dot {
-            width: 8px; height: 8px;
+        /* Header Brand with Logo */
+        .brand-header {
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .hero-logo-container {
+            width: 72px;
+            height: 72px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.28) 0%, rgba(13, 20, 36, 0.85) 100%);
+            border: 1.5px solid rgba(59, 130, 246, 0.45);
+            border-radius: 20px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 16px 36px -10px rgba(37, 99, 235, 0.5),
+                0 0 20px rgba(59, 130, 246, 0.2) inset;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .hero-logo-container:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 
+                0 20px 40px -8px rgba(37, 99, 235, 0.65),
+                0 0 25px rgba(59, 130, 246, 0.3) inset;
+        }
+
+        .hero-logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+        }
+
+        .brand-title-wrap {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .club-title-text {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+
+        .club-subtitle-tag {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .brand-badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(37, 99, 235, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.28);
+            border-radius: 50px;
+            padding: 6px 14px;
+            margin-bottom: 24px;
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
-            background: #3b82f6;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
             animation: pulse-dot 2s ease-in-out infinite;
         }
 
         @keyframes pulse-dot {
             0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
+            50% { opacity: 0.45; transform: scale(0.8); }
         }
 
-        .brand-badge span {
+        .brand-badge-pill span {
             color: #93c5fd;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
         }
 
         .hero-title {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: clamp(2.5rem, 4vw, 3.8rem);
+            font-size: clamp(2.4rem, 3.8vw, 3.6rem);
             font-weight: 800;
             color: #ffffff;
             line-height: 1.15;
-            margin-bottom: 20px;
-            letter-spacing: -0.02em;
+            margin-bottom: 18px;
+            letter-spacing: -0.025em;
         }
 
         .hero-title .gradient-text {
@@ -207,70 +336,162 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 
         .hero-subtitle {
             font-size: 1.05rem;
-            color: #64748b;
-            line-height: 1.7;
-            max-width: 440px;
-            margin-bottom: 48px;
+            color: #94a3b8;
+            line-height: 1.65;
+            max-width: 480px;
+            margin-bottom: 38px;
         }
 
-        /* Stats row */
-        .stats-row {
+        /* Feature Pills */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            max-width: 520px;
+            margin-bottom: 36px;
+        }
+
+        .feature-card {
+            background: rgba(15, 23, 42, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            padding: 12px 14px;
             display: flex;
-            gap: 32px;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.25s ease;
         }
 
-        .stat-item {
-            text-align: left;
+        .feature-card:hover {
+            background: rgba(37, 99, 235, 0.12);
+            border-color: rgba(59, 130, 246, 0.25);
+            transform: translateY(-2px);
         }
 
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #ffffff;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            line-height: 1;
+        .feature-card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(139, 92, 246, 0.15));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #60a5fa;
+            font-size: 15px;
+            flex-shrink: 0;
         }
 
-        .stat-label {
-            font-size: 0.78rem;
-            color: #475569;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-top: 4px;
+        .feature-card-content strong {
+            display: block;
+            font-size: 0.88rem;
+            color: #f1f5f9;
+            font-weight: 600;
         }
 
-        .stat-divider {
-            width: 1px;
-            background: rgba(255,255,255,0.06);
+        .feature-card-content span {
+            font-size: 0.76rem;
+            color: #64748b;
         }
 
-        /* ── Right Panel ── */
+        .hero-footer-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+
+        .hero-footer-status i {
+            color: #3b82f6;
+        }
+
+        /* ── Right Login Panel ── */
         .right-panel {
-            width: 480px;
+            flex: 0.85;
+            min-width: 440px;
+            max-width: 540px;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 40px 48px;
+            position: relative;
         }
 
         .login-card {
             width: 100%;
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 24px;
-            padding: 44px 40px;
+            background: var(--card-bg);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--card-border);
+            border-radius: 26px;
+            padding: 42px 38px;
             box-shadow:
-                0 0 0 1px rgba(255,255,255,0.03) inset,
-                0 32px 64px -12px rgba(0, 0, 0, 0.6);
-            animation: slideUp 0.6s ease both;
+                0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+                0 30px 70px -15px rgba(0, 0, 0, 0.75),
+                0 0 40px -10px rgba(37, 99, 235, 0.15);
+            animation: cardSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+            position: relative;
+            overflow: hidden;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Subtle glowing top line */
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            right: 20%;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, #3b82f6, #8b5cf6, transparent);
+            border-radius: 2px;
+        }
+
+        @keyframes cardSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(28px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Card Top Brand Header */
+        .card-brand-top {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card-logo-container {
+            width: 54px;
+            height: 54px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.09) 0%, rgba(15, 23, 42, 0.7) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 8px 20px -4px rgba(37, 99, 235, 0.35),
+                0 0 12px rgba(59, 130, 246, 0.15) inset;
+            flex-shrink: 0;
+        }
+
+        .card-logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4));
+        }
+
+        .card-brand-text {
+            display: flex;
+            flex-direction: column;
         }
 
         .card-eyebrow {
@@ -279,100 +500,110 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
             color: #3b82f6;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            margin-bottom: 10px;
         }
 
         .card-title {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 1.75rem;
+            font-size: 1.65rem;
             font-weight: 800;
-            color: #f1f5f9;
-            margin-bottom: 6px;
+            color: #f8fafc;
             letter-spacing: -0.02em;
+            line-height: 1.2;
+            margin-top: 2px;
         }
 
         .card-subtitle {
-            font-size: 0.875rem;
-            color: #475569;
-            margin-bottom: 36px;
+            font-size: 0.88rem;
+            color: #64748b;
+            margin-bottom: 28px;
+            line-height: 1.5;
         }
 
-        /* ── Form ── */
+        /* ── Form Inputs ── */
+        .field-group {
+            margin-bottom: 20px;
+        }
+
         .field-label {
             display: block;
             font-size: 12px;
             font-weight: 600;
             color: #94a3b8;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
             margin-bottom: 8px;
         }
 
         .field-wrap {
             position: relative;
-            margin-bottom: 20px;
         }
 
         .field-wrap input {
             width: 100%;
-            background: rgba(15, 23, 42, 0.8) !important;
-            border: 1.5px solid rgba(255, 255, 255, 0.07) !important;
-            border-radius: 12px !important;
+            background: var(--input-bg) !important;
+            border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 14px !important;
             padding: 13px 16px 13px 46px !important;
-            color: #f1f5f9 !important;
-            font-size: 0.93rem !important;
+            color: #f8fafc !important;
+            font-size: 0.94rem !important;
             font-family: 'Inter', sans-serif !important;
             outline: none !important;
             transition: all 0.25s ease !important;
             height: auto !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2) inset !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25) inset !important;
         }
 
         .field-wrap input::placeholder {
-            color: #334155 !important;
+            color: #475569 !important;
         }
 
         .field-wrap input:focus {
             border-color: #3b82f6 !important;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12), 0 2px 4px rgba(0,0,0,0.2) inset !important;
-            background: rgba(15, 23, 42, 0.95) !important;
+            box-shadow: 
+                0 0 0 4px rgba(59, 130, 246, 0.16),
+                0 2px 6px rgba(0,0,0,0.25) inset !important;
+            background: rgba(13, 20, 38, 0.96) !important;
         }
 
         .field-icon {
             position: absolute;
-            left: 15px;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            color: #334155;
-            font-size: 1rem;
+            color: #475569;
+            font-size: 0.95rem;
             pointer-events: none;
-            transition: color 0.25s;
+            transition: color 0.25s ease;
         }
 
         .field-wrap input:focus ~ .field-icon {
             color: #3b82f6;
         }
 
-        /* Toggle password visibility */
         .toggle-pw {
             position: absolute;
-            right: 14px;
+            right: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: #334155;
+            color: #475569;
             cursor: pointer;
             font-size: 0.95rem;
-            transition: color 0.2s;
+            transition: color 0.2s ease, transform 0.2s ease;
+            padding: 4px;
         }
 
-        .toggle-pw:hover { color: #60a5fa; }
+        .toggle-pw:hover {
+            color: #60a5fa;
+            transform: translateY(-50%) scale(1.1);
+        }
 
-        /* Remember me */
+        /* ── Remember & Forgot Row ── */
         .remember-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 28px;
+            margin-bottom: 26px;
+            margin-top: 4px;
         }
 
         .remember-check {
@@ -383,110 +614,151 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
         }
 
         .remember-check input[type="checkbox"] {
-            width: 16px !important;
-            height: 16px !important;
-            accent-color: #3b82f6;
+            width: 17px !important;
+            height: 17px !important;
+            border-radius: 5px;
+            accent-color: #2563eb;
             cursor: pointer;
         }
 
         .remember-check label {
-            font-size: 0.83rem;
-            color: #64748b;
+            font-size: 0.85rem;
+            color: #94a3b8;
             cursor: pointer;
             margin: 0;
+            user-select: none;
         }
 
         .forgot-link {
-            font-size: 0.83rem;
-            color: #3b82f6;
+            font-size: 0.85rem;
+            color: #60a5fa;
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.2s;
+            transition: all 0.2s ease;
         }
 
-        .forgot-link:hover { color: #60a5fa; text-decoration: none; }
+        .forgot-link:hover {
+            color: #93c5fd;
+            text-decoration: underline;
+        }
 
-        /* Submit button */
+        /* ── Sign In Button ── */
         .btn-signin {
             width: 100%;
-            background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
+            background-size: 200% 200%;
             border: none;
-            border-radius: 12px;
-            padding: 14px;
+            border-radius: 14px;
+            padding: 14px 20px;
             color: #ffffff;
-            font-size: 0.95rem;
+            font-size: 0.98rem;
             font-weight: 700;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             cursor: pointer;
             letter-spacing: 0.02em;
-            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
-            transition: all 0.25s ease;
+            box-shadow: 0 8px 24px -4px rgba(79, 70, 229, 0.45);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .btn-signin::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+            background: linear-gradient(135deg, rgba(255,255,255,0.18), transparent 70%);
             opacity: 0;
-            transition: opacity 0.25s;
+            transition: opacity 0.3s ease;
         }
 
         .btn-signin:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.5);
+            background-position: 100% 100%;
+            box-shadow: 0 12px 32px -4px rgba(79, 70, 229, 0.6);
+            color: #ffffff;
         }
 
-        .btn-signin:hover::before { opacity: 1; }
+        .btn-signin:hover::before {
+            opacity: 1;
+        }
 
-        .btn-signin:active { transform: translateY(0); }
+        .btn-signin:active {
+            transform: translateY(0);
+        }
 
-        /* Footer text */
+        /* Card Footer */
         .card-footer-text {
             text-align: center;
-            margin-top: 28px;
+            margin-top: 26px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
             font-size: 0.78rem;
-            color: #1e293b;
+            color: #64748b;
         }
 
         .card-footer-text span {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            color: #334155;
+            gap: 6px;
+            color: #64748b;
         }
 
         .card-footer-text i {
-            color: #1d4ed8;
+            color: #10b981;
         }
 
-        /* ── Responsive ── */
-        @media (max-width: 900px) {
-            .left-panel { display: none; }
-            .right-panel {
-                width: 100%;
-                padding: 24px 20px;
-            }
-            .login-card { padding: 36px 28px; }
-        }
-
+        /* View transitions */
         .view-pane {
             animation: fadeInView 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
         @keyframes fadeInView {
-            from { opacity: 0; transform: translateY(12px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Responsive Styling ── */
+        @media (max-width: 991px) {
+            .left-panel {
+                display: none;
+            }
+            .right-panel {
+                flex: 1;
+                max-width: 480px;
+                width: 100%;
+                margin: 0 auto;
+                padding: 30px 20px;
+            }
+            .login-card {
+                padding: 34px 26px;
+                border-radius: 22px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 28px 20px;
+            }
+            .card-title {
+                font-size: 1.45rem;
+            }
+            .card-logo-container {
+                width: 46px;
+                height: 46px;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Animated background -->
+    <!-- Animated background canvas with ambient orbs & dot grid -->
     <div class="bg-canvas">
+        <div class="bg-grid"></div>
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
         <div class="orb orb-3"></div>
@@ -494,38 +766,82 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 
     <div class="login-wrapper">
 
-        <!-- ── Left Branding Panel ── -->
+        <!-- ── Left Branding Hero Panel ── -->
         <div class="left-panel animated fadeInLeft">
-            <div class="brand-badge">
-                <div class="brand-badge-dot"></div>
-                <span>Member Management</span>
-            </div>
 
-            <h1 class="hero-title">
-                Welcome to<br>
-                <span class="gradient-text">YMCA BCP</span>
-            </h1>
-
-            <p class="hero-subtitle">
-                Your all-in-one platform to manage members, track attendance, process payments, and generate insightful reports — all from one place.
-            </p>
-
-            <div class="stats-row">
-                <div class="stat-item">
-                    <div class="stat-value">100%</div>
-                    <div class="stat-label">Secure</div>
+            <div class="brand-header">
+                <div class="hero-logo-container">
+                    <img src="favicon.png" alt="YMCA Logo" class="hero-logo-img" onerror="this.onerror=null; this.src='favicon.ico';">
                 </div>
-                <div class="stat-divider"></div>
-                <div class="stat-item">
-                    <div class="stat-value">Live</div>
-                    <div class="stat-label">Attendance</div>
-                </div>
-                <div class="stat-divider"></div>
-                <div class="stat-item">
-                    <div class="stat-value">24/7</div>
-                    <div class="stat-label">Access</div>
+                <div class="brand-title-wrap">
+                    <div class="club-title-text">YMCA BCP</div>
+                    <div class="club-subtitle-tag">Poovathussery Badminton Club</div>
                 </div>
             </div>
+
+            <div class="left-panel-content">
+                <div class="brand-badge-pill">
+                    <div class="live-dot"></div>
+                    <span>Official Member Portal</span>
+                </div>
+
+                <h1 class="hero-title">
+                    Excellence on Court,<br>
+                    <span class="gradient-text">Precision in Management.</span>
+                </h1>
+
+                <p class="hero-subtitle">
+                    Streamlined club administration for active members. Track daily court attendance, record subscriptions, and access official verified receipts instantly.
+                </p>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-card-icon">
+                            <i class="fa fa-calendar-check-o"></i>
+                        </div>
+                        <div class="feature-card-content">
+                            <strong>Live Attendance</strong>
+                            <span>Morning &amp; Evening sessions</span>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-card-icon">
+                            <i class="fa fa-file-text-o"></i>
+                        </div>
+                        <div class="feature-card-content">
+                            <strong>Official Receipts</strong>
+                            <span>Instant PDF receipts &amp; alerts</span>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-card-icon">
+                            <i class="fa fa-google-wallet"></i>
+                        </div>
+                        <div class="feature-card-content">
+                            <strong>Prepaid Wallet</strong>
+                            <span>Automatic dues settlement</span>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-card-icon">
+                            <i class="fa fa-users"></i>
+                        </div>
+                        <div class="feature-card-content">
+                            <strong>Family Directory</strong>
+                            <span>Linked accounts &amp; groupings</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-footer-status">
+                <i class="fa fa-shield"></i>
+                <span>Enterprise Cloud Architecture &bull; <strong>YMCA BCP &bull; 2026</strong></span>
+            </div>
+
         </div>
 
         <!-- ── Right Login Panel ── -->
@@ -534,24 +850,33 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 
                 <!-- ── Sign In View ── -->
                 <div id="signin-view" class="view-pane">
-                    <div class="card-eyebrow">YMCA BCP Portal</div>
-                    <div class="card-title">Sign In</div>
-                    <div class="card-subtitle">Enter your credentials to continue</div>
+
+                    <div class="card-brand-top">
+                        <div class="card-logo-container">
+                            <img src="favicon.png" alt="YMCA BCP Logo" class="card-logo-img" onerror="this.onerror=null; this.src='favicon.ico';">
+                        </div>
+                        <div class="card-brand-text">
+                            <div class="card-eyebrow">YMCA BCP Portal</div>
+                            <div class="card-title">Sign In</div>
+                        </div>
+                    </div>
+
+                    <div class="card-subtitle">Enter your registered email and password to access your account</div>
 
                     <?php if (!empty($login_success)) { ?>
                     <div id="login-success-alert" style="
                         display: flex;
                         align-items: center;
-                        gap: 10px;
+                        gap: 12px;
                         background: rgba(16, 185, 129, 0.12);
                         border: 1px solid rgba(16, 185, 129, 0.3);
-                        border-radius: 10px;
-                        padding: 12px 14px;
-                        margin-bottom: 20px;
-                        animation: slideUp 0.4s ease both;
+                        border-radius: 12px;
+                        padding: 12px 16px;
+                        margin-bottom: 22px;
+                        animation: fadeInView 0.3s ease both;
                     ">
-                        <i class="fa fa-check-circle" style="color: #34d399; font-size: 1rem; flex-shrink: 0;"></i>
-                        <span style="color: #a7f3d0; font-size: 0.85rem; font-weight: 500;"><?php echo htmlspecialchars($login_success); ?></span>
+                        <i class="fa fa-check-circle" style="color: #34d399; font-size: 1.1rem; flex-shrink: 0;"></i>
+                        <span style="color: #a7f3d0; font-size: 0.86rem; font-weight: 500; line-height: 1.4;"><?php echo htmlspecialchars($login_success); ?></span>
                     </div>
                     <?php } ?>
 
@@ -559,32 +884,36 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
                     <div id="login-error-alert" style="
                         display: flex;
                         align-items: center;
-                        gap: 10px;
-                        background: rgba(239, 68, 68, 0.1);
-                        border: 1px solid rgba(239, 68, 68, 0.25);
-                        border-radius: 10px;
-                        padding: 12px 14px;
-                        margin-bottom: 20px;
-                        animation: slideUp 0.4s ease both;
+                        gap: 12px;
+                        background: rgba(239, 68, 68, 0.12);
+                        border: 1px solid rgba(239, 68, 68, 0.28);
+                        border-radius: 12px;
+                        padding: 12px 16px;
+                        margin-bottom: 22px;
+                        animation: fadeInView 0.3s ease both;
                     ">
-                        <i class="fa fa-exclamation-circle" style="color: #f87171; font-size: 1rem; flex-shrink: 0;"></i>
-                        <span style="color: #fca5a5; font-size: 0.85rem; font-weight: 500;"><?php echo htmlspecialchars($login_error); ?></span>
+                        <i class="fa fa-exclamation-circle" style="color: #f87171; font-size: 1.1rem; flex-shrink: 0;"></i>
+                        <span style="color: #fca5a5; font-size: 0.86rem; font-weight: 500; line-height: 1.4;"><?php echo htmlspecialchars($login_error); ?></span>
                     </div>
                     <?php } ?>
 
                     <form role="form" action="./app_login_manager/login_validation.php" method="POST" autocomplete="off">
 
-                        <div class="field-wrap">
+                        <div class="field-group">
                             <label class="field-label" for="email">Email Address</label>
-                            <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="username">
-                            <i class="fa fa-envelope field-icon"></i>
+                            <div class="field-wrap">
+                                <input type="email" id="email" name="email" placeholder="member@example.com" required autocomplete="username">
+                                <i class="fa fa-envelope field-icon"></i>
+                            </div>
                         </div>
 
-                        <div class="field-wrap">
+                        <div class="field-group">
                             <label class="field-label" for="password">Password</label>
-                            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
-                            <i class="fa fa-lock field-icon"></i>
-                            <i class="fa fa-eye-slash toggle-pw" id="togglePw" title="Show/Hide password"></i>
+                            <div class="field-wrap">
+                                <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                                <i class="fa fa-lock field-icon"></i>
+                                <i class="fa fa-eye-slash toggle-pw" id="togglePw" title="Show or hide password"></i>
+                            </div>
                         </div>
 
                         <div class="remember-row">
@@ -596,7 +925,7 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
                         </div>
 
                         <button type="submit" class="btn-signin">
-                            <i class="fa fa-sign-in" style="margin-right: 8px;"></i> Sign In
+                            <i class="fa fa-sign-in"></i> Sign In to Account
                         </button>
 
                     </form>
@@ -604,17 +933,28 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 
                 <!-- ── In-Page Forgot Password View ── -->
                 <div id="forgot-view" class="view-pane" style="display: none;">
-                    <div class="card-eyebrow">Account Recovery</div>
-                    <div class="card-title">Forgot Password</div>
-                    <div class="card-subtitle">Enter your registered email and we'll send a reset link</div>
+
+                    <div class="card-brand-top">
+                        <div class="card-logo-container">
+                            <img src="favicon.png" alt="YMCA BCP Logo" class="card-logo-img" onerror="this.onerror=null; this.src='favicon.ico';">
+                        </div>
+                        <div class="card-brand-text">
+                            <div class="card-eyebrow">Account Recovery</div>
+                            <div class="card-title">Reset Password</div>
+                        </div>
+                    </div>
+
+                    <div class="card-subtitle">Enter your registered email and we'll send a secure password reset link</div>
 
                     <div id="forgot-alert" style="display: none; margin-bottom: 20px;"></div>
 
                     <form id="forgotForm" autocomplete="off">
-                        <div class="field-wrap">
-                            <label class="field-label" for="forgot_email">Email Address</label>
-                            <input type="email" id="forgot_email" name="email" placeholder="you@example.com" required autocomplete="email">
-                            <i class="fa fa-envelope field-icon"></i>
+                        <div class="field-group">
+                            <label class="field-label" for="forgot_email">Registered Email Address</label>
+                            <div class="field-wrap">
+                                <input type="email" id="forgot_email" name="email" placeholder="member@example.com" required autocomplete="email">
+                                <i class="fa fa-envelope field-icon"></i>
+                            </div>
                         </div>
 
                         <button type="submit" class="btn-signin" id="btnSubmitForgot">
@@ -625,14 +965,14 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 
                         <div style="text-align: center; margin-top: 24px;">
                             <a href="#" id="btnBackToLogin" class="forgot-link" style="display: inline-flex; align-items: center; gap: 8px;">
-                                <i class="fa fa-arrow-left"></i> Back to Sign In
+                                <i class="fa fa-arrow-left"></i> Return to Sign In
                             </a>
                         </div>
                     </form>
                 </div>
 
                 <div class="card-footer-text">
-                    <span><i class="fa fa-shield"></i> Secured with encrypted authentication</span>
+                    <span><i class="fa fa-lock"></i> 256-Bit SSL Encrypted &bull; YMCA BCP ERP</span>
                 </div>
 
             </div>
@@ -758,7 +1098,7 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
                             devHelper = `
                                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(16, 185, 129, 0.25); font-size: 0.8rem;">
                                     <span style="opacity: 0.85; color: #6ee7b7;">Development Helper:</span><br>
-                                    <a href="${res.dev_reset_link}" style="color: #93c5fd; text-decoration: underline; word-break: break-all;">Click here to reset password directly</a>
+                                    <a href="${res.dev_reset_link}" style="color: #93c5fa; text-decoration: underline; word-break: break-all;">Click here to reset password directly</a>
                                 </div>
                             `;
                         }

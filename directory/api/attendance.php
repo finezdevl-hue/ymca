@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/api_bootstrap.php';
-require_attendance_master();
 include_once __DIR__ . '/attendance_fix_helper.php';
 include_once __DIR__ . '/../../app_pagination/pagination.php';
 include_once __DIR__ . '/../../app_common/auth_helper.php';

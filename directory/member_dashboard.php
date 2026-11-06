@@ -1,13 +1,22 @@
 <?php
 session_start();
-if (empty($_SESSION['login_id']) || $_SESSION['login_id'] == 1) {
+include_once __DIR__ . '/../app_common/db_connect.php';
+include_once __DIR__ . '/../app_common/auth_helper.php';
+
+if (empty($_SESSION['login_id'])) {
     header("Location: ../index.php");
     exit();
 }
-include '../app_common/db_connect.php';
-include_once '../app_common/auth_helper.php';
 
-$login_id = (int)($_SESSION['login_id'] ?? 0);
+$login_id = (int)$_SESSION['login_id'];
+if (isSuperAdmin($login_id)) {
+    header("Location: dashboard.php");
+    exit();
+} elseif (isGroupAdmin($login_id)) {
+    header("Location: group_dashboard.php");
+    exit();
+}
+
 $can_mark_all_att_desktop = isAttendanceMaster($login_id);
 
 $db = new Database();

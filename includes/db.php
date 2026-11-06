@@ -6,6 +6,25 @@ define('APP_DB_CONNECT_LOADED', true);
 
 date_default_timezone_set('Asia/Kolkata');
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Internal helper: infer mysqli bind_param type string from parameter values.
+// ─────────────────────────────────────────────────────────────────────────────
+if (!function_exists('inferBindTypes')) {
+    function inferBindTypes(array $params): string {
+        $types = '';
+        foreach ($params as $p) {
+            if (is_int($p)) {
+                $types .= 'i';
+            } elseif (is_float($p)) {
+                $types .= 'd';
+            } else {
+                $types .= 's';
+            }
+        }
+        return $types;
+    }
+}
+
 require_once __DIR__ . '/../database/Connection.php';
 require_once __DIR__ . '/logger.php';
 require_once __DIR__ . '/auth.php';
@@ -233,6 +252,10 @@ if (!function_exists('computeMemberMonthlyFee')) {
 }
 
 if (!function_exists('app_exec_query')) {
+    /**
+     * @deprecated Use app_exec_getresult() with bound parameters instead.
+     *             This function accepts raw SQL and must never receive user-controlled input.
+     */
     function app_exec_query($sql) {
         try {
             $db = new Database();
@@ -261,16 +284,7 @@ if (!function_exists('app_exec_nonquery')) {
 
             if (!empty($parameters)) {
                 if (empty($types)) {
-                    $types = '';
-                    foreach ($parameters as $p) {
-                        if (is_int($p)) {
-                            $types .= 'i';
-                        } elseif (is_float($p)) {
-                            $types .= 'd';
-                        } else {
-                            $types .= 's';
-                        }
-                    }
+                    $types = inferBindTypes($parameters);
                 }
                 $stmt->bind_param($types, ...$parameters);
             }
@@ -306,16 +320,7 @@ if (!function_exists('app_exec_getresult')) {
 
             if (!empty($parameters)) {
                 if (empty($types)) {
-                    $types = '';
-                    foreach ($parameters as $p) {
-                        if (is_int($p)) {
-                            $types .= 'i';
-                        } elseif (is_float($p)) {
-                            $types .= 'd';
-                        } else {
-                            $types .= 's';
-                        }
-                    }
+                    $types = inferBindTypes($parameters);
                 }
                 $stmt->bind_param($types, ...$parameters);
             }
@@ -375,16 +380,7 @@ if (!function_exists('app_exec_roll_back_nonquery')) {
 
             if (!empty($parameters)) {
                 if (empty($types)) {
-                    $types = '';
-                    foreach ($parameters as $p) {
-                        if (is_int($p)) {
-                            $types .= 'i';
-                        } elseif (is_float($p)) {
-                            $types .= 'd';
-                        } else {
-                            $types .= 's';
-                        }
-                    }
+                    $types = inferBindTypes($parameters);
                 }
                 $stmt->bind_param($types, ...$parameters);
             }
@@ -479,16 +475,7 @@ if (!function_exists('app_exec_getlast_id_roll_back')) {
 
             if (!empty($parameters)) {
                 if (empty($types)) {
-                    $types = '';
-                    foreach ($parameters as $p) {
-                        if (is_int($p)) {
-                            $types .= 'i';
-                        } elseif (is_float($p)) {
-                            $types .= 'd';
-                        } else {
-                            $types .= 's';
-                        }
-                    }
+                    $types = inferBindTypes($parameters);
                 }
                 $stmt->bind_param($types, ...$parameters);
             }

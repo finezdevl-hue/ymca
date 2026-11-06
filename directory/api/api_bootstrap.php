@@ -8,3 +8,8 @@ require_once __DIR__ . '/../../includes/db.php';
 
 // Deny by default: require login for every API endpoint
 $current_login_id = require_login();
+
+// Initialize default database connection and transaction manager for all API endpoints
+$db = new Database();
+$conn = $db->getConnection();
+$tm = new TransactionManager($conn);

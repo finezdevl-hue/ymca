@@ -52,6 +52,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'load_data') {
             m.middle_name, 
             m.last_name, 
             m.phone, 
+            m.whtsapp,
             COALESCE(rec.expected, 0) AS total_expected, 
             COALESCE(paid.received, 0) AS total_received, 
             (COALESCE(rec.expected, 0) - COALESCE(paid.received, 0)) AS balance_due 

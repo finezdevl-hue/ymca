@@ -1,5 +1,17 @@
 <?php
 session_start();
+include_once __DIR__ . '/../app_common/auth_helper.php';
+
+$login_id = (int)($_SESSION['login_id'] ?? 0);
+if (empty($login_id)) {
+    header("Location: ../app_login_manager/logout.php");
+    exit();
+}
+if (isNormalMember($login_id)) {
+    header("Location: member_dashboard.php");
+    exit();
+}
+
 include '../app_common/db_connect.php';
 
 // Fetch all FD transactions with individual interest sum

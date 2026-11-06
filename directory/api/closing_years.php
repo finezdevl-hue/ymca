@@ -48,7 +48,8 @@ include '../../app_pagination/pagination.php';
         //action to delete payment details start
         if($action=="hide_closing_year"){
             try{
-                echo $_POST['hide'];
+                // Value echoed back for client confirmation (integer only, no XSS risk after cast)
+                echo (int)$_POST['hide'];
             
                 $sql = "UPDATE  tbl_closing SET hide = ? WHERE id = ?";
                 

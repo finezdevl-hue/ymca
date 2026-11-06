@@ -1,5 +1,17 @@
 <?php
 session_start();
+include_once __DIR__ . '/../app_common/auth_helper.php';
+
+$login_id = (int)($_SESSION['login_id'] ?? 0);
+if (empty($login_id)) {
+    header("Location: ../app_login_manager/logout.php");
+    exit();
+}
+if (isNormalMember($login_id)) {
+    header("Location: member_dashboard.php");
+    exit();
+}
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -104,6 +116,13 @@ session_start();
                                 htm += "<button type='button' class='btn btn-primary btn-xs' style='border-radius: 6px; padding: 3px 10px;' onclick='viewMemberStatement(" + m.id + ", \"" + m.first_name + "\", \"" + (m.middle_name || "") + "\", \"" + m.last_name + "\")'>";
                                 htm += "<i class='fa fa-list'></i> View Statement";
                                 htm += "</button>";
+
+                                if (balance > 0) {
+                                    var safeName = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                                    htm += " <button type='button' class='btn btn-success btn-xs' style='border-radius: 6px; padding: 3px 10px; margin-left: 6px; background-color: #10b981; border-color: #10b981;' onclick='openWhatsAppAlertModal(" + m.id + ", \"" + safeName + "\", " + balance + ")'>";
+                                    htm += "<i class='fa fa-whatsapp'></i> Send Alert";
+                                    htm += "</button>";
+                                }
                                 htm += "</td>";
                                 htm += "</tr>";
                             }
@@ -162,6 +181,99 @@ session_start();
 
             document.body.appendChild(form);
             form.submit();
+        }
+
+        function openWhatsAppAlertModal(memberId, memberName, balance) {
+            $('#wa_modal_member_id').val(memberId);
+            $('#wa_modal_balance').val(balance);
+            $('#wa_modal_name').text(memberName);
+            $('#wa_modal_phone').text('Loading phone...');
+            $('#wa_modal_balance_display').text('₹' + parseFloat(balance).toLocaleString('en-IN', {minimumFractionDigits: 2}));
+            $('#wa_modal_text').val('Loading template...');
+            $('#wa_modal_url').val('');
+            $('#modalWhatsAppAlert').modal('show');
+
+            $.ajax({
+                type: "POST",
+                url: "api/whatsapp.php",
+                data: {
+                    action: 'get_balance_alert_preview',
+                    member_id: memberId,
+                    balance: balance
+                },
+                success: function(res) {
+                    if (res.status === 'success') {
+                        $('#wa_modal_phone').text(res.phone || res.clean_phone || 'No Phone');
+                        $('#wa_modal_text').val(res.message_text);
+                        $('#wa_modal_url').val(res.wa_url);
+                    } else {
+                        alerterror(res.message || "Could not generate message preview.");
+                    }
+                },
+                error: function() {
+                    alerterror("Failed to load message preview.");
+                }
+            });
+        }
+
+        function dispatchAlertFromModal() {
+            var memberId = $('#wa_modal_member_id').val();
+            var balance = $('#wa_modal_balance').val();
+            var btn = $('#btn_modal_send_api');
+            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Sending...');
+
+            $.ajax({
+                type: "POST",
+                url: "api/whatsapp.php",
+                data: {
+                    action: 'send_balance_alert',
+                    member_id: memberId,
+                    balance: balance
+                },
+                success: function(res) {
+                    btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Send via WhatsApp API');
+                    $('#modalWhatsAppAlert').modal('hide');
+                    if (res.status === 'success') {
+                        alertsuccess("Pending balance alert sent successfully to member!");
+                    } else if (res.status === 'warning') {
+                        swal({
+                            title: "WhatsApp Web Ready",
+                            text: res.message + "\nClick 'Open WhatsApp' to view or send.",
+                            type: "info",
+                            showCancelButton: true,
+                            confirmButtonColor: "#25D366",
+                            confirmButtonText: "<i class='fa fa-whatsapp'></i> Open WhatsApp",
+                            cancelButtonText: "Done",
+                            html: true
+                        }, function(isConfirm) {
+                            if (isConfirm && res.wa_url) {
+                                window.open(res.wa_url, '_blank');
+                            }
+                        });
+                    } else {
+                        alerterror(res.message || "Failed to send WhatsApp alert.");
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Send via WhatsApp API');
+                    var msg = "Failed to send WhatsApp alert.";
+                    try {
+                        var json = JSON.parse(xhr.responseText);
+                        if (json.message) msg = json.message;
+                    } catch(e) {}
+                    alerterror(msg);
+                }
+            });
+        }
+
+        function openDirectWhatsAppFromModal() {
+            var waUrl = $('#wa_modal_url').val();
+            if (!waUrl) {
+                var phone = $('#wa_modal_phone').text().replace(/[^0-9]/g, '');
+                var text = encodeURIComponent($('#wa_modal_text').val());
+                waUrl = 'https://wa.me/' + phone + '?text=' + text;
+            }
+            window.open(waUrl, '_blank');
         }
     </script>
     <script src="../app_pagination/pagination.js"></script>
@@ -267,6 +379,59 @@ session_start();
             <!-- Table Container -->
             <div class="wrapper wrapper-content animated fadeInRight" id="table_receivables" style="padding-top: 0;">
                 <!-- Dynamically Injected -->
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Balance Alert Modal -->
+    <div class="modal fade" id="modalWhatsAppAlert" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: 18px 24px;">
+                    <button type="button" class="close" data-dismiss="modal" style="color:#fff; opacity:0.8; font-size:24px;">&times;</button>
+                    <h4 class="modal-title" style="font-weight: 800; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa fa-whatsapp" style="font-size: 20px;"></i> Send Pending Balance Alert
+                    </h4>
+                </div>
+                <div class="modal-body" style="padding: 22px 24px; background: #fafbfc;">
+                    <input type="hidden" id="wa_modal_member_id">
+                    <input type="hidden" id="wa_modal_balance">
+                    <input type="hidden" id="wa_modal_url">
+
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 800; color: #0f172a;" id="wa_modal_name">—</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                                <i class="fa fa-phone"></i> <span id="wa_modal_phone">—</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Due Balance</div>
+                            <div style="font-size: 18px; font-weight: 900; color: #ef4444;" id="wa_modal_balance_display">₹0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 6px; display: block;">
+                            Message Preview / Text:
+                        </label>
+                        <textarea class="form-control" id="wa_modal_text" rows="9" style="font-family: monospace; font-size: 12.5px; border-radius: 10px; background: #fff;"></textarea>
+                    </div>
+                    <div style="font-size: 11.5px; color: #64748b;">
+                        <i class="fa fa-info-circle"></i> This message is generated from your configured pending balance template. You can edit before sending.
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 14px 24px; background: #fff; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between;">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius: 8px;">Cancel</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-default" onclick="openDirectWhatsAppFromModal()" style="border-radius: 8px; font-weight: 600; color: #059669; border-color: #a7f3d0;">
+                            <i class="fa fa-external-link"></i> Open in WhatsApp Web
+                        </button>
+                        <button type="button" class="btn btn-success" id="btn_modal_send_api" onclick="dispatchAlertFromModal()" style="border-radius: 8px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); border: none;">
+                            <i class="fa fa-paper-plane"></i> Send via WhatsApp API
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

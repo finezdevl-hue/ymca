@@ -24,8 +24,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $alertmessage = "Too many password reset requests. Please wait a few minutes before trying again.";
         $alert_type = "danger";
     } else {
-        record_failed_attempt($email, 'forgot_password');
-
         $sql = "SELECT login_id, name, email FROM tbl_login WHERE LTRIM(RTRIM(LOWER(email))) = LTRIM(RTRIM(LOWER(?))) LIMIT 1";
         $result = app_exec_getresult($sql, [$email], "s");
 
@@ -50,9 +48,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Dispatch branded password reset email via SMTP (with fallback)
             send_password_reset_email($email, $row['name'] ?? '', $reset_link);
 
+            // Clear any previous failed attempts for this email on success
+            clear_login_attempts($email, 'forgot_password');
+
             $alertmessage = "Password reset instructions have been sent to your email address.";
             $alert_type = "success";
         } else {
+            // No account found: record attempt to protect against enumeration abuse
+            record_failed_attempt($email, 'forgot_password');
             $alertmessage = "No account exists with this email address.";
             $alert_type = "danger";
         }

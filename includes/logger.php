@@ -4,8 +4,6 @@
  * Writes sanitized logs to logs/ directory with strict file permissions.
  */
 
-$login_id = $_SESSION['login_id'] ?? 'guest';
-
 if (!function_exists('saveQuerylog')) {
     function saveQuerylog($stmt, $parameters = []) {
         // Skip routine query logging unless explicitly enabled to avoid disk I/O bottlenecks

@@ -333,25 +333,42 @@ include_once __DIR__ . '/attendance_fix_helper.php';
                     }
                 }
 
+                $db = new Database();
+                $conn = $db->getConnection();
+                $tm = new TransactionManager($conn);
+                $tm->begin();
+
                 if (!empty($del_recv_ids)) {
                     $ids_str = implode(',', array_map('intval', $del_recv_ids));
                     // Delete placeholder received records
-                    app_exec_query("DELETE FROM tbl_member_recieved WHERE receiveble_id IN ($ids_str) AND fees = 0");
+                    if (!app_exec_roll_back_nonquery($conn, "DELETE FROM tbl_member_recieved WHERE receiveble_id IN ($ids_str) AND fees = 0")) {
+                        throw new Exception("Error deleting placeholder received records");
+                    }
                     // Delete receivables
-                    app_exec_query("DELETE FROM tbl_member_recievable WHERE id IN ($ids_str)");
+                    if (!app_exec_roll_back_nonquery($conn, "DELETE FROM tbl_member_recievable WHERE id IN ($ids_str)")) {
+                        throw new Exception("Error deleting fee receivables");
+                    }
                 }
 
                 // 4. Delete monthly attendance records
                 $del_att_sql = "DELETE FROM tbl_monthly_attendance WHERE from_date = ? AND to_date = ?" . $mem_filter_sql;
                 $del_att_params = array_merge([$from_date, $to_date], $mem_params);
                 $del_att_types = "ss" . $mem_types;
-                app_exec_nonquery($del_att_sql, $del_att_params, $del_att_types);
+                if (!app_exec_roll_back_nonquery($conn, $del_att_sql, $del_att_params, $del_att_types)) {
+                    throw new Exception("Error deleting monthly attendance records");
+                }
+
+                $tm->commit();
 
                 echo json_encode(["status" => "success", "message" => "Monthly attendance and fee receivables for $month_label have been reset successfully."]);
                 exit();
             } catch (Exception $e) {
+                if (isset($tm)) {
+                    $tm->rollback();
+                }
+                saveErrorlog("undo_monthly_attendance: " . $e->getMessage());
                 http_response_code(500);
-                echo json_encode(["Message" => "Error: " . $e->getMessage()]);
+                echo json_encode(["status" => "error", "message" => "An error occurred while resetting monthly attendance."]);
                 exit();
             }
         }
@@ -579,27 +596,32 @@ include_once __DIR__ . '/attendance_fix_helper.php';
                         ];
                         $types_rec = "idsiisii";
 
-                        $recieveble_id = app_exec_getlast_id($sql_rec, $parameters_rec, $types_rec);
+                        $recieveble_id = app_exec_getlast_id_roll_back($conn, $sql_rec, $parameters_rec, $types_rec);
+                        if ($recieveble_id === null) {
+                            throw new Exception("Error creating fee receivable for member $member_id");
+                        }
 
-                        if ($recieveble_id !== null) {
-                            // Insert into tbl_member_recieved
-                            $sql_rev = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, flag, group_id) VALUES (?, 0.00, ?, ?, ?, ?, ?, ?, ?)";
-                            $parameters_rev = [
-                                $member_id,
-                                $currentDate,
-                                $_SESSION['login_id'],
-                                $head,
-                                $row_description,
-                                $recieveble_id,
-                                $selected_year,
-                                $rec_group_id
-                            ];
-                            $types_rev = "isiisiii";
-                            app_exec_nonquery($sql_rev, $parameters_rev, $types_rev);
+                        // Insert into tbl_member_recieved
+                        $sql_rev = "INSERT INTO tbl_member_recieved (member_id, fees, date, login_id, head, discription, receiveble_id, flag, group_id) VALUES (?, 0.00, ?, ?, ?, ?, ?, ?, ?)";
+                        $parameters_rev = [
+                            $member_id,
+                            $currentDate,
+                            $_SESSION['login_id'],
+                            $head,
+                            $row_description,
+                            $recieveble_id,
+                            $selected_year,
+                            $rec_group_id
+                        ];
+                        $types_rev = "isiisiii";
+                        if (!app_exec_roll_back_nonquery($conn, $sql_rev, $parameters_rev, $types_rev)) {
+                            throw new Exception("Error creating received placeholder record for member $member_id");
+                        }
 
-                            // Update isreceiveble in tbl_monthly_attendance
-                            $sql_upd = "UPDATE tbl_monthly_attendance SET isreceiveble = 1 WHERE id = ?";
-                            app_exec_nonquery($sql_upd, [$id], "i");
+                        // Update isreceiveble in tbl_monthly_attendance
+                        $sql_upd = "UPDATE tbl_monthly_attendance SET isreceiveble = 1 WHERE id = ?";
+                        if (!app_exec_roll_back_nonquery($conn, $sql_upd, [$id], "i")) {
+                            throw new Exception("Error updating attendance record $id");
                         }
                     }
                     $tm->commit();
@@ -613,8 +635,9 @@ include_once __DIR__ . '/attendance_fix_helper.php';
                 if (isset($tm)) {
                     $tm->rollback();
                 }
+                saveErrorlog("save_all_receivables: " . $e->getMessage());
                 http_response_code(500);
-                echo "Oops! Something went wrong: " . $e->getMessage();
+                echo json_encode(["status" => "error", "message" => "An error occurred while creating fee receivables."]);
                 exit;
             }
         }
