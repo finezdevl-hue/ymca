@@ -413,6 +413,7 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
             width: 100%;
             max-width: 540px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 40px 48px;
@@ -736,10 +737,6 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .mobile-brand-header {
-            display: none;
-        }
-
         /* ── Responsive Styling ── */
         @media (max-width: 991px) {
             html, body {
@@ -754,7 +751,7 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
-                padding: 28px 16px;
+                padding: 20px 14px;
                 width: 100%;
                 box-sizing: border-box;
             }
@@ -765,93 +762,23 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 
             .right-panel {
                 flex: none;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
                 min-width: 0 !important;
                 width: 100% !important;
-                max-width: 440px;
+                max-width: 420px;
                 margin: 0 auto;
                 padding: 0 !important;
                 box-sizing: border-box;
             }
 
-            .mobile-brand-header {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                margin-bottom: 20px;
-                width: 100%;
-                animation: cardSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-            }
-
-            .mobile-logo-ring {
-                width: 68px;
-                height: 68px;
-                background: radial-gradient(circle, rgba(37, 99, 235, 0.35) 0%, rgba(13, 20, 36, 0.95) 100%);
-                border: 1.5px solid rgba(59, 130, 246, 0.5);
-                border-radius: 20px;
-                padding: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 
-                    0 12px 28px -8px rgba(37, 99, 235, 0.6),
-                    0 0 16px rgba(59, 130, 246, 0.25) inset;
-                margin-bottom: 10px;
-            }
-
-            .mobile-logo-img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-                filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
-            }
-
-            .mobile-brand-title {
-                font-family: 'Plus Jakarta Sans', sans-serif;
-                font-size: 1.45rem;
-                font-weight: 800;
-                color: #ffffff;
-                letter-spacing: -0.02em;
-                line-height: 1.2;
-            }
-
-            .mobile-brand-subtitle {
-                font-size: 0.8rem;
-                color: #93c5fd;
-                font-weight: 600;
-                letter-spacing: 0.04em;
-                text-transform: uppercase;
-                margin-top: 3px;
-            }
-
-            .mobile-brand-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                background: rgba(37, 99, 235, 0.15);
-                border: 1px solid rgba(59, 130, 246, 0.3);
-                border-radius: 50px;
-                padding: 4px 12px;
-                font-size: 11px;
-                font-weight: 700;
-                color: #93c5fd;
-                letter-spacing: 0.06em;
-                text-transform: uppercase;
-                margin-top: 10px;
-            }
-
-            .desktop-only-logo {
-                display: none !important;
-            }
-
-            .card-brand-top {
-                margin-bottom: 16px;
-            }
-
             .login-card {
+                width: 100% !important;
+                max-width: 420px;
                 padding: 32px 24px;
                 border-radius: 24px;
-                width: 100%;
                 box-sizing: border-box;
                 box-shadow:
                     0 0 0 1px rgba(255, 255, 255, 0.06) inset,
@@ -859,13 +786,58 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
                     0 0 35px -10px rgba(37, 99, 235, 0.2);
             }
 
+            .card-brand-top {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                gap: 12px;
+                margin-bottom: 18px;
+            }
+
+            .card-logo-container {
+                width: 64px;
+                height: 64px;
+                border-radius: 18px;
+                padding: 7px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: radial-gradient(circle, rgba(37, 99, 235, 0.35) 0%, rgba(13, 20, 36, 0.95) 100%);
+                border: 1.5px solid rgba(59, 130, 246, 0.5);
+                box-shadow: 
+                    0 10px 24px -6px rgba(37, 99, 235, 0.55),
+                    0 0 14px rgba(59, 130, 246, 0.2) inset;
+            }
+
+            .card-brand-text {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .card-eyebrow {
+                font-size: 11px;
+                font-weight: 700;
+                color: #60a5fa;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+            }
+
             .card-title {
                 font-size: 1.55rem;
+                font-weight: 800;
+                color: #ffffff;
+                margin-top: 2px;
             }
 
             .card-subtitle {
-                font-size: 0.86rem;
+                text-align: center;
+                font-size: 0.85rem;
+                color: #94a3b8;
                 margin-bottom: 22px;
+                line-height: 1.45;
             }
 
             .field-group {
@@ -898,7 +870,7 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 
         @media (max-width: 480px) {
             .login-wrapper {
-                padding: 18px 12px;
+                padding: 16px 10px;
             }
 
             .login-card {
@@ -906,23 +878,11 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
                 border-radius: 20px;
             }
 
-            .mobile-brand-header {
-                margin-bottom: 16px;
-            }
-
-            .mobile-logo-ring {
-                width: 60px;
-                height: 60px;
+            .card-logo-container {
+                width: 56px;
+                height: 56px;
                 border-radius: 16px;
-                margin-bottom: 8px;
-            }
-
-            .mobile-brand-title {
-                font-size: 1.35rem;
-            }
-
-            .mobile-brand-subtitle {
-                font-size: 0.75rem;
+                padding: 6px;
             }
 
             .card-title {
@@ -964,6 +924,7 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
         @media (max-width: 360px) {
             .login-card {
                 padding: 22px 14px;
+                border-radius: 18px;
             }
 
             .remember-row {
@@ -1068,30 +1029,17 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
 
         <!-- ── Right Login Panel ── -->
         <div class="right-panel">
-
-            <!-- Mobile Brand Header (Visible only on mobile <= 991px) -->
-            <div class="mobile-brand-header">
-                <div class="mobile-logo-ring">
-                    <img src="favicon.png" alt="YMCA BCP Logo" class="mobile-logo-img" onerror="this.onerror=null; this.src='favicon.ico';">
-                </div>
-                <div class="mobile-brand-title">YMCA BCP</div>
-                <div class="mobile-brand-subtitle">Poovathussery Badminton Club</div>
-                <div class="mobile-brand-badge">
-                    <span class="live-dot" style="width:6px; height:6px;"></span> Member &amp; Admin Portal
-                </div>
-            </div>
-
             <div class="login-card">
 
                 <!-- ── Sign In View ── -->
                 <div id="signin-view" class="view-pane">
 
                     <div class="card-brand-top">
-                        <div class="card-logo-container desktop-only-logo">
+                        <div class="card-logo-container">
                             <img src="favicon.png" alt="YMCA BCP Logo" class="card-logo-img" onerror="this.onerror=null; this.src='favicon.ico';">
                         </div>
                         <div class="card-brand-text">
-                            <div class="card-eyebrow">Member &amp; Admin Access</div>
+                            <div class="card-eyebrow">YMCA Poovathussery</div>
                             <div class="card-title">Sign In</div>
                         </div>
                     </div>
@@ -1170,7 +1118,7 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
                 <div id="forgot-view" class="view-pane" style="display: none;">
 
                     <div class="card-brand-top">
-                        <div class="card-logo-container desktop-only-logo">
+                        <div class="card-logo-container">
                             <img src="favicon.png" alt="YMCA BCP Logo" class="card-logo-img" onerror="this.onerror=null; this.src='favicon.ico';">
                         </div>
                         <div class="card-brand-text">
