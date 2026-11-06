@@ -1275,12 +1275,21 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
                     if (btnSubmit) btnSubmit.disabled = false;
                     if (btnText) btnText.innerHTML = originalHtml;
 
-                    if (res && res.status === 'success') {
+                    if (res && (res.status === 'success' || res.status === 'warning')) {
+                        const isWarn = res.status === 'warning';
+                        const bgColor = isWarn ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)';
+                        const borderColor = isWarn ? 'rgba(245, 158, 11, 0.32)' : 'rgba(16, 185, 129, 0.28)';
+                        const textColor = isWarn ? '#fde68a' : '#a7f3d0';
+                        const titleColor = isWarn ? '#fef3c7' : '#ecfdf5';
+                        const iconClass = isWarn ? 'fa-exclamation-triangle' : 'fa-check-circle';
+                        const iconColor = isWarn ? '#fbbf24' : '#34d399';
+                        const titleText = isWarn ? 'Delivery Notice' : 'Instructions Sent';
+
                         let devHelper = '';
                         if (res.dev_reset_link) {
                             devHelper = `
-                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(16, 185, 129, 0.25); font-size: 0.8rem;">
-                                    <span style="opacity: 0.85; color: #6ee7b7;">Development Helper:</span><br>
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 0.8rem;">
+                                    <span style="opacity: 0.85; color: #93c5fd;">Development Helper:</span><br>
                                     <a href="${res.dev_reset_link}" style="color: #93c5fa; text-decoration: underline; word-break: break-all;">Click here to reset password directly</a>
                                 </div>
                             `;
@@ -1290,18 +1299,18 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
                                 display: flex;
                                 align-items: flex-start;
                                 gap: 12px;
-                                background: rgba(16, 185, 129, 0.12);
-                                border: 1px solid rgba(16, 185, 129, 0.28);
+                                background: ${bgColor};
+                                border: 1px solid ${borderColor};
                                 border-radius: 12px;
                                 padding: 14px 16px;
-                                color: #a7f3d0;
+                                color: ${textColor};
                                 font-size: 0.86rem;
                                 line-height: 1.5;
                                 animation: fadeInView 0.3s ease both;
                             ">
-                                <i class="fa fa-check-circle" style="color: #34d399; font-size: 1.15rem; margin-top: 2px; flex-shrink: 0;"></i>
+                                <i class="fa ${iconClass}" style="color: ${iconColor}; font-size: 1.15rem; margin-top: 2px; flex-shrink: 0;"></i>
                                 <div style="flex: 1;">
-                                    <div style="font-weight: 600; color: #ecfdf5; margin-bottom: 2px;">Instructions Sent</div>
+                                    <div style="font-weight: 600; color: ${titleColor}; margin-bottom: 2px;">${titleText}</div>
                                     <div>${res.message || 'Password reset instructions have been sent to your email address.'}</div>
                                     ${devHelper}
                                 </div>

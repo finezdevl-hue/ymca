@@ -43,6 +43,7 @@ if (!function_exists('send_smtp_mail')) {
 
         $socket = @stream_socket_client($remote . ':' . $port, $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT, $context);
         if (!$socket) {
+            error_log("SMTP Error: Connection failed to $remote:$port - $errstr ($errno)");
             if (function_exists('app_log_error')) {
                 app_log_error("SMTP Connection failed to $remote:$port - $errstr ($errno)");
             }
@@ -69,6 +70,7 @@ if (!function_exists('send_smtp_mail')) {
 
         $greet = $readResponse();
         if (!str_starts_with($greet, '220')) {
+            error_log("SMTP Error: Invalid greeting from $host - " . trim($greet));
             fclose($socket);
             return false;
         }
@@ -79,10 +81,12 @@ if (!function_exists('send_smtp_mail')) {
         if ($secure === 'tls' && strpos($ehlo, 'STARTTLS') !== false) {
             $tlsResp = $sendCommand("STARTTLS");
             if (!str_starts_with($tlsResp, '220')) {
+                error_log("SMTP Error: STARTTLS rejected - " . trim($tlsResp));
                 fclose($socket);
                 return false;
             }
             if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                error_log("SMTP Error: Failed to enable TLS crypto");
                 fclose($socket);
                 return false;
             }
@@ -93,38 +97,48 @@ if (!function_exists('send_smtp_mail')) {
         if (!empty($username) && !empty($password)) {
             $authResp = $sendCommand("AUTH LOGIN");
             if (!str_starts_with($authResp, '334')) {
+                error_log("SMTP Error: AUTH LOGIN rejected - " . trim($authResp));
                 fclose($socket);
                 return false;
             }
 
             $userResp = $sendCommand(base64_encode($username));
             if (!str_starts_with($userResp, '334')) {
+                error_log("SMTP Error: Username rejected - " . trim($userResp));
                 fclose($socket);
                 return false;
             }
 
             $passResp = $sendCommand(base64_encode($password));
             if (!str_starts_with($passResp, '235')) {
+                error_log("SMTP Error: Password authentication failed - " . trim($passResp));
                 fclose($socket);
                 return false;
             }
+        } elseif (strpos($host, 'gmail.com') !== false) {
+            error_log("SMTP Error: smtp.gmail.com requires SMTP_USERNAME and SMTP_PASSWORD in .env");
+            fclose($socket);
+            return false;
         }
 
         // SMTP Envelope
         $mailFromResp = $sendCommand("MAIL FROM:<$from>");
         if (!str_starts_with($mailFromResp, '250')) {
+            error_log("SMTP Error: MAIL FROM rejected - " . trim($mailFromResp));
             fclose($socket);
             return false;
         }
 
         $rcptToResp = $sendCommand("RCPT TO:<$to>");
         if (!str_starts_with($rcptToResp, '250') && !str_starts_with($rcptToResp, '251')) {
+            error_log("SMTP Error: RCPT TO rejected for <$to> - " . trim($rcptToResp));
             fclose($socket);
             return false;
         }
 
         $dataResp = $sendCommand("DATA");
         if (!str_starts_with($dataResp, '354')) {
+            error_log("SMTP Error: DATA command rejected - " . trim($dataResp));
             fclose($socket);
             return false;
         }
@@ -264,11 +278,15 @@ HTML;
 
         // Fallback to mail() if SMTP dispatch fails
         if (!$sent) {
+            $fromAddr = (defined('SMTP_FROM_EMAIL') && !empty(SMTP_FROM_EMAIL)) ? SMTP_FROM_EMAIL : 'no-reply@ymcabcp.com';
             $headers  = "MIME-Version: 1.0\r\n";
             $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $headers .= "From: YMCA BCP <" . (defined('SMTP_FROM_EMAIL') ? SMTP_FROM_EMAIL : 'no-reply@ymcabcp.com') . ">\r\n";
+            $headers .= "From: YMCA BCP <" . $fromAddr . ">\r\n";
             $headers .= "X-Mailer: PHP/" . phpversion();
             $sent = @mail($recipientEmail, $subject, $html, $headers);
+            if (!$sent) {
+                error_log("Mailer Warning: Fallback mail() function failed to dispatch to <$recipientEmail> (common in local XAMPP without local MTA).");
+            }
         }
 
         return $sent;

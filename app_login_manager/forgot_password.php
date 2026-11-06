@@ -46,13 +46,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Dispatch branded password reset email via SMTP (with fallback)
-            send_password_reset_email($email, $row['name'] ?? '', $reset_link);
+            $mail_sent = send_password_reset_email($email, $row['name'] ?? '', $reset_link);
 
             // Clear any previous failed attempts for this email on success
             clear_login_attempts($email, 'forgot_password');
 
-            $alertmessage = "Password reset instructions have been sent to your email address.";
-            $alert_type = "success";
+            if ($mail_sent) {
+                $alertmessage = "Password reset instructions have been sent to your email address.";
+                $alert_type = "success";
+            } else {
+                if (app_env('APP_ENV') === 'development') {
+                    $alertmessage = "Reset link generated. Note: SMTP email could not be sent (check .env SMTP credentials). In development mode, you can use the direct link below:";
+                    $alert_type = "warning";
+                } else {
+                    $alertmessage = "Unable to dispatch password reset email right now. Please verify SMTP settings or contact the club administrator.";
+                    $alert_type = "danger";
+                }
+            }
         } else {
             // No account found: record attempt to protect against enumeration abuse
             record_failed_attempt($email, 'forgot_password');
@@ -64,8 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($is_ajax) {
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
-            'status' => $alert_type === 'success' ? 'success' : 'error',
+            'status' => $alert_type,
             'message' => $alertmessage,
+            'mail_sent' => !empty($mail_sent),
             'dev_reset_link' => (app_env('APP_ENV') === 'development' && !empty($reset_link)) ? $reset_link : null
         ]);
         exit();
@@ -298,6 +309,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #a7f3d0;
         }
 
+        .alert-box.warning {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fde68a;
+        }
+
         .alert-box.danger {
             background: rgba(239, 68, 68, 0.12);
             border: 1px solid rgba(239, 68, 68, 0.28);
@@ -321,17 +338,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p class="card-subtitle">Enter your registered email address to receive a secure password reset link.</p>
 
             <?php if (!empty($alertmessage)): ?>
-                <div class="alert-box <?= $alert_type === 'success' ? 'success' : 'danger' ?>">
-                    <i class="fa <?= $alert_type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle' ?>" style="font-size: 1.15rem; margin-top: 2px; flex-shrink: 0; color: <?= $alert_type === 'success' ? '#34d399' : '#f87171' ?>;"></i>
+                <?php
+                $boxClass = $alert_type === 'success' ? 'success' : ($alert_type === 'warning' ? 'warning' : 'danger');
+                $iconClass = $alert_type === 'success' ? 'fa-check-circle' : ($alert_type === 'warning' ? 'fa-exclamation-triangle' : 'fa-exclamation-circle');
+                $iconColor = $alert_type === 'success' ? '#34d399' : ($alert_type === 'warning' ? '#fbbf24' : '#f87171');
+                $titleText = $alert_type === 'success' ? 'Instructions Sent' : ($alert_type === 'warning' ? 'Delivery Notice' : 'Notice');
+                ?>
+                <div class="alert-box <?= $boxClass ?>">
+                    <i class="fa <?= $iconClass ?>" style="font-size: 1.15rem; margin-top: 2px; flex-shrink: 0; color: <?= $iconColor ?>;"></i>
                     <div style="flex: 1;">
-                        <div style="font-weight: 600; color: <?= $alert_type === 'success' ? '#ecfdf5' : '#fee2e2' ?>; margin-bottom: 2px;">
-                            <?= $alert_type === 'success' ? 'Instructions Sent' : 'Notice' ?>
+                        <div style="font-weight: 600; color: #ffffff; margin-bottom: 2px;">
+                            <?= $titleText ?>
                         </div>
                         <div><?= htmlspecialchars($alertmessage) ?></div>
 
                         <?php if (app_env('APP_ENV') === 'development' && !empty($reset_link)): ?>
-                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(16, 185, 129, 0.2); font-size: 0.8rem;">
-                                <span style="opacity: 0.85;">Development Helper:</span><br>
+                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 0.8rem;">
+                                <span style="opacity: 0.85; color: #93c5fd;">Development Helper:</span><br>
                                 <a href="<?= htmlspecialchars($reset_link) ?>" style="color: #93c5fd; text-decoration: underline; word-break: break-all;">Click here to reset password directly</a>
                             </div>
                         <?php endif; ?>

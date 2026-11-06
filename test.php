@@ -33,6 +33,26 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
         $action_message = 'Reset failed: ' . htmlspecialchars($e->getMessage());
     }
 }
+
+// Handle test email action
+$smtp_diag_result = null;
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'test_email') {
+    $test_target = trim($_POST['test_recipient'] ?? 'harikrishnamanoj79@gmail.com');
+    if (empty($test_target) || !filter_var($test_target, FILTER_VALIDATE_EMAIL)) {
+        $action_status = 'danger';
+        $action_message = 'Please provide a valid recipient email address for testing.';
+    } else {
+        require_once __DIR__ . '/scripts/test_email.php';
+        $smtp_diag_result = run_smtp_diagnostics($test_target, false);
+        if ($smtp_diag_result['success']) {
+            $action_status = 'success';
+            $action_message = 'Test email successfully sent to: <strong>' . htmlspecialchars($test_target) . '</strong>! Check inbox / spam.';
+        } else {
+            $action_status = 'danger';
+            $action_message = 'Failed to send test email: ' . htmlspecialchars($smtp_diag_result['error'] ?? 'Unknown error');
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -275,6 +295,68 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
             <?php endif; ?>
 
             <?php if ($conn) $conn->close(); ?>
+        <?php endif; ?>
+    </div>
+
+    <!-- 5. SMTP Mail Dispatcher & Live Test -->
+    <div class="card">
+        <h2>5. SMTP Email Configuration &amp; Live Test</h2>
+        <?php
+        require_once __DIR__ . '/config/app.php';
+        $smtp_h = defined('SMTP_HOST') ? SMTP_HOST : '';
+        $smtp_p = defined('SMTP_PORT') ? SMTP_PORT : '';
+        $smtp_s = defined('SMTP_SECURE') ? SMTP_SECURE : '';
+        $smtp_u = defined('SMTP_USERNAME') ? SMTP_USERNAME : '';
+        $smtp_pw = defined('SMTP_PASSWORD') ? SMTP_PASSWORD : '';
+        $smtp_f = defined('SMTP_FROM_EMAIL') ? SMTP_FROM_EMAIL : '';
+        $smtp_has_cred = !empty($smtp_u) && !empty($smtp_pw);
+        ?>
+        <ul>
+            <li><strong>SMTP Host:</strong> <code><?php echo htmlspecialchars($smtp_h ?: 'Not set'); ?>:<?php echo htmlspecialchars((string)$smtp_p); ?></code> (<?php echo htmlspecialchars($smtp_s); ?>)</li>
+            <li><strong>SMTP User:</strong> <?php echo !empty($smtp_u) ? '<code>' . htmlspecialchars($smtp_u) . '</code>' : '<span class="badge badge-danger">Empty</span>'; ?></li>
+            <li><strong>SMTP Password:</strong> <?php echo !empty($smtp_pw) ? '<span class="badge badge-success">Configured (' . strlen($smtp_pw) . ' chars)</span>' : '<span class="badge badge-danger">Empty</span>'; ?></li>
+            <li><strong>From Email:</strong> <code><?php echo htmlspecialchars($smtp_f ?: 'Not set'); ?></code></li>
+            <li><strong>Credentials Status:</strong> 
+                <?php if ($smtp_has_cred): ?>
+                    <span class="badge badge-success">Credentials Present</span>
+                <?php else: ?>
+                    <span class="badge badge-danger">Missing Credentials in .env</span>
+                <?php endif; ?>
+            </li>
+        </ul>
+
+        <?php if (!$smtp_has_cred): ?>
+            <div class="alert alert-warning" style="margin-top:14px;">
+                <strong>⚠️ Why Password Reset Mail Fails:</strong><br>
+                <code>smtp.gmail.com</code> requires an authenticated Gmail address and a 16-character <strong>Google App Password</strong>.<br>
+                Because <code>SMTP_USERNAME</code> and <code>SMTP_PASSWORD</code> are currently empty in your <code>.env</code> file, Google immediately rejects all outgoing emails with <code>530 Authentication Required</code>.<br><br>
+                <strong>How to enable sending:</strong>
+                <ol style="margin: 6px 0 0 18px; padding: 0;">
+                    <li>Open your Google Account &rarr; Security &rarr; Enable 2-Step Verification.</li>
+                    <li>Generate a 16-character App Password at <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:#38bdf8;">myaccount.google.com/apppasswords</a>.</li>
+                    <li>Open <code>.env</code> and add:
+                        <pre style="background:#0f172a; padding:8px 12px; border-radius:6px; margin-top:6px; color:#a7f3d0; font-size:12px;">SMTP_USERNAME=your_email@gmail.com
+SMTP_PASSWORD=your_16_char_app_password
+SMTP_FROM_EMAIL=your_email@gmail.com</pre>
+                    </li>
+                </ol>
+            </div>
+        <?php endif; ?>
+
+        <h3 style="color:#94a3b8; font-size:15px; margin-top:20px;">Send Live Test Email</h3>
+        <form method="POST" style="margin-top:10px;">
+            <input type="hidden" name="action" value="test_email">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <input type="email" name="test_recipient" value="harikrishnamanoj79@gmail.com" required style="background:#0f172a; border:1px solid #334155; color:#f1f5f9; padding:9px 14px; border-radius:8px; font-size:14px; min-width:280px;">
+                <button type="submit" class="btn">
+                    <i class="fa fa-paper-plane"></i> Send Test Email
+                </button>
+            </div>
+        </form>
+
+        <?php if (!empty($smtp_diag_result['log'])): ?>
+            <h4 style="color:#94a3b8; font-size:13px; margin-top:20px; margin-bottom:8px;">Live SMTP Socket Diagnostic Log:</h4>
+            <pre style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:12px 14px; font-size:12px; line-height:1.5; color:#cbd5e1; max-height:280px; overflow-y:auto; white-space:pre-wrap;"><?php echo htmlspecialchars($smtp_diag_result['log']); ?></pre>
         <?php endif; ?>
     </div>
 
