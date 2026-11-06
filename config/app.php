@@ -45,13 +45,13 @@ if (!defined('SMTP_SECURE')) {
     define('SMTP_SECURE', app_env('SMTP_SECURE', 'ssl')); // 'ssl' or 'tls'
 }
 if (!defined('SMTP_USERNAME')) {
-    define('SMTP_USERNAME', app_env('SMTP_USERNAME', ''));
+    define('SMTP_USERNAME', app_env('SMTP_USERNAME', 'fineztechnologies@gmail.com'));
 }
 if (!defined('SMTP_PASSWORD')) {
-    define('SMTP_PASSWORD', app_env('SMTP_PASSWORD', ''));
+    define('SMTP_PASSWORD', app_env('SMTP_PASSWORD', 'gdlxyptftlwxcbrw'));
 }
 if (!defined('SMTP_FROM_EMAIL')) {
-    define('SMTP_FROM_EMAIL', app_env('SMTP_FROM_EMAIL', ''));
+    define('SMTP_FROM_EMAIL', app_env('SMTP_FROM_EMAIL', 'fineztechnologies@gmail.com'));
 }
 if (!defined('SMTP_FROM_NAME')) {
     define('SMTP_FROM_NAME', app_env('SMTP_FROM_NAME', 'YMCA BCP'));
